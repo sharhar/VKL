@@ -8,11 +8,12 @@ VKAPI_ATTR VkBool32 VKAPI_CALL DebugReportCallback(VkDebugReportFlagsEXT flags,
 	return VK_FALSE;
 }
 
-int vklCreateInstance(VKLInstance** pInstace, uint8_t debug) {
+int vklCreateInstance(VKLInstance** pInstace, VkAllocationCallbacks* allocator, VkBool32 debug) {
 	*pInstace = (VKLInstance*)malloc_c(sizeof(VKLInstance));
 	VKLInstance* instance = *pInstace;
 
 	instance->debug = debug;
+	instance->allocator = allocator;
 	instance->pvkGetInstanceProcAddr = (PFN_vkGetInstanceProcAddr)glfwGetInstanceProcAddress(NULL, "vkGetInstanceProcAddr");
 
 	instance->pvkCreateInstance = (PFN_vkCreateInstance)instance->pvkGetInstanceProcAddr(NULL, "vkCreateInstance");
@@ -102,7 +103,7 @@ int vklCreateInstance(VKLInstance** pInstace, uint8_t debug) {
 	instanceInfo.enabledExtensionCount = extensionCount;
 	instanceInfo.ppEnabledExtensionNames = extensions;
 
-	VLKCheck(instance->pvkCreateInstance(&instanceInfo, NULL, &instance->instance),
+	VLKCheck(instance->pvkCreateInstance(&instanceInfo, instance->allocator, &instance->instance),
 		"Failed to create Vulkan Instance");
 
 	instance->pvkDestroyInstance = (PFN_vkDestroyInstance)instance->pvkGetInstanceProcAddr(instance->instance, "vkDestroyInstance");
@@ -145,7 +146,7 @@ int vklCreateInstance(VKLInstance** pInstace, uint8_t debug) {
 		callbackCreateInfo.pfnCallback = &DebugReportCallback;
 		callbackCreateInfo.pUserData = NULL;
 
-		VLKCheck(instance->pvkCreateDebugReportCallbackEXT(instance->instance, &callbackCreateInfo, NULL, &instance->callback),
+		VLKCheck(instance->pvkCreateDebugReportCallbackEXT(instance->instance, &callbackCreateInfo, instance->allocator, &instance->callback),
 			"Could not create Debug Callback");
 	}
 
@@ -156,10 +157,10 @@ int vklCreateInstance(VKLInstance** pInstace, uint8_t debug) {
 
 int vklDestroyInstance(VKLInstance* instance) {
 	if (instance->debug) {
-		instance->pvkDestroyDebugReportCallbackEXT(instance->instance, instance->callback, NULL);
+		instance->pvkDestroyDebugReportCallbackEXT(instance->instance, instance->callback, instance->allocator);
 	}
 
-	instance->pvkDestroyInstance(instance->instance, NULL);
+	instance->pvkDestroyInstance(instance->instance, instance->allocator);
 
 	free_c(instance);
 

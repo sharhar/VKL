@@ -9,6 +9,7 @@ int vklCreateDevice(VKLInstance* instance, VKLDevice** pDevice, GLFWwindow** pWi
 	device->deviceGraphicsContextCount = deviceGraphicsContextCount;
 	device->deviceComputeContextCount = deviceComputeContextCount;
 	device->instance = instance;
+	device->physicalDevice = 0;
 
 	if (deviceGraphicsContextCount > 0) {
 		*pDeviceGraphicsContexts = (VKLDeviceGraphicsContext**)malloc_c(sizeof(VKLDeviceGraphicsContext*) * deviceGraphicsContextCount);
@@ -19,7 +20,8 @@ int vklCreateDevice(VKLInstance* instance, VKLDevice** pDevice, GLFWwindow** pWi
 			device->deviceGraphicsContexts[i] = (VKLDeviceGraphicsContext*)malloc_c(sizeof(VKLDeviceGraphicsContext));
 
 			device->deviceGraphicsContexts[i]->device = device;
-			glfwCreateWindowSurface(instance->instance, pWindows[i], NULL, &device->deviceGraphicsContexts[i]->surface);
+			device->deviceGraphicsContexts[i]->window = pWindows[i];
+			glfwCreateWindowSurface(instance->instance, pWindows[i], device->instance->allocator, &device->deviceGraphicsContexts[i]->surface);
 		}
 	}
 
@@ -95,10 +97,12 @@ int vklCreateDevice(VKLInstance* instance, VKLDevice** pDevice, GLFWwindow** pWi
 		}
 	}
 
-	free(physicalDevices);
+	free_c(physicalDevices);
 
-	assert(device->physicalDevice, "No physical device detected that can render and present!");
-
+	if (device->physicalDevice == 0) {
+		return -1;
+	}
+	
 	if (deviceGraphicsContextCount > 0) {
 		for (int i = 0; i < deviceGraphicsContextCount; i++) {
 			device->deviceGraphicsContexts[i]->queueIdx = graphicsQueueIndex;
@@ -211,7 +215,7 @@ int vklCreateDevice(VKLInstance* instance, VKLDevice** pDevice, GLFWwindow** pWi
 
 	deviceInfo.pEnabledFeatures = &features;
 
-	VLKCheck(instance->pvkCreateDevice(device->physicalDevice, &deviceInfo, NULL, &device->device),
+	VLKCheck(instance->pvkCreateDevice(device->physicalDevice, &deviceInfo, device->instance->allocator, &device->device),
 		"Failed to create logical device");
 
 	device->pvkGetDeviceProcAddr = (PFN_vkGetDeviceProcAddr)instance->pvkGetInstanceProcAddr(instance->instance, "vkGetDeviceProcAddr");
@@ -352,16 +356,20 @@ int vklCreateDevice(VKLInstance* instance, VKLDevice** pDevice, GLFWwindow** pWi
 
 		for (int i = 0; i < deviceGraphicsContextCount; i++) {
 			device->pvkGetDeviceQueue(device->device, graphicsQueueIndex, i, &device->deviceGraphicsContexts[i]->queue);
-			VLKCheck(device->pvkCreateCommandPool(device->device, &commandPoolCreateInfo, NULL, &device->deviceGraphicsContexts[i]->commandPool),
+			VLKCheck(device->pvkCreateCommandPool(device->device, &commandPoolCreateInfo, device->instance->allocator, &device->deviceGraphicsContexts[i]->commandPool),
 				"Failed to create command pool");
+
+			vklAllocateCommandBuffer(device->deviceGraphicsContexts[i], &device->deviceGraphicsContexts[i]->setupCmdBuffer, VK_COMMAND_BUFFER_LEVEL_PRIMARY, 1);
 		}
 
 		commandPoolCreateInfo.queueFamilyIndex = computeQueueIndex;
 
 		for (int i = deviceGraphicsContextCount; i < deviceGraphicsContextCount + deviceComputeContextCount; i++) {
 			device->pvkGetDeviceQueue(device->device, computeQueueIndex, i, &device->deviceComputeContexts[i - deviceGraphicsContextCount]->queue);
-			VLKCheck(device->pvkCreateCommandPool(device->device, &commandPoolCreateInfo, NULL, &device->deviceComputeContexts[i - deviceGraphicsContextCount]->commandPool),
+			VLKCheck(device->pvkCreateCommandPool(device->device, &commandPoolCreateInfo, device->instance->allocator, &device->deviceComputeContexts[i - deviceGraphicsContextCount]->commandPool),
 				"Failed to create command pool");
+
+			vklAllocateCommandBuffer(device->deviceComputeContexts[i - deviceGraphicsContextCount], &device->deviceComputeContexts[i - deviceGraphicsContextCount]->setupCmdBuffer, VK_COMMAND_BUFFER_LEVEL_PRIMARY, 1);
 		}
 	} else if (deviceGraphicsContextCount > 0 && deviceComputeContextCount > 0 && graphicsQueueIndex != computeQueueIndex) {
 		VkCommandPoolCreateInfo commandPoolCreateInfo;
@@ -372,16 +380,20 @@ int vklCreateDevice(VKLInstance* instance, VKLDevice** pDevice, GLFWwindow** pWi
 
 		for (int i = 0; i < deviceGraphicsContextCount; i++) {
 			device->pvkGetDeviceQueue(device->device, graphicsQueueIndex, i, &device->deviceGraphicsContexts[i]->queue);
-			VLKCheck(device->pvkCreateCommandPool(device->device, &commandPoolCreateInfo, NULL, &device->deviceGraphicsContexts[i]->commandPool),
+			VLKCheck(device->pvkCreateCommandPool(device->device, &commandPoolCreateInfo, device->instance->allocator, &device->deviceGraphicsContexts[i]->commandPool),
 				"Failed to create command pool");
+
+			vklAllocateCommandBuffer(device->deviceGraphicsContexts[i], &device->deviceGraphicsContexts[i]->setupCmdBuffer, VK_COMMAND_BUFFER_LEVEL_PRIMARY, 1);
 		}
 
 		commandPoolCreateInfo.queueFamilyIndex = computeQueueIndex;
 
 		for (int i = 0; i < deviceComputeContextCount; i++) {
 			device->pvkGetDeviceQueue(device->device, computeQueueIndex, i, &device->deviceComputeContexts[i]->queue);
-			VLKCheck(device->pvkCreateCommandPool(device->device, &commandPoolCreateInfo, NULL, &device->deviceComputeContexts[i]->commandPool),
+			VLKCheck(device->pvkCreateCommandPool(device->device, &commandPoolCreateInfo, device->instance->allocator, &device->deviceComputeContexts[i]->commandPool),
 				"Failed to create command pool");
+
+			vklAllocateCommandBuffer(device->deviceComputeContexts[i], &device->deviceComputeContexts[i]->setupCmdBuffer, VK_COMMAND_BUFFER_LEVEL_PRIMARY, 1);
 		}
 	} else if (deviceGraphicsContextCount > 0 && deviceComputeContextCount == 0) {
 		VkCommandPoolCreateInfo commandPoolCreateInfo;
@@ -392,8 +404,10 @@ int vklCreateDevice(VKLInstance* instance, VKLDevice** pDevice, GLFWwindow** pWi
 
 		for (int i = 0; i < deviceGraphicsContextCount; i++) {
 			device->pvkGetDeviceQueue(device->device, graphicsQueueIndex, i, &device->deviceGraphicsContexts[i]->queue);
-			VLKCheck(device->pvkCreateCommandPool(device->device, &commandPoolCreateInfo, NULL, &device->deviceGraphicsContexts[i]->commandPool),
+			VLKCheck(device->pvkCreateCommandPool(device->device, &commandPoolCreateInfo, device->instance->allocator, &device->deviceGraphicsContexts[i]->commandPool),
 				"Failed to create command pool");
+
+			vklAllocateCommandBuffer(device->deviceGraphicsContexts[i], &device->deviceGraphicsContexts[i]->setupCmdBuffer, VK_COMMAND_BUFFER_LEVEL_PRIMARY, 1);
 		}
 	} else if (deviceGraphicsContextCount == 0 && deviceComputeContextCount > 0) {
 		VkCommandPoolCreateInfo commandPoolCreateInfo;
@@ -404,8 +418,10 @@ int vklCreateDevice(VKLInstance* instance, VKLDevice** pDevice, GLFWwindow** pWi
 
 		for (int i = 0; i < deviceComputeContextCount; i++) {
 			device->pvkGetDeviceQueue(device->device, computeQueueIndex, i, &device->deviceComputeContexts[i]->queue);
-			VLKCheck(device->pvkCreateCommandPool(device->device, &commandPoolCreateInfo, NULL, &device->deviceComputeContexts[i]->commandPool),
+			VLKCheck(device->pvkCreateCommandPool(device->device, &commandPoolCreateInfo, device->instance->allocator, &device->deviceComputeContexts[i]->commandPool),
 				"Failed to create command pool");
+
+			vklAllocateCommandBuffer(device->deviceComputeContexts[i], &device->deviceComputeContexts[i]->setupCmdBuffer, VK_COMMAND_BUFFER_LEVEL_PRIMARY, 1);
 		}
 	}
 
@@ -414,19 +430,19 @@ int vklCreateDevice(VKLInstance* instance, VKLDevice** pDevice, GLFWwindow** pWi
 
 int vklDestroyDevice(VKLDevice* device) {
 	for (int i = 0; i < device->deviceGraphicsContextCount;i ++) {
-		device->instance->pvkDestroySurfaceKHR(device->instance->instance, device->deviceGraphicsContexts[i]->surface, NULL);
-		device->pvkDestroyCommandPool(device->device, device->deviceGraphicsContexts[i]->commandPool, NULL);
+		device->instance->pvkDestroySurfaceKHR(device->instance->instance, device->deviceGraphicsContexts[i]->surface, device->instance->allocator);
+		device->pvkDestroyCommandPool(device->device, device->deviceGraphicsContexts[i]->commandPool, device->instance->allocator);
 
 		free_c(device->deviceGraphicsContexts[i]);
 	}
 
 	for (int i = 0; i < device->deviceComputeContextCount; i++) {
-		device->pvkDestroyCommandPool(device->device, device->deviceComputeContexts[i]->commandPool, NULL);
+		device->pvkDestroyCommandPool(device->device, device->deviceComputeContexts[i]->commandPool, device->instance->allocator);
 
 		free_c(device->deviceComputeContexts[i]);
 	}
 
-	device->instance->pvkDestroyDevice(device->device, NULL);
+	device->instance->pvkDestroyDevice(device->device, device->instance->allocator);
 
 	free_c(device);
 

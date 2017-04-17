@@ -6,9 +6,15 @@ void VLKCheck(VkResult result, char *msg) {
 }
 
 void* malloc_c(size_t size) {
-	return malloc(size);
+	void* result = malloc(size);
+	memset(result, 0, size);
+	return result;
 }
 
 void free_c(void* block) {
 	free(block);
+}
+
+void* realloc_c(void* pOriginal, size_t size) {
+	return realloc(pOriginal, size);
 }

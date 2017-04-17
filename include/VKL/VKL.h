@@ -10,6 +10,7 @@
 void VLKCheck(VkResult result, char *msg);
 void* malloc_c(size_t size);
 void free_c(void* block);
+void* realloc_c(void* pOriginal, size_t size);
 
 struct VKLInstance;
 struct VKLDevice;
@@ -60,11 +61,12 @@ typedef struct VKLInstance {
 
 	VkInstance instance;
 	VkDebugReportCallbackEXT callback;
+	VkAllocationCallbacks* allocator;
 
 	int layerCount;
 	char** layers;
 
-	uint8_t debug;
+	VkBool32 debug;
 } VKLInstance;
 
 typedef struct VKLDevice {
@@ -215,6 +217,7 @@ typedef struct VKLDeviceGraphicsContext {
 	uint32_t queueIdx;
 	VkQueue queue;
 	VkCommandPool commandPool;
+	VkCommandBuffer setupCmdBuffer;
 
 	VKLDevice* device;
 } VKLDeviceGraphicsContext;
@@ -223,6 +226,7 @@ typedef struct VKLDeviceComputeContext {
 	uint32_t queueIdx;
 	VkQueue queue;
 	VkCommandPool commandPool;
+	VkCommandBuffer setupCmdBuffer;
 
 	VKLDevice* device;
 } VKLDeviceComputeContext;
@@ -243,7 +247,7 @@ typedef struct VKLSwapChain {
 	VKLDeviceGraphicsContext* context;
 } VKLSwapChain;
 
-int vklCreateInstance(VKLInstance** pInstace, uint8_t debug);
+int vklCreateInstance(VKLInstance** pInstace, VkAllocationCallbacks* allocator, VkBool32 debug);
 int vklDestroyInstance(VKLInstance* instance);
 
 int vklCreateDevice(VKLInstance* instance, VKLDevice** pDevice, GLFWwindow** pWindows,
@@ -252,5 +256,9 @@ int vklCreateDevice(VKLInstance* instance, VKLDevice** pDevice, GLFWwindow** pWi
 
 int vklDestroyDevice(VKLDevice* device);
 
-int vklCreateSwapChain(VKLDeviceGraphicsContext* context, VKLSwapChain** swapChain);
+int vklAllocateCommandBuffer(VKLDeviceGraphicsContext* context, VkCommandBuffer* cmdBuffer, VkCommandBufferLevel level, uint32_t count);
+int vklAllocateMemory(VKLDevice* device, VkDeviceMemory* memory, VkMemoryPropertyFlags desiredMemoryFlags, VkMemoryRequirements memoryRequirements);
+int vklAllocateImageMemory(VKLDevice* device, VkDeviceMemory* memory, VkImage image, VkMemoryPropertyFlags desiredMemoryFlags);
+
+int vklCreateSwapChain(VKLDeviceGraphicsContext* context, VKLSwapChain** swapChain, VkBool32 vSync);
 int vklDestroySwapChain(VKLSwapChain* swapChain);
