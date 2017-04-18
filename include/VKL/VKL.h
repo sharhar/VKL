@@ -251,6 +251,12 @@ typedef struct VKLSwapChain {
 	VKLDeviceGraphicsContext* context;
 } VKLSwapChain;
 
+typedef struct VKLBuffer {
+	size_t size;
+	VkBuffer buffer;
+	VkDeviceMemory memory;
+} VKLBuffer;
+
 int vklCreateInstance(VKLInstance** pInstace, VkAllocationCallbacks* allocator, VkBool32 debug);
 int vklDestroyInstance(VKLInstance* instance);
 
@@ -259,10 +265,6 @@ int vklCreateDevice(VKLInstance* instance, VKLDevice** pDevice, GLFWwindow** pWi
 	uint32_t deviceComputeContextCount, VKLDeviceComputeContext*** pDeviceComputeContexts);
 
 int vklDestroyDevice(VKLDevice* device);
-
-int vklAllocateCommandBuffer(VKLDeviceGraphicsContext* context, VkCommandBuffer* cmdBuffer, VkCommandBufferLevel level, uint32_t count);
-int vklAllocateMemory(VKLDevice* device, VkDeviceMemory* memory, VkMemoryPropertyFlags desiredMemoryFlags, VkMemoryRequirements memoryRequirements);
-int vklAllocateImageMemory(VKLDevice* device, VkDeviceMemory* memory, VkImage image, VkMemoryPropertyFlags desiredMemoryFlags);
 
 int vklCreateSwapChain(VKLDeviceGraphicsContext* context, VKLSwapChain** swapChain, VkBool32 vSync);
 int vklDestroySwapChain(VKLSwapChain* swapChain);
@@ -274,3 +276,12 @@ int vklBeginRenderRecording(VKLSwapChain* swapChain, VkCommandBuffer cmdBuffer);
 int vklEndRenderRecording(VKLSwapChain* swapChain, VkCommandBuffer cmdBuffer);
 int vklRenderRecording(VKLSwapChain* swapChain, VkCommandBuffer cmdBuffer);
 int vklSwapBuffers(VKLSwapChain* swapChain);
+
+int vklAllocateCommandBuffer(VKLDeviceGraphicsContext* context, VkCommandBuffer* cmdBuffer, VkCommandBufferLevel level, uint32_t count);
+int vklAllocateMemory(VKLDevice* device, VkDeviceMemory* memory, VkMemoryPropertyFlags desiredMemoryFlags, VkMemoryRequirements memoryRequirements);
+int vklAllocateImageMemory(VKLDevice* device, VkDeviceMemory* memory, VkImage image, VkMemoryPropertyFlags desiredMemoryFlags);
+int vklAllocateBufferMemory(VKLDevice* device, VkDeviceMemory* memory, VkBuffer buffer, VkMemoryPropertyFlags desiredMemoryFlags);
+int vklWriteToMemory(VKLDevice* device, VkDeviceMemory memory, void* data, size_t size);
+int vklCreateBuffer(VKLDevice* device, VKLBuffer* buffer, VkBool32 deviceLocal, size_t size, VkBufferUsageFlags usage);
+int vklDestroyBuffer(VKLDevice* device, VKLBuffer* buffer);
+int vklCreateStagedBuffer(VKLDeviceGraphicsContext* device, VKLBuffer* buffer, void* data, size_t size, VkBufferUsageFlags usage);

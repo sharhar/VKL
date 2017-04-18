@@ -40,6 +40,15 @@ int main() {
 		vklSwapBuffers(swapChain);
 	}
 
+	float data[] = {
+		-0.5f, -0.5f,
+		 0.0f,  0.5f,
+		 0.5f, -0.5f
+	};
+
+	VKLBuffer buffer;
+	vklCreateStagedBuffer(devCon, &buffer, data, sizeof(float) * 6, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+
 	while (!glfwWindowShouldClose(window)) {
 		glfwPollEvents();
 
@@ -50,6 +59,7 @@ int main() {
 		vklSwapBuffers(swapChain);
 	}
 
+	vklDestroyBuffer(device, &buffer);
 	vklDestroySwapChain(swapChain);
 	vklDestroyDevice(device);
 	vklDestroyInstance(instance);
