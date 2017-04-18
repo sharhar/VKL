@@ -244,6 +244,10 @@ typedef struct VKLSwapChain {
 	
 	uint32_t width, height, nextImageIdx, imageCount;
 
+	float clearR, clearG, clearB, clearA;
+
+	VkBool32 waitForRender;
+
 	VKLDeviceGraphicsContext* context;
 } VKLSwapChain;
 
@@ -262,3 +266,11 @@ int vklAllocateImageMemory(VKLDevice* device, VkDeviceMemory* memory, VkImage im
 
 int vklCreateSwapChain(VKLDeviceGraphicsContext* context, VKLSwapChain** swapChain, VkBool32 vSync);
 int vklDestroySwapChain(VKLSwapChain* swapChain);
+
+int vklSetClearColor(VKLSwapChain* swapChain, float r, float g, float b, float a);
+
+int vklClearScreen(VKLSwapChain* swapChain);
+int vklBeginRenderRecording(VKLSwapChain* swapChain, VkCommandBuffer cmdBuffer);
+int vklEndRenderRecording(VKLSwapChain* swapChain, VkCommandBuffer cmdBuffer);
+int vklRenderRecording(VKLSwapChain* swapChain, VkCommandBuffer cmdBuffer);
+int vklSwapBuffers(VKLSwapChain* swapChain);

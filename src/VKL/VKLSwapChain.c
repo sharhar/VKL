@@ -359,3 +359,167 @@ int vklDestroySwapChain(VKLSwapChain* swapChain) {
 	free_c(swapChain);
 	return 0;
 }
+
+int vklSetClearColor(VKLSwapChain* swapChain, float r, float g, float b, float a) {
+	swapChain->clearR = r;
+	swapChain->clearG = g;
+	swapChain->clearB = b;
+	swapChain->clearA = a;
+	return 0;
+}
+
+int vklClearScreen(VKLSwapChain* swapChain) {
+	VKLDevice* device = swapChain->context->device;
+
+	VkSemaphoreCreateInfo semaphoreCreateInfo;
+	semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+	semaphoreCreateInfo.pNext = NULL;
+	semaphoreCreateInfo.flags = 0;
+
+	device->pvkCreateSemaphore(device->device, &semaphoreCreateInfo, NULL, &swapChain->presentCompleteSemaphore);
+	device->pvkCreateSemaphore(device->device, &semaphoreCreateInfo, NULL, &swapChain->renderingCompleteSemaphore);
+
+	VkResult result = device->pvkAcquireNextImageKHR(device->device, swapChain->swapChain, UINT64_MAX,
+		swapChain->presentCompleteSemaphore, VK_NULL_HANDLE, &swapChain->nextImageIdx);
+
+	swapChain->waitForRender = 0;
+
+	return 0;
+}
+
+int vklBeginRenderRecording(VKLSwapChain* swapChain, VkCommandBuffer cmdBuffer) {
+	VKLDevice* device = swapChain->context->device;
+
+	VkCommandBufferBeginInfo beginInfo;
+	memset(&beginInfo, 0, sizeof(VkCommandBufferBeginInfo));
+	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+
+	device->pvkBeginCommandBuffer(cmdBuffer, &beginInfo);
+
+	VkImageMemoryBarrier layoutTransitionBarrier;
+	memset(&layoutTransitionBarrier, 0, sizeof(VkImageMemoryBarrier));
+	layoutTransitionBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+	layoutTransitionBarrier.srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+	layoutTransitionBarrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT |
+		VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+	layoutTransitionBarrier.oldLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+	layoutTransitionBarrier.newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+	layoutTransitionBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	layoutTransitionBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	layoutTransitionBarrier.image = swapChain->presentImages[swapChain->nextImageIdx];
+	layoutTransitionBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	layoutTransitionBarrier.subresourceRange.baseMipLevel = 0;
+	layoutTransitionBarrier.subresourceRange.levelCount = 1;
+	layoutTransitionBarrier.subresourceRange.baseArrayLayer = 0;
+	layoutTransitionBarrier.subresourceRange.layerCount = 1;
+
+	device->pvkCmdPipelineBarrier(cmdBuffer,
+		VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+		VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+		0,
+		0, NULL,
+		0, NULL,
+		1, &layoutTransitionBarrier);
+
+	VkClearValue clearValue[] = {
+		{ swapChain->clearR, swapChain->clearG, swapChain->clearB, swapChain->clearA },
+		{ 1.0, 0.0 } };
+
+	VkRenderPassBeginInfo renderPassBeginInfo;
+	memset(&renderPassBeginInfo, 0, sizeof(VkRenderPassBeginInfo));
+	renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+	renderPassBeginInfo.renderPass = swapChain->renderPass;
+	renderPassBeginInfo.framebuffer = swapChain->frameBuffers[swapChain->nextImageIdx];
+	renderPassBeginInfo.renderArea.offset.x = 0;
+	renderPassBeginInfo.renderArea.offset.y = 0;
+	renderPassBeginInfo.renderArea.extent.width = swapChain->width;
+	renderPassBeginInfo.renderArea.extent.height = swapChain->height;
+	renderPassBeginInfo.clearValueCount = 2;
+	renderPassBeginInfo.pClearValues = clearValue;
+	device->pvkCmdBeginRenderPass(cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+	return 0;
+}
+
+int vklEndRenderRecording(VKLSwapChain* swapChain, VkCommandBuffer cmdBuffer) {
+	VKLDevice* device = swapChain->context->device;
+
+	device->pvkCmdEndRenderPass(cmdBuffer);
+
+	VkImageMemoryBarrier prePresentBarrier;
+	memset(&prePresentBarrier, 0, sizeof(VkImageMemoryBarrier));
+	prePresentBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+	prePresentBarrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+	prePresentBarrier.dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+	prePresentBarrier.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+	prePresentBarrier.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+	prePresentBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	prePresentBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	prePresentBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	prePresentBarrier.subresourceRange.baseMipLevel = 0;
+	prePresentBarrier.subresourceRange.levelCount = 1;
+	prePresentBarrier.subresourceRange.baseArrayLayer = 0;
+	prePresentBarrier.subresourceRange.layerCount = 1;
+	prePresentBarrier.image = swapChain->presentImages[swapChain->nextImageIdx];
+
+	device->pvkCmdPipelineBarrier(cmdBuffer,
+		VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+		VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+		0,
+		0, NULL,
+		0, NULL,
+		1, &prePresentBarrier);
+
+	device->pvkEndCommandBuffer(cmdBuffer);
+
+	return 0;
+}
+
+int vklRenderRecording(VKLSwapChain* swapChain, VkCommandBuffer cmdBuffer) {
+	VKLDevice* device = swapChain->context->device;
+
+	VkPipelineStageFlags waitStageMash = { VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT };
+	VkSubmitInfo submitInfo;
+	memset(&submitInfo, 0, sizeof(VkSubmitInfo));
+	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+	submitInfo.waitSemaphoreCount = 1;
+	submitInfo.pWaitSemaphores = &swapChain->presentCompleteSemaphore;
+	submitInfo.pWaitDstStageMask = &waitStageMash;
+	submitInfo.commandBufferCount = 1;
+	submitInfo.pCommandBuffers = &cmdBuffer;
+	submitInfo.signalSemaphoreCount = 1;
+	submitInfo.pSignalSemaphores = &swapChain->renderingCompleteSemaphore;
+	device->pvkQueueSubmit(swapChain->context->queue, 1, &submitInfo, VK_NULL_HANDLE);
+
+	swapChain->waitForRender = 1;
+
+	return 0;
+}
+
+int vklSwapBuffers(VKLSwapChain* swapChain) {
+	VKLDevice* device = swapChain->context->device;
+
+	VkPresentInfoKHR presentInfo;
+	memset(&presentInfo, 0, sizeof(VkPresentInfoKHR));
+	presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+	presentInfo.waitSemaphoreCount = 1;
+	
+	if (swapChain->waitForRender) {
+		presentInfo.pWaitSemaphores = &swapChain->renderingCompleteSemaphore;
+	} else {
+		presentInfo.pWaitSemaphores = &swapChain->presentCompleteSemaphore;
+	}
+	
+	presentInfo.swapchainCount = 1;
+	presentInfo.pSwapchains = &swapChain->swapChain;
+	presentInfo.pImageIndices = &swapChain->nextImageIdx;
+	presentInfo.pResults = NULL;
+	device->pvkQueuePresentKHR(swapChain->context->queue, &presentInfo);
+
+	device->pvkQueueWaitIdle(swapChain->context->queue);
+
+	device->pvkDestroySemaphore(device->device, swapChain->presentCompleteSemaphore, NULL);
+	device->pvkDestroySemaphore(device->device, swapChain->renderingCompleteSemaphore, NULL);
+
+	return 0;
+}
