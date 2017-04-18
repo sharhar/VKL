@@ -282,6 +282,6 @@ int vklAllocateMemory(VKLDevice* device, VkDeviceMemory* memory, VkMemoryPropert
 int vklAllocateImageMemory(VKLDevice* device, VkDeviceMemory* memory, VkImage image, VkMemoryPropertyFlags desiredMemoryFlags);
 int vklAllocateBufferMemory(VKLDevice* device, VkDeviceMemory* memory, VkBuffer buffer, VkMemoryPropertyFlags desiredMemoryFlags);
 int vklWriteToMemory(VKLDevice* device, VkDeviceMemory memory, void* data, size_t size);
-int vklCreateBuffer(VKLDevice* device, VKLBuffer* buffer, VkBool32 deviceLocal, size_t size, VkBufferUsageFlags usage);
+int vklCreateBuffer(VKLDevice* device, VKLBuffer** pBuffer, VkBool32 deviceLocal, size_t size, VkBufferUsageFlags usage);
 int vklDestroyBuffer(VKLDevice* device, VKLBuffer* buffer);
-int vklCreateStagedBuffer(VKLDeviceGraphicsContext* device, VKLBuffer* buffer, void* data, size_t size, VkBufferUsageFlags usage);
+int vklCreateStagedBuffer(VKLDeviceGraphicsContext* device, VKLBuffer** pBuffer, void* data, size_t size, VkBufferUsageFlags usage);

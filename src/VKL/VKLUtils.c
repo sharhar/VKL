@@ -75,7 +75,9 @@ int vklWriteToMemory(VKLDevice* device, VkDeviceMemory memory, void* data, size_
 	return 0;
 }
 
-int vklCreateBuffer(VKLDevice* device, VKLBuffer* buffer, VkBool32 deviceLocal, size_t size, VkBufferUsageFlags usage) {
+int vklCreateBuffer(VKLDevice* device, VKLBuffer** pBuffer, VkBool32 deviceLocal, size_t size, VkBufferUsageFlags usage) {
+	VKLBuffer* buffer = malloc_c(sizeof(VKLBuffer));
+
 	VkBufferCreateInfo bufferCreateInfo;
 	memset(&bufferCreateInfo, 0, sizeof(VkBufferCreateInfo));
 	bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -96,23 +98,29 @@ int vklCreateBuffer(VKLDevice* device, VKLBuffer* buffer, VkBool32 deviceLocal, 
 
 	buffer->size = size;
 
+	*pBuffer = buffer;
+
 	return 0;
 }
 
 int vklDestroyBuffer(VKLDevice* device, VKLBuffer* buffer) {
 	device->pvkFreeMemory(device->device, buffer->memory, device->instance->allocator);
 	device->pvkDestroyBuffer(device->device, buffer->buffer, device->instance->allocator);
+
+	free_c(buffer);
 }
 
-int vklCreateStagedBuffer(VKLDeviceGraphicsContext* context, VKLBuffer* buffer, void* data, size_t size, VkBufferUsageFlags usage) {
+int vklCreateStagedBuffer(VKLDeviceGraphicsContext* context, VKLBuffer** pBuffer, void* data, size_t size, VkBufferUsageFlags usage) {
 	VKLDevice* device = context->device;
 
-	VKLBuffer stagedBuffer;
+	VKLBuffer* stagedBuffer;
 	vklCreateBuffer(device, &stagedBuffer, 0, size, usage | VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
 
-	vklWriteToMemory(device, stagedBuffer.memory, data, size);
+	vklWriteToMemory(device, stagedBuffer->memory, data, size);
 
-	vklCreateBuffer(device, buffer, 1, size, usage | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+	vklCreateBuffer(device, pBuffer, 1, size, usage | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+
+	VKLBuffer* buffer = *pBuffer;
 
 	VkCommandBufferBeginInfo beginInfo;
 	memset(&beginInfo, 0, sizeof(VkCommandBufferBeginInfo));
@@ -127,7 +135,7 @@ int vklCreateStagedBuffer(VKLDeviceGraphicsContext* context, VKLBuffer* buffer, 
 	bufferCopy.srcOffset = 0;
 	bufferCopy.size = size;
 
-	device->pvkCmdCopyBuffer(context->setupCmdBuffer, stagedBuffer.buffer, buffer->buffer, 1, &bufferCopy);
+	device->pvkCmdCopyBuffer(context->setupCmdBuffer, stagedBuffer->buffer, buffer->buffer, 1, &bufferCopy);
 
 	device->pvkEndCommandBuffer(context->setupCmdBuffer);
 
@@ -141,7 +149,7 @@ int vklCreateStagedBuffer(VKLDeviceGraphicsContext* context, VKLBuffer* buffer, 
 
 	device->pvkQueueWaitIdle(context->queue);
 
-	vklDestroyBuffer(device, &stagedBuffer);
+	vklDestroyBuffer(device, stagedBuffer);
 
 	return 0;
 }
