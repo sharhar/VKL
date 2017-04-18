@@ -1,4 +1,5 @@
 #include <VKL/VKL.h>
+#include <math.h>
 
 int main() {
 	glfwInit();
@@ -24,41 +25,84 @@ int main() {
 	VKLSwapChain* swapChain;
 	vklCreateSwapChain(devCon, &swapChain, VK_TRUE);
 
-	vklSetClearColor(swapChain, 0.25f, 0.45f, 1.0f, 1.0f);
-
-	VkCommandBuffer* cmdBuffers = malloc_c(sizeof(VkCommandBuffer) * swapChain->imageCount);
-	vklAllocateCommandBuffer(devCon, cmdBuffers, VK_COMMAND_BUFFER_LEVEL_PRIMARY, swapChain->imageCount);
-
-	for (int i = 0; i < swapChain->imageCount;i++) {
-		vklClearScreen(swapChain);
-
-		vklBeginRenderRecording(swapChain, cmdBuffers[i]);
-		vklEndRenderRecording(swapChain, cmdBuffers[i]);
-
-		vklRenderRecording(swapChain, cmdBuffers[i]);
-
-		vklSwapBuffers(swapChain);
-	}
-
 	float data[] = {
-		-0.5f, -0.5f,
-		 0.0f,  0.5f,
-		 0.5f, -0.5f
+		-0.8f, -0.8f,
+		 0.0f,  0.8f,
+		 0.8f, -0.8f
 	};
-
+	
 	VKLBuffer* buffer;
 	vklCreateStagedBuffer(devCon, &buffer, data, sizeof(float) * 6, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+
+	char* shaderPaths[2];
+	shaderPaths[0] = "res/basic-vert.spv";
+	shaderPaths[1] = "res/basic-frag.spv";
+
+	VkShaderStageFlagBits stages[2];
+	stages[0] = VK_SHADER_STAGE_VERTEX_BIT;
+	stages[1] = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+	size_t offset = 0;
+	VkFormat format = VK_FORMAT_R32G32_SFLOAT;
+
+	VKLShaderCreateInfo shaderCreateInfo;
+	memset(&shaderCreateInfo, 0, sizeof(VKLShaderCreateInfo));
+	shaderCreateInfo.shaderPaths = shaderPaths;
+	shaderCreateInfo.shaderStages = stages;
+	shaderCreateInfo.shaderCount = 2;
+	shaderCreateInfo.vertexInputAttributeStride = sizeof(float) * 2;
+	shaderCreateInfo.vertexInputAttributesCount = 1;
+	shaderCreateInfo.vertexInputAttributeOffsets = &offset;
+	shaderCreateInfo.vertexInputAttributeFormats = &format;
+
+	VKLShader* shader;
+	vklCreateShader(device, &shader, &shaderCreateInfo);
+
+	VKLPipelineCreateInfo pipelineCreateInfo;
+	memset(&pipelineCreateInfo, 0, sizeof(VKLPipelineCreateInfo));
+	pipelineCreateInfo.shader = shader;
+	pipelineCreateInfo.renderPass = swapChain->renderPass;
+	pipelineCreateInfo.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+	pipelineCreateInfo.cullMode = VK_CULL_MODE_NONE;
+	pipelineCreateInfo.extent.width = swapChain->width;
+	pipelineCreateInfo.extent.height = swapChain->height;
+
+	VKLGraphicsPipeline* pipeline;
+	vklCreateGraphicsPipeline(device, &pipeline, &pipelineCreateInfo);
+	
+	VkCommandBuffer cmdBuffer;
+	vklAllocateCommandBuffer(devCon, &cmdBuffer, VK_COMMAND_BUFFER_LEVEL_PRIMARY, 1);
+
+	vklSetClearColor(swapChain, 0.25f, 0.45f, 1.0f, 1.0f);
 
 	while (!glfwWindowShouldClose(window)) {
 		glfwPollEvents();
 
 		vklClearScreen(swapChain);
 
-		vklRenderRecording(swapChain, cmdBuffers[swapChain->nextImageIdx]);
+		vklBeginRenderRecording(swapChain, cmdBuffer);
+		
+		VkViewport viewport = { 0, 0, swapChain->width, swapChain->height, 0, 1 };
+		VkRect2D scissor = { 0, 0, swapChain->width, swapChain->height };
+		VkDeviceSize offsets = 0;
+
+		device->pvkCmdSetViewport(cmdBuffer, 0, 1, &viewport);
+		device->pvkCmdSetScissor(cmdBuffer, 0, 1, &scissor);
+		
+		device->pvkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->pipeline);
+		device->pvkCmdBindVertexBuffers(cmdBuffer, 0, 1, &buffer->buffer, &offsets);
+
+		device->pvkCmdDraw(cmdBuffer, 3, 1, 0, 0);
+		
+		vklEndRenderRecording(swapChain, cmdBuffer);
+
+		vklRenderRecording(swapChain, cmdBuffer);
 
 		vklSwapBuffers(swapChain);
 	}
 
+	vklDestroyGraphicsPipeline(device, pipeline);
+	vklDestroyShader(device, shader);
 	vklDestroyBuffer(device, buffer);
 	vklDestroySwapChain(swapChain);
 	vklDestroyDevice(device);

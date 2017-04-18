@@ -448,3 +448,17 @@ int vklDestroyDevice(VKLDevice* device) {
 
 	return 0;
 }
+
+int vklAllocateCommandBuffer(VKLDeviceGraphicsContext* context, VkCommandBuffer* cmdBuffer, VkCommandBufferLevel level, uint32_t count) {
+	VkCommandBufferAllocateInfo commandBufferAllocationInfo;
+	memset(&commandBufferAllocationInfo, 0, sizeof(VkCommandBufferAllocateInfo));
+	commandBufferAllocationInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+	commandBufferAllocationInfo.commandPool = context->commandPool;
+	commandBufferAllocationInfo.level = level;
+	commandBufferAllocationInfo.commandBufferCount = count;
+
+	VLKCheck(context->device->pvkAllocateCommandBuffers(context->device->device, &commandBufferAllocationInfo, cmdBuffer),
+		"Failed to allocate setup command buffer");
+
+	return 0;
+}

@@ -2,14 +2,14 @@ cmake_minimum_required(VERSION 2.8.11)
 
 file(GLOB_RECURSE VKL_TEST_SRC *.c)
 
-if(APPLE)
-	add_executable(
-		VKL-Test 
-		MACOSX_BUNDLE 
-		${VKL_TEST_SRC}
-	)
+if(MSVC)
+	add_executable(VKL-Test ${VKL_TEST_SRC})
+	file(COPY "${CMAKE_SOURCE_DIR}/res" DESTINATION "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/Debug")
+	file(COPY "${CMAKE_SOURCE_DIR}/res" DESTINATION "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/Release")
+	file(COPY "${CMAKE_SOURCE_DIR}/res" DESTINATION "${CMAKE_BINARY_DIR}/src/VKL-Test")
 else()
 	add_executable(VKL-Test ${VKL_TEST_SRC})
+	file(COPY "${CMAKE_SOURCE_DIR}/res" DESTINATION "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
 endif()
 
 target_link_libraries (VKL-Test LINK_PUBLIC VKL)

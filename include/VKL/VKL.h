@@ -11,18 +11,23 @@ void VLKCheck(VkResult result, char *msg);
 void* malloc_c(size_t size);
 void free_c(void* block);
 void* realloc_c(void* pOriginal, size_t size);
+char* readFileFromPath(char *filename, size_t* size);
 
 struct VKLInstance;
 struct VKLDevice;
 struct VKLDeviceGraphicsContext;
 struct VKLDeviceComputeContext;
 struct VKLSwapChain;
+struct VKLBuffer;
+struct VKLShader;
 
 typedef struct VKLInstance VKLInstance;
 typedef struct VKLDevice VKLDevice;
 typedef struct VKLDeviceGraphicsContext VKLDeviceGraphicsContext;
 typedef struct VKLDeviceComputeContext VKLDeviceComputeContext;
 typedef struct VKLSwapChain VKLSwapChain;
+typedef struct VKLBuffer VKLBuffer;
+typedef struct VKLShader VKLShader;
 
 typedef struct VKLInstance {
 	PFN_vkCreateInstance pvkCreateInstance;
@@ -255,7 +260,25 @@ typedef struct VKLBuffer {
 	size_t size;
 	VkBuffer buffer;
 	VkDeviceMemory memory;
+	VkBool32 deviceLocal;
 } VKLBuffer;
+
+typedef struct VKLShader {
+	uint32_t shaderModulesCount;
+	VkShaderModule* shaderModules;
+	VkDescriptorPoolSize* descriptorPoolSizes;
+	uint32_t descriptorPoolSizesCount;
+	VkDescriptorSetLayout descriptorSetLayout;
+
+	uint32_t shaderStageCreateInfosCount;
+	VkPipelineShaderStageCreateInfo* shaderStageCreateInfos;
+	VkPipelineVertexInputStateCreateInfo* vertexInputStateCreateInfo;
+} VKLShader;
+
+typedef struct VKLGraphicsPipeline {
+	VkPipeline pipeline;
+	VkPipelineLayout pipelineLayout;
+} VKLGraphicsPipeline;
 
 int vklCreateInstance(VKLInstance** pInstace, VkAllocationCallbacks* allocator, VkBool32 debug);
 int vklDestroyInstance(VKLInstance* instance);
@@ -263,25 +286,51 @@ int vklDestroyInstance(VKLInstance* instance);
 int vklCreateDevice(VKLInstance* instance, VKLDevice** pDevice, GLFWwindow** pWindows,
 	uint32_t deviceGraphicsContextCount, VKLDeviceGraphicsContext*** pDeviceGraphicsContexts,
 	uint32_t deviceComputeContextCount, VKLDeviceComputeContext*** pDeviceComputeContexts);
-
 int vklDestroyDevice(VKLDevice* device);
+int vklAllocateCommandBuffer(VKLDeviceGraphicsContext* context, VkCommandBuffer* cmdBuffer, VkCommandBufferLevel level, uint32_t count);
 
 int vklCreateSwapChain(VKLDeviceGraphicsContext* context, VKLSwapChain** swapChain, VkBool32 vSync);
 int vklDestroySwapChain(VKLSwapChain* swapChain);
-
 int vklSetClearColor(VKLSwapChain* swapChain, float r, float g, float b, float a);
-
 int vklClearScreen(VKLSwapChain* swapChain);
 int vklBeginRenderRecording(VKLSwapChain* swapChain, VkCommandBuffer cmdBuffer);
 int vklEndRenderRecording(VKLSwapChain* swapChain, VkCommandBuffer cmdBuffer);
 int vklRenderRecording(VKLSwapChain* swapChain, VkCommandBuffer cmdBuffer);
 int vklSwapBuffers(VKLSwapChain* swapChain);
 
-int vklAllocateCommandBuffer(VKLDeviceGraphicsContext* context, VkCommandBuffer* cmdBuffer, VkCommandBufferLevel level, uint32_t count);
 int vklAllocateMemory(VKLDevice* device, VkDeviceMemory* memory, VkMemoryPropertyFlags desiredMemoryFlags, VkMemoryRequirements memoryRequirements);
 int vklAllocateImageMemory(VKLDevice* device, VkDeviceMemory* memory, VkImage image, VkMemoryPropertyFlags desiredMemoryFlags);
 int vklAllocateBufferMemory(VKLDevice* device, VkDeviceMemory* memory, VkBuffer buffer, VkMemoryPropertyFlags desiredMemoryFlags);
 int vklWriteToMemory(VKLDevice* device, VkDeviceMemory memory, void* data, size_t size);
+
 int vklCreateBuffer(VKLDevice* device, VKLBuffer** pBuffer, VkBool32 deviceLocal, size_t size, VkBufferUsageFlags usage);
 int vklDestroyBuffer(VKLDevice* device, VKLBuffer* buffer);
 int vklCreateStagedBuffer(VKLDeviceGraphicsContext* device, VKLBuffer** pBuffer, void* data, size_t size, VkBufferUsageFlags usage);
+
+typedef struct VKLShaderCreateInfo {
+	char** shaderPaths;
+	VkShaderStageFlagBits* shaderStages;
+	uint32_t shaderCount;
+	VkDescriptorPoolSize* decriptorPoolSizes;
+	uint32_t descriptorPoolSizesCount;
+	VkDescriptorSetLayoutBinding* bindings;
+	uint32_t bindingsCount;
+	size_t vertexInputAttributeStride;
+	size_t* vertexInputAttributeOffsets;
+	VkFormat* vertexInputAttributeFormats;
+	uint32_t vertexInputAttributesCount;
+} VKLShaderCreateInfo;
+
+int vklCreateShader(VKLDevice* device, VKLShader** pShader, VKLShaderCreateInfo* shaderCreateInfo);
+int vklDestroyShader(VKLDevice* device, VKLShader* shader);
+
+typedef struct VKLPipelineCreateInfo {
+	VKLShader* shader;
+	VkPrimitiveTopology topology;
+	VkCullModeFlags cullMode;
+	VkRenderPass renderPass;
+	VkExtent2D extent;
+} VKLPipelineCreateInfo;
+
+int vklCreateGraphicsPipeline(VKLDevice* device, VKLGraphicsPipeline** pPipeline, VKLPipelineCreateInfo* createInfo);
+int vklDestroyGraphicsPipeline(VKLDevice* device, VKLGraphicsPipeline* pipeline);

@@ -1,5 +1,38 @@
 #include <VKL/VKL.h>
 #include <malloc.h>
+#include <stdlib.h>
+
+char* readFileFromPath(char *filename, size_t* size) {
+	char *buffer = NULL;
+	size_t string_size, read_size;
+	FILE *handler = fopen(filename, "rb");
+
+	if (handler) {
+		fseek(handler, 0, SEEK_END);
+		string_size = ftell(handler);
+		rewind(handler);
+
+		buffer = (char*)malloc_c(sizeof(char) * (string_size + 1));
+
+		read_size = fread(buffer, sizeof(char), string_size, handler);
+
+		buffer[string_size] = '\0';
+
+		if (string_size != read_size) {
+			printf("Error occured while reading file!\nstring_size = %d\nread_size = %d\n\n", string_size, read_size);
+			free_c(buffer);
+			buffer = NULL;
+		}
+
+		*size = read_size;
+
+		fclose(handler);
+	} else {
+		printf("Did not find file!\n");
+	}
+
+	return buffer;
+}
 
 void VLKCheck(VkResult result, char *msg) {
 	assert(result == VK_SUCCESS, msg);
