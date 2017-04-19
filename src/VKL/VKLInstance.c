@@ -8,7 +8,7 @@ VKAPI_ATTR VkBool32 VKAPI_CALL DebugReportCallback(VkDebugReportFlagsEXT flags,
 	return VK_FALSE;
 }
 
-int vklCreateInstance(VKLInstance** pInstace, VkAllocationCallbacks* allocator, VkBool32 debug) {
+int vklCreateInstance(VKLInstance** pInstace, VkAllocationCallbacks* allocator, VkBool32 debug, char* wsiExtName) {
 	*pInstace = (VKLInstance*)malloc_c(sizeof(VKLInstance));
 	VKLInstance* instance = *pInstace;
 
@@ -52,10 +52,20 @@ int vklCreateInstance(VKLInstance** pInstace, VkAllocationCallbacks* allocator, 
 		instance->layerCount = 0;
 	}
 
-	uint32_t extensionCountGLFW = 0;
-	char** extensionsGLFW = (char**)glfwGetRequiredInstanceExtensions(&extensionCountGLFW);
-	uint32_t extensionCount = extensionCountGLFW;
-	char** extensions = extensionsGLFW;
+	uint32_t extensionCount;
+	char** extensions;
+
+	if (wsiExtName == NULL) {
+		uint32_t extensionCountGLFW = 0;
+		char** extensionsGLFW = (char**)glfwGetRequiredInstanceExtensions(&extensionCountGLFW);
+		extensionCount = extensionCountGLFW;
+		extensions = extensionsGLFW;
+	} else {
+		extensionCount = 2;
+		extensions = malloc_c(sizeof(char*) * 2);
+		extensions[0] = VK_KHR_SURFACE_EXTENSION_NAME;
+		extensions[1] = wsiExtName;
+	}
 
 	if (debug) {
 		uint32_t extensionCountEXT = 0;
@@ -76,12 +86,16 @@ int vklCreateInstance(VKLInstance** pInstace, VkAllocationCallbacks* allocator, 
 			return -1;
 		}
 
-		extensionCount = extensionCountGLFW + 1;
+
+		uint32_t preExtentionCount = extensionCount;
+		char** preExtentions = extensions;
+
+		extensionCount = preExtentionCount + 1;
 		extensions = (char**)malloc_c(sizeof(char*) * extensionCount);
-		for (int i = 0; i < extensionCountGLFW; i++) {
-			extensions[i] = extensionsGLFW[i];
+		for (int i = 0; i < preExtentionCount; i++) {
+			extensions[i] = preExtentions[i];
 		}
-		extensions[extensionCountGLFW] = extentionEXT;
+		extensions[preExtentionCount] = extentionEXT;
 	}
 
 	VkApplicationInfo applicationInfo;
@@ -128,6 +142,10 @@ int vklCreateInstance(VKLInstance** pInstace, VkAllocationCallbacks* allocator, 
 	instance->pvkGetPhysicalDeviceSurfaceFormatsKHR = (PFN_vkGetPhysicalDeviceSurfaceFormatsKHR)instance->pvkGetInstanceProcAddr(instance->instance, "vkGetPhysicalDeviceSurfaceFormatsKHR");
 	instance->pvkGetPhysicalDeviceSurfacePresentModesKHR = (PFN_vkGetPhysicalDeviceSurfacePresentModesKHR)instance->pvkGetInstanceProcAddr(instance->instance, "vkGetPhysicalDeviceSurfacePresentModesKHR");
 
+#ifdef VKL_USE_WSI_WIN32
+	instance->pvkCreateWin32SurfaceKHR = (PFN_vkCreateWin32SurfaceKHR)instance->pvkGetInstanceProcAddr(instance->instance, "vkCreateWin32SurfaceKHR");
+#endif
+
 	instance->pvkGetPhysicalDeviceDisplayPropertiesKHR = (PFN_vkGetPhysicalDeviceDisplayPropertiesKHR)instance->pvkGetInstanceProcAddr(instance->instance, "vkGetPhysicalDeviceDisplayPropertiesKHR");
 	instance->pvkGetPhysicalDeviceDisplayPlanePropertiesKHR = (PFN_vkGetPhysicalDeviceDisplayPlanePropertiesKHR)instance->pvkGetInstanceProcAddr(instance->instance, "vkGetPhysicalDeviceDisplayPlanePropertiesKHR");
 	instance->pvkGetDisplayPlaneSupportedDisplaysKHR = (PFN_vkGetDisplayPlaneSupportedDisplaysKHR)instance->pvkGetInstanceProcAddr(instance->instance, "vkGetDisplayPlaneSupportedDisplaysKHR");
@@ -164,5 +182,13 @@ int vklDestroyInstance(VKLInstance* instance) {
 
 	free_c(instance);
 
+	return 0;
+}
+
+int vklDestroySurface(VKLInstance* instance, VKLSurface* surface) {
+	instance->pvkDestroySurfaceKHR(instance->instance, surface->surface, instance->allocator);
+
+	free_c(surface);
+	
 	return 0;
 }

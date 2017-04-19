@@ -1,4 +1,6 @@
 #include <VKL/VKL.h>
+#include <VKL/VKLWSI.h>
+#include <GLFW/glfw3.h>
 #include <math.h>
 
 int main() {
@@ -6,7 +8,7 @@ int main() {
 
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 	GLFWwindow* window = glfwCreateWindow(800, 600, "VKL Test", NULL, NULL);
-
+	
 	VkBool32 debug = 0;
 	
 #ifdef _DEBUG
@@ -14,11 +16,14 @@ int main() {
 #endif
 
 	VKLInstance* instance;
-	vklCreateInstance(&instance, NULL, debug);
+	vklCreateInstance(&instance, NULL, debug, NULL);
 	
+	VKLSurface* surface;
+	vklCreateGLFWSurface(instance, &surface, window);
+
 	VKLDevice* device;
 	VKLDeviceGraphicsContext** deviceContexts;
-	vklCreateDevice(instance, &device, &window, 1, &deviceContexts, 0, NULL);
+	vklCreateDevice(instance, &device, &surface, 1, &deviceContexts, 0, NULL);
 
 	VKLDeviceGraphicsContext* devCon = deviceContexts[0];
 	
@@ -106,6 +111,7 @@ int main() {
 	vklDestroyBuffer(device, buffer);
 	vklDestroySwapChain(swapChain);
 	vklDestroyDevice(device);
+	vklDestroySurface(instance, surface);
 	vklDestroyInstance(instance);
 
 	glfwTerminate();

@@ -46,7 +46,6 @@ int vklCreateStagedBuffer(VKLDeviceGraphicsContext* context, VKLBuffer** pBuffer
 
 	vklWriteToMemory(device, stagedBuffer->memory, data, size);
 
-	/*
 	vklCreateBuffer(device, pBuffer, VK_TRUE, size, usage | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
 
 	VKLBuffer* buffer = *pBuffer;
@@ -79,9 +78,6 @@ int vklCreateStagedBuffer(VKLDeviceGraphicsContext* context, VKLBuffer** pBuffer
 	device->pvkQueueWaitIdle(context->queue);
 
 	vklDestroyBuffer(device, stagedBuffer);
-	*/
-
-	*pBuffer = stagedBuffer;
 
 	return 0;
 }

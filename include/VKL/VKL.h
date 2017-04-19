@@ -1,8 +1,18 @@
 #pragma once
 
+//Uncomment the bottom line to enable direct win32 surface creation
+//#define VKL_USE_WSI_WIN32
+
+#ifdef VKL_USE_WSI_WIN32
+#define VK_USE_PLATFORM_WIN32_KHR
+#define VK_NO_PROTOTYPES
+#include <vulkan/vulkan.h>
+#else
 #define VK_NO_PROTOTYPES
 #include <vulkan/vulkan.h>
 #include <GLFW/glfw3.h>
+#endif
+
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
@@ -14,20 +24,24 @@ void* realloc_c(void* pOriginal, size_t size);
 char* readFileFromPath(char *filename, size_t* size);
 
 struct VKLInstance;
+struct VKLSurface;
 struct VKLDevice;
 struct VKLDeviceGraphicsContext;
 struct VKLDeviceComputeContext;
 struct VKLSwapChain;
 struct VKLBuffer;
 struct VKLShader;
+struct VKLGraphicsPipeline;
 
 typedef struct VKLInstance VKLInstance;
+typedef struct VKLSurface VKLSurface;
 typedef struct VKLDevice VKLDevice;
 typedef struct VKLDeviceGraphicsContext VKLDeviceGraphicsContext;
 typedef struct VKLDeviceComputeContext VKLDeviceComputeContext;
 typedef struct VKLSwapChain VKLSwapChain;
 typedef struct VKLBuffer VKLBuffer;
 typedef struct VKLShader VKLShader;
+typedef struct VKLGraphicsPipeline VKLGraphicsPipeline;
 
 typedef struct VKLInstance {
 	PFN_vkCreateInstance pvkCreateInstance;
@@ -56,6 +70,10 @@ typedef struct VKLInstance {
 	PFN_vkGetPhysicalDeviceSurfaceFormatsKHR pvkGetPhysicalDeviceSurfaceFormatsKHR;
 	PFN_vkGetPhysicalDeviceSurfacePresentModesKHR pvkGetPhysicalDeviceSurfacePresentModesKHR;
 
+#ifdef VKL_USE_WSI_WIN32
+	PFN_vkCreateWin32SurfaceKHR pvkCreateWin32SurfaceKHR;
+#endif
+
 	PFN_vkGetPhysicalDeviceDisplayPropertiesKHR pvkGetPhysicalDeviceDisplayPropertiesKHR;
 	PFN_vkGetPhysicalDeviceDisplayPlanePropertiesKHR pvkGetPhysicalDeviceDisplayPlanePropertiesKHR;
 	PFN_vkGetDisplayPlaneSupportedDisplaysKHR pvkGetDisplayPlaneSupportedDisplaysKHR;
@@ -73,6 +91,11 @@ typedef struct VKLInstance {
 
 	VkBool32 debug;
 } VKLInstance;
+
+typedef struct VKLSurface {
+	VkSurfaceKHR surface;
+	uint32_t width, height;
+} VKLSurface;
 
 typedef struct VKLDevice {
 	PFN_vkGetDeviceProcAddr pvkGetDeviceProcAddr;
@@ -216,8 +239,7 @@ typedef struct VKLDevice {
 } VKLDevice;
 
 typedef struct VKLDeviceGraphicsContext {
-	GLFWwindow* window;
-	VkSurfaceKHR surface;
+	VKLSurface* surface;
 
 	uint32_t queueIdx;
 	VkQueue queue;
@@ -280,10 +302,12 @@ typedef struct VKLGraphicsPipeline {
 	VkPipelineLayout pipelineLayout;
 } VKLGraphicsPipeline;
 
-int vklCreateInstance(VKLInstance** pInstace, VkAllocationCallbacks* allocator, VkBool32 debug);
+int vklCreateInstance(VKLInstance** pInstace, VkAllocationCallbacks* allocator, VkBool32 debug, char* wsiExtName);
 int vklDestroyInstance(VKLInstance* instance);
 
-int vklCreateDevice(VKLInstance* instance, VKLDevice** pDevice, GLFWwindow** pWindows,
+int vklDestroySurface(VKLInstance* instance, VKLSurface* surface);
+
+int vklCreateDevice(VKLInstance* instance, VKLDevice** pDevice, VKLSurface** pSurfaces,
 	uint32_t deviceGraphicsContextCount, VKLDeviceGraphicsContext*** pDeviceGraphicsContexts,
 	uint32_t deviceComputeContextCount, VKLDeviceComputeContext*** pDeviceComputeContexts);
 int vklDestroyDevice(VKLDevice* device);

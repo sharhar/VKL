@@ -7,9 +7,9 @@ int vklCreateSwapChain(VKLDeviceGraphicsContext* context, VKLSwapChain** pSwapCh
 	swapChain->context = context;
 
 	uint32_t formatCount = 0;
-	device->instance->pvkGetPhysicalDeviceSurfaceFormatsKHR(device->physicalDevice, context->surface, &formatCount, NULL);
+	device->instance->pvkGetPhysicalDeviceSurfaceFormatsKHR(device->physicalDevice, context->surface->surface, &formatCount, NULL);
 	VkSurfaceFormatKHR* surfaceFormats = malloc_c(sizeof(VkSurfaceFormatKHR) * formatCount);
-	device->instance->pvkGetPhysicalDeviceSurfaceFormatsKHR(device->physicalDevice, context->surface, &formatCount, surfaceFormats);
+	device->instance->pvkGetPhysicalDeviceSurfaceFormatsKHR(device->physicalDevice, context->surface->surface, &formatCount, surfaceFormats);
 
 	VkFormat colorFormat;
 	if (formatCount == 1 && surfaceFormats[0].format == VK_FORMAT_UNDEFINED) {
@@ -25,7 +25,7 @@ int vklCreateSwapChain(VKLDeviceGraphicsContext* context, VKLSwapChain** pSwapCh
 
 	VkSurfaceCapabilitiesKHR surfaceCapabilities;
 	memset(&surfaceCapabilities, 0, sizeof(VkSurfaceCapabilitiesKHR));
-	context->device->instance->pvkGetPhysicalDeviceSurfaceCapabilitiesKHR(context->device->physicalDevice, context->surface, &surfaceCapabilities);
+	context->device->instance->pvkGetPhysicalDeviceSurfaceCapabilitiesKHR(context->device->physicalDevice, context->surface->surface, &surfaceCapabilities);
 
 	uint32_t desiredImageCount = 2;
 	if (desiredImageCount < surfaceCapabilities.minImageCount) {
@@ -36,12 +36,8 @@ int vklCreateSwapChain(VKLDeviceGraphicsContext* context, VKLSwapChain** pSwapCh
 		desiredImageCount = surfaceCapabilities.maxImageCount;
 	}
 
-	int wW = 800;
-	int wH = 600;
-	glfwGetWindowSize(context->window, &wW, &wH);
-
-	swapChain->width = (uint32_t)wW;
-	swapChain->height = (uint32_t)wH;
+	swapChain->width = context->surface->width;
+	swapChain->height = context->surface->height;
 
 	VkExtent2D surfaceResolution = surfaceCapabilities.currentExtent;
 	if (surfaceResolution.width == -1) {
@@ -59,9 +55,9 @@ int vklCreateSwapChain(VKLDeviceGraphicsContext* context, VKLSwapChain** pSwapCh
 	}
 
 	uint32_t presentModeCount = 0;
-	device->instance->pvkGetPhysicalDeviceSurfacePresentModesKHR(device->physicalDevice, context->surface, &presentModeCount, NULL);
+	device->instance->pvkGetPhysicalDeviceSurfacePresentModesKHR(device->physicalDevice, context->surface->surface, &presentModeCount, NULL);
 	VkPresentModeKHR* presentModes = malloc_c(sizeof(VkPresentModeKHR) * presentModeCount);
-	device->instance->pvkGetPhysicalDeviceSurfacePresentModesKHR(device->physicalDevice, context->surface, &presentModeCount, presentModes);
+	device->instance->pvkGetPhysicalDeviceSurfacePresentModesKHR(device->physicalDevice, context->surface->surface, &presentModeCount, presentModes);
 
 	VkPresentModeKHR presentationMode = VK_PRESENT_MODE_FIFO_KHR;
 	if (!vSync) {
@@ -78,7 +74,7 @@ int vklCreateSwapChain(VKLDeviceGraphicsContext* context, VKLSwapChain** pSwapCh
 	VkSwapchainCreateInfoKHR swapChainCreateInfo;
 	memset(&swapChainCreateInfo, 0, sizeof(VkSwapchainCreateInfoKHR));
 	swapChainCreateInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-	swapChainCreateInfo.surface = context->surface;
+	swapChainCreateInfo.surface = context->surface->surface;
 	swapChainCreateInfo.minImageCount = desiredImageCount;
 	swapChainCreateInfo.imageFormat = colorFormat;
 	swapChainCreateInfo.imageColorSpace = colorSpace;

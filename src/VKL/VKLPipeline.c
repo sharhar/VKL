@@ -6,8 +6,8 @@ int vklCreateGraphicsPipeline(VKLDevice* device, VKLGraphicsPipeline** pPipeline
 	VkPipelineLayoutCreateInfo layoutCreateInfo;
 	memset(&layoutCreateInfo, 0, sizeof(VkPipelineLayoutCreateInfo));
 	layoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-	layoutCreateInfo.setLayoutCount = 0;// 1;
-	layoutCreateInfo.pSetLayouts = NULL;// &createInfo->shader->descriptorSetLayout;
+	layoutCreateInfo.setLayoutCount = 1;
+	layoutCreateInfo.pSetLayouts = &createInfo->shader->descriptorSetLayout;
 	layoutCreateInfo.pushConstantRangeCount = 0;
 	layoutCreateInfo.pPushConstantRanges = NULL;
 
@@ -113,7 +113,6 @@ int vklCreateGraphicsPipeline(VKLDevice* device, VKLGraphicsPipeline** pPipeline
 	colorBlendState.blendConstants[1] = 0.0;
 	colorBlendState.blendConstants[2] = 0.0;
 	colorBlendState.blendConstants[3] = 0.0;
-
 	
 	VkDynamicState dynamicState[2] = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
 	VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo;

@@ -1,6 +1,6 @@
 #include <VKL/VKL.h>
 
-int vklCreateDevice(VKLInstance* instance, VKLDevice** pDevice, GLFWwindow** pWindows,
+int vklCreateDevice(VKLInstance* instance, VKLDevice** pDevice, VKLSurface** pSurfaces,
 	uint32_t deviceGraphicsContextCount, VKLDeviceGraphicsContext*** pDeviceGraphicsContexts,
 	uint32_t deviceComputeContextCount, VKLDeviceComputeContext*** pDeviceComputeContexts) {
 
@@ -20,8 +20,7 @@ int vklCreateDevice(VKLInstance* instance, VKLDevice** pDevice, GLFWwindow** pWi
 			device->deviceGraphicsContexts[i] = (VKLDeviceGraphicsContext*)malloc_c(sizeof(VKLDeviceGraphicsContext));
 
 			device->deviceGraphicsContexts[i]->device = device;
-			device->deviceGraphicsContexts[i]->window = pWindows[i];
-			glfwCreateWindowSurface(instance->instance, pWindows[i], device->instance->allocator, &device->deviceGraphicsContexts[i]->surface);
+			device->deviceGraphicsContexts[i]->surface = pSurfaces[i];
 		}
 	}
 
@@ -63,7 +62,7 @@ int vklCreateDevice(VKLInstance* instance, VKLDevice** pDevice, GLFWwindow** pWi
 				uint8_t supportsSurfaces = 1;
 				for (int k = 0; k < deviceGraphicsContextCount; k++) {
 					VkBool32 supportsPresent;
-					instance->pvkGetPhysicalDeviceSurfaceSupportKHR(physicalDevices[i], j, device->deviceGraphicsContexts[k]->surface, &supportsPresent);
+					instance->pvkGetPhysicalDeviceSurfaceSupportKHR(physicalDevices[i], j, device->deviceGraphicsContexts[k]->surface->surface, &supportsPresent);
 					if (!supportsPresent) {
 						supportsSurfaces = 0;
 						break;
@@ -430,7 +429,6 @@ int vklCreateDevice(VKLInstance* instance, VKLDevice** pDevice, GLFWwindow** pWi
 
 int vklDestroyDevice(VKLDevice* device) {
 	for (int i = 0; i < device->deviceGraphicsContextCount;i ++) {
-		device->instance->pvkDestroySurfaceKHR(device->instance->instance, device->deviceGraphicsContexts[i]->surface, device->instance->allocator);
 		device->pvkDestroyCommandPool(device->device, device->deviceGraphicsContexts[i]->commandPool, device->instance->allocator);
 
 		free_c(device->deviceGraphicsContexts[i]);
