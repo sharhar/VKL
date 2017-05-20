@@ -1,17 +1,7 @@
 #pragma once
 
-//Uncomment the bottom line to enable direct win32 surface creation
-//#define VKL_USE_WSI_WIN32
-
-#ifdef VKL_USE_WSI_WIN32
-#define VK_USE_PLATFORM_WIN32_KHR
-#define VK_NO_PROTOTYPES
-#include <vulkan/vulkan.h>
-#else
-#define VK_NO_PROTOTYPES
 #include <vulkan/vulkan.h>
 #include <GLFW/glfw3.h>
-#endif
 
 #include <assert.h>
 #include <stdio.h>
@@ -301,6 +291,13 @@ typedef struct VKLGraphicsPipeline {
 	VkPipeline pipeline;
 	VkPipelineLayout pipelineLayout;
 } VKLGraphicsPipeline;
+
+#ifdef VKL_USE_WSI_WIN32
+#include <windows.h>
+int vklCreateWin32Surface(VKLInstance* instance, VKLSurface** pSurface, HWND hWnd);
+#else
+int vklCreateGLFWSurface(VKLInstance* instance, VKLSurface** pSurface, GLFWwindow* window);
+#endif
 
 int vklCreateInstance(VKLInstance** pInstace, VkAllocationCallbacks* allocator, VkBool32 debug, char* wsiExtName);
 int vklDestroyInstance(VKLInstance* instance);

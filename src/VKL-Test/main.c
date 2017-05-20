@@ -1,5 +1,4 @@
 #include <VKL/VKL.h>
-#include <VKL/VKLWSI.h>
 #include <GLFW/glfw3.h>
 #include <math.h>
 
