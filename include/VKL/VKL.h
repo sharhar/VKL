@@ -1,5 +1,9 @@
 #pragma once
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <vulkan/vulkan.h>
 #include <GLFW/glfw3.h>
 
@@ -59,10 +63,6 @@ typedef struct VKLInstance {
 	PFN_vkGetPhysicalDeviceSurfaceCapabilitiesKHR pvkGetPhysicalDeviceSurfaceCapabilitiesKHR;
 	PFN_vkGetPhysicalDeviceSurfaceFormatsKHR pvkGetPhysicalDeviceSurfaceFormatsKHR;
 	PFN_vkGetPhysicalDeviceSurfacePresentModesKHR pvkGetPhysicalDeviceSurfacePresentModesKHR;
-
-#ifdef VKL_USE_WSI_WIN32
-	PFN_vkCreateWin32SurfaceKHR pvkCreateWin32SurfaceKHR;
-#endif
 
 	PFN_vkGetPhysicalDeviceDisplayPropertiesKHR pvkGetPhysicalDeviceDisplayPropertiesKHR;
 	PFN_vkGetPhysicalDeviceDisplayPlanePropertiesKHR pvkGetPhysicalDeviceDisplayPlanePropertiesKHR;
@@ -355,3 +355,7 @@ typedef struct VKLPipelineCreateInfo {
 
 int vklCreateGraphicsPipeline(VKLDevice* device, VKLGraphicsPipeline** pPipeline, VKLPipelineCreateInfo* createInfo);
 int vklDestroyGraphicsPipeline(VKLDevice* device, VKLGraphicsPipeline* pipeline);
+
+#ifdef __cplusplus
+}
+#endif
