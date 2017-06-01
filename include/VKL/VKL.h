@@ -11,6 +11,7 @@ extern "C" {
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 void VLKCheck(VkResult result, char *msg);
 void* malloc_c(size_t size);

@@ -113,9 +113,9 @@ int vklCreateInstance(VKLInstance** pInstace, VkAllocationCallbacks* allocator, 
 	instanceInfo.flags = 0;
 	instanceInfo.pApplicationInfo = &applicationInfo;
 	instanceInfo.enabledLayerCount = instance->layerCount;
-	instanceInfo.ppEnabledLayerNames = instance->layers;
+	instanceInfo.ppEnabledLayerNames = (const char**)instance->layers;
 	instanceInfo.enabledExtensionCount = extensionCount;
-	instanceInfo.ppEnabledExtensionNames = extensions;
+	instanceInfo.ppEnabledExtensionNames = (const char**)extensions;
 
 	VLKCheck(instance->pvkCreateInstance(&instanceInfo, instance->allocator, &instance->instance),
 		"Failed to create Vulkan Instance");

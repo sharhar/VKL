@@ -198,7 +198,7 @@ int vklCreateDevice(VKLInstance* instance, VKLDevice** pDevice, VKLSurface** pSu
 	deviceInfo.queueCreateInfoCount = queueCreateCount;
 	deviceInfo.pQueueCreateInfos = queueCreateInfos;
 	deviceInfo.enabledLayerCount = instance->layerCount;
-	deviceInfo.ppEnabledLayerNames = instance->layers;
+	deviceInfo.ppEnabledLayerNames = (const char**)instance->layers;
 
 	const char *deviceExtensions[] = { "VK_KHR_swapchain" };
 	deviceInfo.enabledExtensionCount = 1;

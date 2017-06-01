@@ -1,6 +1,6 @@
 #include <VKL/VKL.h>
-#include <malloc.h>
 #include <stdlib.h>
+#include <memory.h>
 
 char* readFileFromPath(char *filename, size_t* size) {
 	char *buffer = NULL;
@@ -19,7 +19,7 @@ char* readFileFromPath(char *filename, size_t* size) {
 		buffer[string_size] = '\0';
 
 		if (string_size != read_size) {
-			printf("Error occured while reading file!\nstring_size = %d\nread_size = %d\n\n", string_size, read_size);
+			printf("Error occured while reading file!\nstring_size = %zu\nread_size = %zu\n\n", string_size, read_size);
 			free_c(buffer);
 			buffer = NULL;
 		}
@@ -35,7 +35,9 @@ char* readFileFromPath(char *filename, size_t* size) {
 }
 
 void VLKCheck(VkResult result, char *msg) {
-	assert(result == VK_SUCCESS, msg);
+	if(result != VK_SUCCESS) {
+		printf("%s\n", msg);
+	}
 }
 
 void* malloc_c(size_t size) {
