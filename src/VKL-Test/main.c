@@ -30,13 +30,13 @@ int main() {
 	vklCreateSwapChain(devCon, &swapChain, VK_TRUE);
 
 	float data[] = {
-		-0.8f, -0.8f,
-		 0.0f,  0.8f,
-		 0.8f, -0.8f
+		-0.8f, -0.8f, 1.0f, 0.0f,
+		 0.0f,  0.8f, 0.0f, 1.0f,
+		 0.8f, -0.8f, 0.0f, 0.0f
 	};
 	
 	VKLBuffer* buffer;
-	vklCreateStagedBuffer(devCon, &buffer, data, sizeof(float) * 6, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+	vklCreateStagedBuffer(devCon, &buffer, data, sizeof(float) * 3 * 4, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
 
 	char* shaderPaths[2];
 	shaderPaths[0] = "res/basic-vert.spv";
@@ -46,15 +46,21 @@ int main() {
 	stages[0] = VK_SHADER_STAGE_VERTEX_BIT;
 	stages[1] = VK_SHADER_STAGE_FRAGMENT_BIT;
 
-	size_t offset = 0;
-	VkFormat format = VK_FORMAT_R32G32_SFLOAT;
+	size_t offsets[2] = {0, sizeof(float) * 2};
+	VkFormat formats[2] = { VK_FORMAT_R32G32_SFLOAT, VK_FORMAT_R32G32_SFLOAT };
 
-	VkDescriptorSetLayoutBinding bindings[1];
+	VkDescriptorSetLayoutBinding bindings[2];
 	bindings[0].binding = 0;
 	bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 	bindings[0].descriptorCount = 1;
 	bindings[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 	bindings[0].pImmutableSamplers = NULL;
+
+	bindings[1].binding = 1;
+	bindings[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	bindings[1].descriptorCount = 1;
+	bindings[1].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+	bindings[1].pImmutableSamplers = NULL;
 
 	VKLShaderCreateInfo shaderCreateInfo;
 	memset(&shaderCreateInfo, 0, sizeof(VKLShaderCreateInfo));
@@ -62,11 +68,11 @@ int main() {
 	shaderCreateInfo.shaderStages = stages;
 	shaderCreateInfo.shaderCount = 2;
 	shaderCreateInfo.bindings = bindings;
-	shaderCreateInfo.bindingsCount = 1;
-	shaderCreateInfo.vertexInputAttributeStride = sizeof(float) * 2;
-	shaderCreateInfo.vertexInputAttributesCount = 1;
-	shaderCreateInfo.vertexInputAttributeOffsets = &offset;
-	shaderCreateInfo.vertexInputAttributeFormats = &format;
+	shaderCreateInfo.bindingsCount = 2;
+	shaderCreateInfo.vertexInputAttributeStride = sizeof(float) * 4;
+	shaderCreateInfo.vertexInputAttributesCount = 2;
+	shaderCreateInfo.vertexInputAttributeOffsets = offsets;
+	shaderCreateInfo.vertexInputAttributeFormats = formats;
 
 	VKLShader* shader;
 	vklCreateShader(device, &shader, &shaderCreateInfo);
@@ -97,9 +103,28 @@ int main() {
 	};
 
 	VKLBuffer* uniformBuffer;
-	vklCreateStagedBuffer(devCon, &uniformBuffer, proj, sizeof(float) * 16, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
-
+	vklCreateBuffer(device, &uniformBuffer, VK_FALSE, sizeof(float) * 16, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
+	
 	vklSetUniformBuffer(device, uniform, uniformBuffer, 0);
+
+	uint8_t imageData[16] = {
+		255,   0, 255, 255,      0, 255,   0, 255,
+		  0, 255,   0, 255,    255,   0, 255, 255
+	};
+
+	VKLTextureCreateInfo textureCreateInfo;
+	textureCreateInfo.width = 2;
+	textureCreateInfo.height = 2;
+	textureCreateInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
+	textureCreateInfo.tiling = VK_IMAGE_TILING_LINEAR;
+	textureCreateInfo.usage = VK_IMAGE_USAGE_SAMPLED_BIT;
+
+	VKLTexture* texture;
+	vklCreateTexture(device, &texture, &textureCreateInfo, VK_FALSE);
+	vklSetTextureData(device, texture, imageData);
+	//vklCreateStagedTexture(devCon, &texture, &textureCreateInfo, imageData);
+
+	vklSetUniformTexture(device, uniform, texture, 1);
 
 	vklSetClearColor(swapChain, 0.25f, 0.45f, 1.0f, 1.0f);
 
@@ -119,6 +144,10 @@ int main() {
 		
 		device->pvkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->pipeline);
 		device->pvkCmdBindVertexBuffers(cmdBuffer, 0, 1, &buffer->buffer, &offsets);
+
+		proj[12] = glfwGetTime()/10.0f;
+
+		vklWriteToMemory(device, uniformBuffer->memory, proj, sizeof(float) * 16);
 
 		device->pvkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 
 			pipeline->pipelineLayout, 0, 1, &uniform->descriptorSet, 0, NULL);

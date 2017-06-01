@@ -29,6 +29,7 @@ struct VKLBuffer;
 struct VKLShader;
 struct VKLGraphicsPipeline;
 struct VKLUniformObject;
+struct VKLTexture;
 
 typedef struct VKLInstance VKLInstance;
 typedef struct VKLSurface VKLSurface;
@@ -40,6 +41,7 @@ typedef struct VKLBuffer VKLBuffer;
 typedef struct VKLShader VKLShader;
 typedef struct VKLGraphicsPipeline VKLGraphicsPipeline;
 typedef struct VKLUniformObject VKLUniformObject;
+typedef struct VKLTexture VKLTexture;
 
 typedef struct VKLInstance {
 	PFN_vkCreateInstance pvkCreateInstance;
@@ -301,6 +303,16 @@ typedef struct VKLUniformObject {
 	VkDescriptorSet descriptorSet;
 } VKLUniformObject;
 
+typedef struct VKLTexture {
+	uint32_t width;
+	uint32_t height;
+
+	VkImage image;
+	VkDeviceMemory memory;
+	VkImageView imageView;
+	VkSampler sampler;
+} VKLTexture;
+
 #ifdef VKL_USE_WSI_WIN32
 #include <windows.h>
 int vklCreateWin32Surface(VKLInstance* instance, VKLSurface** pSurface, HWND hWnd);
@@ -367,7 +379,21 @@ int vklDestroyGraphicsPipeline(VKLDevice* device, VKLGraphicsPipeline* pipeline)
 
 int vklCreateUniformObject(VKLDevice* device, VKLUniformObject** pUniform, VKLShader* shader);
 int vklSetUniformBuffer(VKLDevice* device, VKLUniformObject* uniform, VKLBuffer* buffer, uint32_t index);
+int vklSetUniformTexture(VKLDevice* device, VKLUniformObject* uniform, VKLTexture* texture, uint32_t index);
 int vklDestroyUniformObject(VKLDevice* device, VKLUniformObject* uniform);
+
+typedef struct VKLTextureCreateInfo {
+	uint32_t width;
+	uint32_t height;
+	VkImageUsageFlags usage;
+	VkFormat format;
+	VkImageTiling tiling;
+} VKLTextureCreateInfo;
+
+int vklCreateTexture(VKLDevice* device, VKLTexture** pTexture, VKLTextureCreateInfo* createInfo, VkBool32 deviceLocal);
+int vklSetTextureData(VKLDevice* device, VKLTexture* texture, uint8_t* data);
+int vklCreateStagedTexture(VKLDeviceGraphicsContext* devCon, VKLTexture** pTexture, VKLTextureCreateInfo* createInfo, uint8_t* data);
+int vklDestroyTexture(VKLDevice* device, VKLTexture* texture);
 
 #ifdef __cplusplus
 }

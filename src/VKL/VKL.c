@@ -1,6 +1,4 @@
 #include <VKL/VKL.h>
-#include <stdlib.h>
-#include <memory.h>
 
 char* readFileFromPath(char *filename, size_t* size) {
 	char *buffer = NULL;
