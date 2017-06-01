@@ -4,6 +4,7 @@
 extern "C" {
 #endif
 
+#define VK_NO_PROTOTYPES
 #include <vulkan/vulkan.h>
 #include <GLFW/glfw3.h>
 
@@ -26,6 +27,7 @@ struct VKLSwapChain;
 struct VKLBuffer;
 struct VKLShader;
 struct VKLGraphicsPipeline;
+struct VKLUniformObject;
 
 typedef struct VKLInstance VKLInstance;
 typedef struct VKLSurface VKLSurface;
@@ -36,6 +38,7 @@ typedef struct VKLSwapChain VKLSwapChain;
 typedef struct VKLBuffer VKLBuffer;
 typedef struct VKLShader VKLShader;
 typedef struct VKLGraphicsPipeline VKLGraphicsPipeline;
+typedef struct VKLUniformObject VKLUniformObject;
 
 typedef struct VKLInstance {
 	PFN_vkCreateInstance pvkCreateInstance;
@@ -229,14 +232,14 @@ typedef struct VKLDevice {
 } VKLDevice;
 
 typedef struct VKLDeviceGraphicsContext {
-	VKLSurface* surface;
-
 	uint32_t queueIdx;
 	VkQueue queue;
 	VkCommandPool commandPool;
 	VkCommandBuffer setupCmdBuffer;
 
 	VKLDevice* device;
+	
+	VKLSurface* surface;
 } VKLDeviceGraphicsContext;
 
 typedef struct VKLDeviceComputeContext {
@@ -291,6 +294,11 @@ typedef struct VKLGraphicsPipeline {
 	VkPipeline pipeline;
 	VkPipelineLayout pipelineLayout;
 } VKLGraphicsPipeline;
+
+typedef struct VKLUniformObject {
+	VkDescriptorPool descriptorPool;
+	VkDescriptorSet descriptorSet;
+} VKLUniformObject;
 
 #ifdef VKL_USE_WSI_WIN32
 #include <windows.h>
@@ -355,6 +363,10 @@ typedef struct VKLPipelineCreateInfo {
 
 int vklCreateGraphicsPipeline(VKLDevice* device, VKLGraphicsPipeline** pPipeline, VKLPipelineCreateInfo* createInfo);
 int vklDestroyGraphicsPipeline(VKLDevice* device, VKLGraphicsPipeline* pipeline);
+
+int vklCreateUniformObject(VKLDevice* device, VKLUniformObject** pUniform, VKLShader* shader);
+int vklSetUniformBuffer(VKLDevice* device, VKLUniformObject* uniform, VKLBuffer* buffer, uint32_t index);
+int vklDestroyUniformObject(VKLDevice* device, VKLUniformObject* uniform);
 
 #ifdef __cplusplus
 }

@@ -49,11 +49,20 @@ int main() {
 	size_t offset = 0;
 	VkFormat format = VK_FORMAT_R32G32_SFLOAT;
 
+	VkDescriptorSetLayoutBinding bindings[1];
+	bindings[0].binding = 0;
+	bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	bindings[0].descriptorCount = 1;
+	bindings[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+	bindings[0].pImmutableSamplers = NULL;
+
 	VKLShaderCreateInfo shaderCreateInfo;
 	memset(&shaderCreateInfo, 0, sizeof(VKLShaderCreateInfo));
 	shaderCreateInfo.shaderPaths = shaderPaths;
 	shaderCreateInfo.shaderStages = stages;
 	shaderCreateInfo.shaderCount = 2;
+	shaderCreateInfo.bindings = bindings;
+	shaderCreateInfo.bindingsCount = 1;
 	shaderCreateInfo.vertexInputAttributeStride = sizeof(float) * 2;
 	shaderCreateInfo.vertexInputAttributesCount = 1;
 	shaderCreateInfo.vertexInputAttributeOffsets = &offset;
@@ -77,6 +86,21 @@ int main() {
 	VkCommandBuffer cmdBuffer;
 	vklAllocateCommandBuffer(devCon, &cmdBuffer, VK_COMMAND_BUFFER_LEVEL_PRIMARY, 1);
 
+	VKLUniformObject* uniform;
+	vklCreateUniformObject(device, &uniform, shader);
+
+	float proj[] = {
+		1, 0, 0, 0,
+		0, 1, 0, 0,
+		0, 0, 1, 0,
+		0, 0, 0, 1
+	};
+
+	VKLBuffer* uniformBuffer;
+	vklCreateStagedBuffer(devCon, &uniformBuffer, proj, sizeof(float) * 16, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
+
+	vklSetUniformBuffer(device, uniform, uniformBuffer, 0);
+
 	vklSetClearColor(swapChain, 0.25f, 0.45f, 1.0f, 1.0f);
 
 	while (!glfwWindowShouldClose(window)) {
@@ -96,6 +120,9 @@ int main() {
 		device->pvkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->pipeline);
 		device->pvkCmdBindVertexBuffers(cmdBuffer, 0, 1, &buffer->buffer, &offsets);
 
+		device->pvkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 
+			pipeline->pipelineLayout, 0, 1, &uniform->descriptorSet, 0, NULL);
+
 		device->pvkCmdDraw(cmdBuffer, 3, 1, 0, 0);
 		
 		vklEndRenderRecording(swapChain, cmdBuffer);
@@ -105,8 +132,10 @@ int main() {
 		vklSwapBuffers(swapChain);
 	}
 
+	vklDestroyUniformObject(device, uniform);
 	vklDestroyGraphicsPipeline(device, pipeline);
 	vklDestroyShader(device, shader);
+	vklDestroyBuffer(device, uniformBuffer);
 	vklDestroyBuffer(device, buffer);
 	vklDestroySwapChain(swapChain);
 	vklDestroyDevice(device);

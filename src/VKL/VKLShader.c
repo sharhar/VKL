@@ -60,6 +60,14 @@ int vklCreateShader(VKLDevice* device, VKLShader** pShader, VKLShaderCreateInfo*
 	shader->vertexInputStateCreateInfo->vertexAttributeDescriptionCount = shaderCreateInfo->vertexInputAttributesCount;
 	shader->vertexInputStateCreateInfo->pVertexAttributeDescriptions = vertexAttributeDescritpion;
 
+	shader->descriptorPoolSizesCount = shaderCreateInfo->bindingsCount;
+	shader->descriptorPoolSizes = malloc_c(sizeof(VkDescriptorPoolSize) * shader->descriptorPoolSizesCount);
+
+	for (uint32_t i = 0; i < shader->descriptorPoolSizesCount;i++) {
+		shader->descriptorPoolSizes[i].type = shaderCreateInfo->bindings[i].descriptorType;
+		shader->descriptorPoolSizes[i].descriptorCount = shaderCreateInfo->bindings[i].descriptorCount;
+	}
+
 	*pShader = shader;
 
 	return 0;
