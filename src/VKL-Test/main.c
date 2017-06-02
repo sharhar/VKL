@@ -30,13 +30,17 @@ int main() {
 	vklCreateSwapChain(devCon, &swapChain, VK_TRUE);
 
 	float data[] = {
-		-0.8f, -0.8f, 1.0f, 0.0f,
-		 0.0f,  0.8f, 0.0f, 1.0f,
-		 0.8f, -0.8f, 0.0f, 0.0f
+		-0.5f, -0.5f, 0.0f, 0.0f,
+		 0.5f,  0.5f, 1.0f, 1.0f,
+		 0.5f, -0.5f, 1.0f, 0.0f,
+
+		-0.5f, -0.5f, 0.0f, 0.0f,
+		 0.5f,  0.5f, 1.0f, 1.0f,
+		-0.5f,  0.5f, 0.0f, 1.0f,
 	};
 	
 	VKLBuffer* buffer;
-	vklCreateStagedBuffer(devCon, &buffer, data, sizeof(float) * 3 * 4, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+	vklCreateStagedBuffer(devCon, &buffer, data, sizeof(float) * 6 * 4, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
 
 	char* shaderPaths[2];
 	shaderPaths[0] = "res/basic-vert.spv";
@@ -107,17 +111,20 @@ int main() {
 	
 	vklSetUniformBuffer(device, uniform, uniformBuffer, 0);
 
-	uint8_t imageData[16] = {
-		255,   0, 255, 255,      0, 255,   0, 255,
-		  0, 255,   0, 255,    255,   0, 255, 255
+	float imageData[] = {
+		1.0f, 0.0f, 0.0f,    0.0f, 0.0f, 1.0f,
+		0.0f, 1.0f, 0.0f,    1.0f, 0.0f, 1.0f
 	};
 
 	VKLTextureCreateInfo textureCreateInfo;
 	textureCreateInfo.width = 2;
 	textureCreateInfo.height = 2;
-	textureCreateInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
+	textureCreateInfo.format = VK_FORMAT_R32G32B32_SFLOAT;
 	textureCreateInfo.tiling = VK_IMAGE_TILING_LINEAR;
 	textureCreateInfo.usage = VK_IMAGE_USAGE_SAMPLED_BIT;
+	textureCreateInfo.filter = VK_FILTER_NEAREST;
+	textureCreateInfo.colorSize = sizeof(float);
+	textureCreateInfo.colorCount = 3;
 
 	VKLTexture* texture;
 	vklCreateStagedTexture(devCon, &texture, &textureCreateInfo, imageData);
@@ -150,7 +157,7 @@ int main() {
 		device->pvkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 
 			pipeline->pipelineLayout, 0, 1, &uniform->descriptorSet, 0, NULL);
 
-		device->pvkCmdDraw(cmdBuffer, 3, 1, 0, 0);
+		device->pvkCmdDraw(cmdBuffer, 6, 1, 0, 0);
 		
 		vklEndRenderRecording(swapChain, cmdBuffer);
 

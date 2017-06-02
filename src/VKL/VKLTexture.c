@@ -5,6 +5,8 @@ int vklCreateTexture(VKLDevice* device, VKLTexture** pTexture, VKLTextureCreateI
 
 	texture->width = createInfo->width;
 	texture->height = createInfo->height;
+	texture->colorCount = createInfo->colorCount;
+	texture->colorSize = createInfo->colorSize;
 
 	VkImageCreateInfo textureCreateInfo;
 	memset(&textureCreateInfo, 0, sizeof(VkImageCreateInfo));
@@ -57,18 +59,18 @@ int vklCreateTexture(VKLDevice* device, VKLTexture** pTexture, VKLTextureCreateI
 		VkSamplerCreateInfo samplerCreateInfo;
 		memset(&samplerCreateInfo, 0, sizeof(VkSamplerCreateInfo));
 		samplerCreateInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-		samplerCreateInfo.magFilter = VK_FILTER_NEAREST;
-		samplerCreateInfo.minFilter = VK_FILTER_NEAREST;
+		samplerCreateInfo.magFilter = createInfo->filter;
+		samplerCreateInfo.minFilter = createInfo->filter;
 		samplerCreateInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
 		samplerCreateInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
 		samplerCreateInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
 		samplerCreateInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
 		samplerCreateInfo.mipLodBias = 0;
 		samplerCreateInfo.anisotropyEnable = VK_FALSE;
-		samplerCreateInfo.maxAnisotropy = 1;
+		samplerCreateInfo.maxAnisotropy = 0;
 		samplerCreateInfo.minLod = 0;
-		samplerCreateInfo.maxLod = 5;
-		samplerCreateInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
+		samplerCreateInfo.maxLod = 0;
+		samplerCreateInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
 		samplerCreateInfo.unnormalizedCoordinates = VK_FALSE;
 
 		VLKCheck(device->pvkCreateSampler(device->device, &samplerCreateInfo, NULL, &texture->sampler),
@@ -95,8 +97,10 @@ int vklSetTextureData(VKLDevice* device, VKLTexture* texture, uint8_t* data) {
 	VkSubresourceLayout imageLayout;
 	device->pvkGetImageSubresourceLayout(device->device, texture->image, &subresource, &imageLayout);
 
-	if (imageLayout.rowPitch == texture->width * 4) {
-		memcpy(imageMapped, data, texture->width * texture->height * 4);
+	uint32_t textureRowWidth = texture->width * texture->colorCount * texture->colorSize;
+
+	if (imageLayout.rowPitch == textureRowWidth) {
+		memcpy(imageMapped, data, texture->height * textureRowWidth);
 	}
 	else {
 		uint8_t* dataBytes = (uint8_t*)imageMapped;
@@ -104,8 +108,8 @@ int vklSetTextureData(VKLDevice* device, VKLTexture* texture, uint8_t* data) {
 		for (int y = 0; y < texture->height; y++) {
 			memcpy(
 				&dataBytes[y * imageLayout.rowPitch],
-				&data[y * texture->width * 4],
-				texture->width * 4);
+				&data[y * textureRowWidth],
+				textureRowWidth);
 		}
 	}
 

@@ -57,7 +57,7 @@ int vklSetUniformTexture(VKLDevice* device, VKLUniformObject* uniform, VKLTextur
 	memset(&descriptorImageInfo, 0, sizeof(VkDescriptorImageInfo));
 	descriptorImageInfo.sampler = texture->sampler;
 	descriptorImageInfo.imageView = texture->imageView;
-	descriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_PREINITIALIZED;
+	descriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
 	VkWriteDescriptorSet writeDescriptor;
 	memset(&writeDescriptor, 0, sizeof(VkWriteDescriptorSet));

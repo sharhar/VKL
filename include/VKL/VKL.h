@@ -306,6 +306,8 @@ typedef struct VKLUniformObject {
 typedef struct VKLTexture {
 	uint32_t width;
 	uint32_t height;
+	size_t colorSize;
+	uint32_t colorCount;
 
 	VkImage image;
 	VkDeviceMemory memory;
@@ -390,6 +392,9 @@ typedef struct VKLTextureCreateInfo {
 	VkImageUsageFlags usage;
 	VkFormat format;
 	VkImageTiling tiling;
+	VkFilter filter;
+	size_t colorSize;
+	uint32_t colorCount;
 } VKLTextureCreateInfo;
 
 int vklCreateTexture(VKLDevice* device, VKLTexture** pTexture, VKLTextureCreateInfo* createInfo, VkBool32 deviceLocal);
