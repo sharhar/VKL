@@ -120,9 +120,7 @@ int main() {
 	textureCreateInfo.usage = VK_IMAGE_USAGE_SAMPLED_BIT;
 
 	VKLTexture* texture;
-	vklCreateTexture(device, &texture, &textureCreateInfo, VK_FALSE);
-	vklSetTextureData(device, texture, imageData);
-	//vklCreateStagedTexture(devCon, &texture, &textureCreateInfo, imageData);
+	vklCreateStagedTexture(devCon, &texture, &textureCreateInfo, imageData);
 
 	vklSetUniformTexture(device, uniform, texture, 1);
 
@@ -130,6 +128,10 @@ int main() {
 
 	while (!glfwWindowShouldClose(window)) {
 		glfwPollEvents();
+
+		proj[12] = glfwGetTime() / 10.0f;
+
+		vklWriteToMemory(device, uniformBuffer->memory, proj, sizeof(float) * 16);
 
 		vklClearScreen(swapChain);
 
@@ -145,10 +147,6 @@ int main() {
 		device->pvkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->pipeline);
 		device->pvkCmdBindVertexBuffers(cmdBuffer, 0, 1, &buffer->buffer, &offsets);
 
-		proj[12] = glfwGetTime()/10.0f;
-
-		vklWriteToMemory(device, uniformBuffer->memory, proj, sizeof(float) * 16);
-
 		device->pvkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 
 			pipeline->pipelineLayout, 0, 1, &uniform->descriptorSet, 0, NULL);
 
@@ -161,6 +159,7 @@ int main() {
 		vklSwapBuffers(swapChain);
 	}
 
+	vklDestroyTexture(device, texture);
 	vklDestroyUniformObject(device, uniform);
 	vklDestroyGraphicsPipeline(device, pipeline);
 	vklDestroyShader(device, shader);

@@ -311,6 +311,8 @@ typedef struct VKLTexture {
 	VkDeviceMemory memory;
 	VkImageView imageView;
 	VkSampler sampler;
+
+	VkBool32 temporary;
 } VKLTexture;
 
 #ifdef VKL_USE_WSI_WIN32

@@ -3,6 +3,9 @@
 int vklCreateTexture(VKLDevice* device, VKLTexture** pTexture, VKLTextureCreateInfo* createInfo, VkBool32 deviceLocal) {
 	VKLTexture* texture = malloc_c(sizeof(VKLTexture));
 
+	texture->width = createInfo->width;
+	texture->height = createInfo->height;
+
 	VkImageCreateInfo textureCreateInfo;
 	memset(&textureCreateInfo, 0, sizeof(VkImageCreateInfo));
 	textureCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -24,16 +27,20 @@ int vklCreateTexture(VKLDevice* device, VKLTexture** pTexture, VKLTextureCreateI
 	VLKCheck(device->pvkCreateImage(device->device, &textureCreateInfo, NULL, &texture->image),
 		"Failed to create texture image");
 
-	vklAllocateImageMemory(device, &texture->memory, texture->image, 
+	vklAllocateImageMemory(device, &texture->memory, texture->image,
 		deviceLocal == VK_TRUE ? VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT : VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
+	texture->temporary = VK_TRUE;
+
 	if (createInfo->usage != VK_IMAGE_USAGE_TRANSFER_SRC_BIT) {
+		texture->temporary = VK_FALSE;
+
 		VkImageViewCreateInfo textureImageViewCreateInfo;
 		memset(&textureImageViewCreateInfo, 0, sizeof(VkImageViewCreateInfo));
 		textureImageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
 		textureImageViewCreateInfo.image = texture->image;
 		textureImageViewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-		textureImageViewCreateInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
+		textureImageViewCreateInfo.format = textureCreateInfo.format;
 		textureImageViewCreateInfo.components.r = VK_COMPONENT_SWIZZLE_R;
 		textureImageViewCreateInfo.components.g = VK_COMPONENT_SWIZZLE_G;
 		textureImageViewCreateInfo.components.b = VK_COMPONENT_SWIZZLE_B;
@@ -58,10 +65,10 @@ int vklCreateTexture(VKLDevice* device, VKLTexture** pTexture, VKLTextureCreateI
 		samplerCreateInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
 		samplerCreateInfo.mipLodBias = 0;
 		samplerCreateInfo.anisotropyEnable = VK_FALSE;
-		samplerCreateInfo.maxAnisotropy = 0;
+		samplerCreateInfo.maxAnisotropy = 1;
 		samplerCreateInfo.minLod = 0;
-		samplerCreateInfo.maxLod = 0;
-		samplerCreateInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+		samplerCreateInfo.maxLod = 5;
+		samplerCreateInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
 		samplerCreateInfo.unnormalizedCoordinates = VK_FALSE;
 
 		VLKCheck(device->pvkCreateSampler(device->device, &samplerCreateInfo, NULL, &texture->sampler),
@@ -248,12 +255,24 @@ int vklCreateStagedTexture(VKLDeviceGraphicsContext* devCon, VKLTexture** pTextu
 	device->pvkQueueWaitIdle(devCon->queue);
 	device->pvkResetCommandBuffer(devCon->setupCmdBuffer, 0);
 
+	vklDestroyTexture(device, stagedTexture);
+
 	*pTexture = texture;
 
 	return 0;
 }
 
 int vklDestroyTexture(VKLDevice* device, VKLTexture* texture) {
+	if (texture->temporary == VK_FALSE) {
+		device->pvkDestroySampler(device->device, texture->sampler, device->instance->allocator);
+		device->pvkDestroyImageView(device->device, texture->imageView, device->instance->allocator);
+	}
+
+	device->pvkFreeMemory(device->device, texture->memory, device->instance->allocator);
+	device->pvkDestroyImage(device->device, texture->image, device->instance->allocator);
+
+	free_c(texture);
+
 	return 0;
 }
 
