@@ -112,13 +112,15 @@ int main() {
 	vklSetUniformBuffer(device, uniform, uniformBuffer, 0);
 
 	float imageData[] = {
-		1.0f, 0.0f, 0.0f,    0.0f, 0.0f, 1.0f,
-		0.0f, 1.0f, 0.0f,    1.0f, 0.0f, 1.0f
+		1.0f, 0.0f, 0.0f,    0.0f, 1.0f, 0.0f,   0.0f, 0.0f, 1.0f,    0.0f, 0.0f, 0.0f,
+		1.0f, 0.3f, 0.3f,    0.3f, 1.0f, 0.3f,   0.3f, 0.3f, 1.0f,    0.3f, 0.3f, 0.3f,
+		1.0f, 0.5f, 0.5f,    0.5f, 1.0f, 0.5f,   0.5f, 0.5f, 1.0f,    0.5f, 0.5f, 0.5f,
+		1.0f, 0.8f, 0.8f,    0.8f, 1.0f, 0.8f,   0.8f, 0.8f, 1.0f,    0.8f, 0.8f, 0.8f
 	};
 
 	VKLTextureCreateInfo textureCreateInfo;
-	textureCreateInfo.width = 2;
-	textureCreateInfo.height = 2;
+	textureCreateInfo.width = 4;
+	textureCreateInfo.height = 4;
 	textureCreateInfo.format = VK_FORMAT_R32G32B32_SFLOAT;
 	textureCreateInfo.tiling = VK_IMAGE_TILING_LINEAR;
 	textureCreateInfo.usage = VK_IMAGE_USAGE_SAMPLED_BIT;

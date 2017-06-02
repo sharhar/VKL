@@ -314,6 +314,9 @@ typedef struct VKLTexture {
 	VkImageView imageView;
 	VkSampler sampler;
 
+	VkAccessFlags accessMask;
+	VkImageLayout layout;
+
 	VkBool32 temporary;
 } VKLTexture;
 
@@ -400,6 +403,7 @@ typedef struct VKLTextureCreateInfo {
 int vklCreateTexture(VKLDevice* device, VKLTexture** pTexture, VKLTextureCreateInfo* createInfo, VkBool32 deviceLocal);
 int vklSetTextureData(VKLDevice* device, VKLTexture* texture, uint8_t* data);
 int vklCreateStagedTexture(VKLDeviceGraphicsContext* devCon, VKLTexture** pTexture, VKLTextureCreateInfo* createInfo, uint8_t* data);
+int vklImageLayoutTransition(VKLDevice* device, VKLTexture* texture, VkCommandBuffer cmdBuffer, VkAccessFlags accessMask, VkImageLayout layout);
 int vklDestroyTexture(VKLDevice* device, VKLTexture* texture);
 
 #ifdef __cplusplus

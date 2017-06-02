@@ -32,6 +32,9 @@ int vklCreateTexture(VKLDevice* device, VKLTexture** pTexture, VKLTextureCreateI
 	vklAllocateImageMemory(device, &texture->memory, texture->image,
 		deviceLocal == VK_TRUE ? VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT : VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
+	texture->layout = VK_IMAGE_LAYOUT_PREINITIALIZED;
+	texture->accessMask = VK_ACCESS_HOST_WRITE_BIT;
+
 	texture->temporary = VK_TRUE;
 
 	if (createInfo->usage != VK_IMAGE_USAGE_TRANSFER_SRC_BIT) {
@@ -154,44 +157,8 @@ int vklCreateStagedTexture(VKLDeviceGraphicsContext* devCon, VKLTexture** pTextu
 
 	device->pvkBeginCommandBuffer(devCon->setupCmdBuffer, &beginInfo);
 
-	VkImageMemoryBarrier layoutTransitionBarrier;
-	memset(&layoutTransitionBarrier, 0, sizeof(VkImageMemoryBarrier));
-	layoutTransitionBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-	layoutTransitionBarrier.srcAccessMask = VK_ACCESS_HOST_WRITE_BIT;
-	layoutTransitionBarrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
-	layoutTransitionBarrier.oldLayout = VK_IMAGE_LAYOUT_PREINITIALIZED;
-	layoutTransitionBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-	layoutTransitionBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-	layoutTransitionBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-	layoutTransitionBarrier.image = stagedTexture->image;
-	VkImageSubresourceRange resourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
-	layoutTransitionBarrier.subresourceRange = resourceRange;
-
-	device->pvkCmdPipelineBarrier(devCon->setupCmdBuffer,
-		VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-		VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-		0,
-		0, NULL,
-		0, NULL,
-		1, &layoutTransitionBarrier);
-
-	layoutTransitionBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-	layoutTransitionBarrier.srcAccessMask = VK_ACCESS_HOST_WRITE_BIT;
-	layoutTransitionBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-	layoutTransitionBarrier.oldLayout = VK_IMAGE_LAYOUT_PREINITIALIZED;
-	layoutTransitionBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-	layoutTransitionBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-	layoutTransitionBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-	layoutTransitionBarrier.image = texture->image;
-	layoutTransitionBarrier.subresourceRange = resourceRange;
-
-	device->pvkCmdPipelineBarrier(devCon->setupCmdBuffer,
-		VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-		VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-		0,
-		0, NULL,
-		0, NULL,
-		1, &layoutTransitionBarrier);
+	vklImageLayoutTransition(device, stagedTexture, devCon->setupCmdBuffer, VK_ACCESS_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+	vklImageLayoutTransition(device, texture, devCon->setupCmdBuffer, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
 	VkImageSubresourceLayers subResource;
 	memset(&subResource, 0, sizeof(VkImageSubresourceLayers));
@@ -220,23 +187,7 @@ int vklCreateStagedTexture(VKLDeviceGraphicsContext* devCon, VKLTexture** pTextu
 		texture->image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 		1, &region);
 
-	layoutTransitionBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-	layoutTransitionBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-	layoutTransitionBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-	layoutTransitionBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-	layoutTransitionBarrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-	layoutTransitionBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-	layoutTransitionBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-	layoutTransitionBarrier.image = texture->image;
-	layoutTransitionBarrier.subresourceRange = resourceRange;
-
-	device->pvkCmdPipelineBarrier(devCon->setupCmdBuffer,
-		VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-		VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-		0,
-		0, NULL,
-		0, NULL,
-		1, &layoutTransitionBarrier);
+	vklImageLayoutTransition(device, texture, devCon->setupCmdBuffer, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
 	device->pvkEndCommandBuffer(devCon->setupCmdBuffer);
 
@@ -266,6 +217,34 @@ int vklCreateStagedTexture(VKLDeviceGraphicsContext* devCon, VKLTexture** pTextu
 	return 0;
 }
 
+int vklImageLayoutTransition(VKLDevice* device, VKLTexture* texture, VkCommandBuffer cmdBuffer, VkAccessFlags accessMask, VkImageLayout layout) {
+	VkImageMemoryBarrier layoutTransitionBarrier;
+	memset(&layoutTransitionBarrier, 0, sizeof(VkImageMemoryBarrier));
+	layoutTransitionBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+	layoutTransitionBarrier.srcAccessMask = texture->accessMask;
+	layoutTransitionBarrier.dstAccessMask = accessMask;
+	layoutTransitionBarrier.oldLayout = texture->layout;
+	layoutTransitionBarrier.newLayout = layout;
+	layoutTransitionBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	layoutTransitionBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	layoutTransitionBarrier.image = texture->image;
+	VkImageSubresourceRange resourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
+	layoutTransitionBarrier.subresourceRange = resourceRange;
+
+	device->pvkCmdPipelineBarrier(cmdBuffer,
+		VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+		VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+		0,
+		0, NULL,
+		0, NULL,
+		1, &layoutTransitionBarrier);
+
+	texture->accessMask = accessMask;
+	texture->layout = layout;
+	
+	return 0;
+}
+
 int vklDestroyTexture(VKLDevice* device, VKLTexture* texture) {
 	if (texture->temporary == VK_FALSE) {
 		device->pvkDestroySampler(device->device, texture->sampler, device->instance->allocator);
@@ -279,4 +258,3 @@ int vklDestroyTexture(VKLDevice* device, VKLTexture* texture) {
 
 	return 0;
 }
-
