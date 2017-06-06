@@ -330,24 +330,3 @@ int vklEndRender(VKLDevice* device, VKLFrameBuffer* frameBuffer, VkCommandBuffer
 
 	return 0;
 }
-
-int vklRenderRecording(VKLDeviceGraphicsContext* devCon, VKLFrameBuffer* frameBuffer, VkCommandBuffer cmdBuffer) {
-	VKLDevice* device = devCon->device;
-
-	VkPipelineStageFlags waitStageMash = { VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT };
-	VkSubmitInfo submitInfo;
-	memset(&submitInfo, 0, sizeof(VkSubmitInfo));
-	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-	submitInfo.waitSemaphoreCount = 0;
-	submitInfo.pWaitSemaphores = NULL;
-	submitInfo.pWaitDstStageMask = &waitStageMash;
-	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &cmdBuffer;
-	submitInfo.signalSemaphoreCount = 0;
-	submitInfo.pSignalSemaphores = NULL;
-	device->pvkQueueSubmit(devCon->queue, 1, &submitInfo, VK_NULL_HANDLE);
-
-	device->pvkQueueWaitIdle(devCon->queue);
-
-	return 0;
-}

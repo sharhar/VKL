@@ -351,9 +351,11 @@ int vklCreateDevice(VKLInstance* instance, VKLDevice** pDevice, VKLSurface** pSu
 	uint32_t deviceGraphicsContextCount, VKLDeviceGraphicsContext*** pDeviceGraphicsContexts,
 	uint32_t deviceComputeContextCount, VKLDeviceComputeContext*** pDeviceComputeContexts);
 int vklDestroyDevice(VKLDevice* device);
+
 int vklAllocateCommandBuffer(VKLDeviceGraphicsContext* context, VkCommandBuffer* cmdBuffer, VkCommandBufferLevel level, uint32_t count);
 int vklBeginCommandBuffer(VKLDevice* device, VkCommandBuffer cmdBuffer);
 int vklEndCommandBuffer(VKLDevice* device, VkCommandBuffer cmdBuffer);
+int vklExecuteCommandBuffer(VKLDeviceGraphicsContext* devCon, VkCommandBuffer cmdBuffer);
 
 int vklCreateSwapChain(VKLDeviceGraphicsContext* context, VKLSwapChain** swapChain, VkBool32 vSync);
 int vklGetBackBuffer(VKLSwapChain* swapChain, VKLFrameBuffer** pFrameBuffer);
@@ -423,7 +425,6 @@ int vklCreateFrameBuffer(VKLDeviceGraphicsContext* devCon, VKLFrameBuffer** pFra
 int vklSetClearColor(VKLFrameBuffer* frameBuffer, float r, float g, float b, float a);
 int vklBeginRender(VKLDevice* device, VKLFrameBuffer* frameBuffer, VkCommandBuffer cmdBuffer);
 int vklEndRender(VKLDevice* device, VKLFrameBuffer* frameBuffer, VkCommandBuffer cmdBuffer);
-int vklRenderRecording(VKLDeviceGraphicsContext* devCon, VKLFrameBuffer* frameBuffer, VkCommandBuffer cmdBuffer);
 int vklDestroyFrameBuffer(VKLDevice* device, VKLFrameBuffer* frameBuffer);
 
 #ifdef __cplusplus

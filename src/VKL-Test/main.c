@@ -169,7 +169,7 @@ int main() {
 
 		vklWriteToMemory(device, uniformBuffer->memory, proj, sizeof(float) * 16);
 		
-		vklRenderRecording(devCon, backBuffer, cmdBuffer);
+		vklExecuteCommandBuffer(devCon, cmdBuffer);
 
 		vklPresent(swapChain);
 	}
