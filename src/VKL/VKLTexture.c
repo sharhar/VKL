@@ -191,14 +191,12 @@ int vklCreateStagedTexture(VKLDeviceGraphicsContext* devCon, VKLTexture** pTextu
 
 	device->pvkEndCommandBuffer(devCon->setupCmdBuffer);
 
-	VkPipelineStageFlags waitStageMash[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
-	
 	VkSubmitInfo submitInfo;
 	memset(&submitInfo, 0, sizeof(VkSubmitInfo));
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 	submitInfo.waitSemaphoreCount = 0;
 	submitInfo.pWaitSemaphores = NULL;
-	submitInfo.pWaitDstStageMask = waitStageMash;
+	submitInfo.pWaitDstStageMask = NULL;
 	submitInfo.commandBufferCount = 1;
 	submitInfo.pCommandBuffers = &devCon->setupCmdBuffer;
 	submitInfo.signalSemaphoreCount = 0;

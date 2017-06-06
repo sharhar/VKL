@@ -80,7 +80,7 @@ int vklCreateSwapChain(VKLDeviceGraphicsContext* context, VKLSwapChain** pSwapCh
 	swapChainCreateInfo.imageColorSpace = colorSpace;
 	swapChainCreateInfo.imageExtent = surfaceResolution;
 	swapChainCreateInfo.imageArrayLayers = 1;
-	swapChainCreateInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+	swapChainCreateInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 	swapChainCreateInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
 	swapChainCreateInfo.preTransform = preTransform;
 	swapChainCreateInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
@@ -172,162 +172,89 @@ int vklCreateSwapChain(VKLDeviceGraphicsContext* context, VKLSwapChain** pSwapCh
 			"Coud not create image view");
 	}
 
-	device->instance->pvkGetPhysicalDeviceMemoryProperties(device->physicalDevice, &device->memoryProperties);
+	vklCreateFrameBuffer(context, &swapChain->backBuffer, swapChain->width, swapChain->height, colorFormat, VK_ACCESS_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 
-	VkImageCreateInfo imageCreateInfo;
-	memset(&imageCreateInfo, 0, sizeof(VkImageCreateInfo));
-	imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-	imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
-	imageCreateInfo.format = VK_FORMAT_D16_UNORM;
-	imageCreateInfo.extent.width = swapChain->width;
-	imageCreateInfo.extent.height = swapChain->height;
-	imageCreateInfo.extent.depth = 1;
-	imageCreateInfo.mipLevels = 1;
-	imageCreateInfo.arrayLayers = 1;
-	imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-	imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-	imageCreateInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-	imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-	imageCreateInfo.queueFamilyIndexCount = 0;
-	imageCreateInfo.pQueueFamilyIndices = NULL;
-	imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	swapChain->cmdBuffers = malloc_c(sizeof(VkCommandBuffer) * swapChain->imageCount);
+	vklAllocateCommandBuffer(context, swapChain->cmdBuffers, VK_COMMAND_BUFFER_LEVEL_PRIMARY, swapChain->imageCount);
 
-	VLKCheck(device->pvkCreateImage(device->device, &imageCreateInfo, NULL, &swapChain->depthImage),
-		"Failed to create depth image");
+	for (uint32_t i = 0; i < swapChain->imageCount;i++) {
+		vklBeginCommandBuffer(device, swapChain->cmdBuffers[i]);
 
-	vklAllocateImageMemory(device, &swapChain->depthImageMemory, swapChain->depthImage, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+		VkImageMemoryBarrier layoutTransitionBarrier;
+		memset(&layoutTransitionBarrier, 0, sizeof(VkImageMemoryBarrier));
+		layoutTransitionBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+		layoutTransitionBarrier.srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+		layoutTransitionBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+		layoutTransitionBarrier.oldLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+		layoutTransitionBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+		layoutTransitionBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		layoutTransitionBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		layoutTransitionBarrier.image = swapChain->presentImages[i];
+		layoutTransitionBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		layoutTransitionBarrier.subresourceRange.baseMipLevel = 0;
+		layoutTransitionBarrier.subresourceRange.levelCount = 1;
+		layoutTransitionBarrier.subresourceRange.baseArrayLayer = 0;
+		layoutTransitionBarrier.subresourceRange.layerCount = 1;
 
-	device->pvkBeginCommandBuffer(context->setupCmdBuffer, &beginInfo);
+		device->pvkCmdPipelineBarrier(swapChain->cmdBuffers[i],
+			VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+			VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+			0,
+			0, NULL,
+			0, NULL,
+			1, &layoutTransitionBarrier);
 
-	VkImageMemoryBarrier layoutTransitionBarrier;
-	memset(&layoutTransitionBarrier, 0, sizeof(VkImageMemoryBarrier));
-	layoutTransitionBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-	layoutTransitionBarrier.srcAccessMask = 0;
-	layoutTransitionBarrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT |
-		VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-	layoutTransitionBarrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-	layoutTransitionBarrier.newLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-	layoutTransitionBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-	layoutTransitionBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-	layoutTransitionBarrier.image = swapChain->depthImage;
-	layoutTransitionBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-	layoutTransitionBarrier.subresourceRange.baseMipLevel = 0;
-	layoutTransitionBarrier.subresourceRange.levelCount = 1;
-	layoutTransitionBarrier.subresourceRange.baseArrayLayer = 0;
-	layoutTransitionBarrier.subresourceRange.layerCount = 1;
+		VkImageSubresourceLayers subResource;
+		memset(&subResource, 0, sizeof(VkImageSubresourceLayers));
+		subResource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		subResource.baseArrayLayer = 0;
+		subResource.mipLevel = 0;
+		subResource.layerCount = 1;
 
-	device->pvkCmdPipelineBarrier(context->setupCmdBuffer,
-		VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-		VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-		0,
-		0, NULL,
-		0, NULL,
-		1, &layoutTransitionBarrier);
+		VkImageCopy region;
+		memset(&region, 0, sizeof(VkImageCopy));
+		region.srcSubresource = subResource;
+		region.dstSubresource = subResource;
+		region.srcOffset.x = 0;
+		region.srcOffset.y = 0;
+		region.srcOffset.z = 0;
+		region.dstOffset.x = 0;
+		region.dstOffset.y = 0;
+		region.dstOffset.z = 0;
+		region.extent.width = swapChain->width;
+		region.extent.height = swapChain->height;
+		region.extent.depth = 1;
 
-	device->pvkEndCommandBuffer(context->setupCmdBuffer);
+		device->pvkCmdCopyImage(
+			swapChain->cmdBuffers[i],
+			swapChain->backBuffer->image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+			swapChain->presentImages[i], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+			1, &region);
 
-	VkPipelineStageFlags waitStageMask[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
-	memset(&submitInfo, 0, sizeof(VkSubmitInfo));
-	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-	submitInfo.waitSemaphoreCount = 0;
-	submitInfo.pWaitSemaphores = NULL;
-	submitInfo.pWaitDstStageMask = waitStageMask;
-	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &context->setupCmdBuffer;
-	submitInfo.signalSemaphoreCount = 0;
-	submitInfo.pSignalSemaphores = NULL;
-	VLKCheck(device->pvkQueueSubmit(context->queue, 1, &submitInfo, VK_NULL_HANDLE),
-		"Could not submit Queue");
+		memset(&layoutTransitionBarrier, 0, sizeof(VkImageMemoryBarrier));
+		layoutTransitionBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+		layoutTransitionBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+		layoutTransitionBarrier.dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+		layoutTransitionBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+		layoutTransitionBarrier.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+		layoutTransitionBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		layoutTransitionBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		layoutTransitionBarrier.image = swapChain->presentImages[i];
+		layoutTransitionBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		layoutTransitionBarrier.subresourceRange.baseMipLevel = 0;
+		layoutTransitionBarrier.subresourceRange.levelCount = 1;
+		layoutTransitionBarrier.subresourceRange.baseArrayLayer = 0;
+		layoutTransitionBarrier.subresourceRange.layerCount = 1;
 
-	device->pvkQueueWaitIdle(context->queue);
+		device->pvkCmdPipelineBarrier(swapChain->cmdBuffers[i],
+			VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+			VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+			0,
+			0, NULL,
+			0, NULL,
+			1, &layoutTransitionBarrier);
 
-	device->pvkResetCommandBuffer(context->setupCmdBuffer, 0);
-
-	VkImageViewCreateInfo imageViewCreateInfo;
-	memset(&imageViewCreateInfo, 0, sizeof(VkImageViewCreateInfo));
-	imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-	imageViewCreateInfo.image = swapChain->depthImage;
-	imageViewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-	imageViewCreateInfo.format = imageCreateInfo.format;
-	imageViewCreateInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
-	imageViewCreateInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
-	imageViewCreateInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
-	imageViewCreateInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
-	imageViewCreateInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-	imageViewCreateInfo.subresourceRange.baseMipLevel = 0;
-	imageViewCreateInfo.subresourceRange.levelCount = 1;
-	imageViewCreateInfo.subresourceRange.baseArrayLayer = 0;
-	imageViewCreateInfo.subresourceRange.layerCount = 1;
-
-	VLKCheck(device->pvkCreateImageView(device->device, &imageViewCreateInfo, device->instance->allocator, &swapChain->depthImageView),
-		"Failed to create image view");
-
-	VkAttachmentDescription passAttachments[2];
-	memset(passAttachments, 0, sizeof(VkAttachmentDescription) * 2);
-	passAttachments[0].format = colorFormat;
-	passAttachments[0].samples = VK_SAMPLE_COUNT_1_BIT;
-	passAttachments[0].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-	passAttachments[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-	passAttachments[0].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-	passAttachments[0].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-	passAttachments[0].initialLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-	passAttachments[0].finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-	passAttachments[1].format = VK_FORMAT_D16_UNORM;
-	passAttachments[1].samples = VK_SAMPLE_COUNT_1_BIT;
-	passAttachments[1].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-	passAttachments[1].storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-	passAttachments[1].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-	passAttachments[1].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-	passAttachments[1].initialLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-	passAttachments[1].finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-	VkAttachmentReference colorAttachmentReference;
-	memset(&colorAttachmentReference, 0, sizeof(VkAttachmentReference));
-	colorAttachmentReference.attachment = 0;
-	colorAttachmentReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-	VkAttachmentReference depthAttachmentReference;
-	memset(&depthAttachmentReference, 0, sizeof(VkAttachmentReference));
-	depthAttachmentReference.attachment = 1;
-	depthAttachmentReference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-	VkSubpassDescription subpass;
-	memset(&subpass, 0, sizeof(VkSubpassDescription));
-	subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-	subpass.colorAttachmentCount = 1;
-	subpass.pColorAttachments = &colorAttachmentReference;
-	subpass.pDepthStencilAttachment = &depthAttachmentReference;
-
-	VkRenderPassCreateInfo renderPassCreateInfo;
-	memset(&renderPassCreateInfo, 0, sizeof(VkRenderPassCreateInfo));
-	renderPassCreateInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-	renderPassCreateInfo.attachmentCount = 2;
-	renderPassCreateInfo.pAttachments = passAttachments;
-	renderPassCreateInfo.subpassCount = 1;
-	renderPassCreateInfo.pSubpasses = &subpass;
-
-	VLKCheck(device->pvkCreateRenderPass(device->device, &renderPassCreateInfo, device->instance->allocator, &swapChain->renderPass),
-		"Failed to create renderpass");
-
-	VkImageView frameBufferAttachments[2];
-	frameBufferAttachments[1] = swapChain->depthImageView;
-
-	VkFramebufferCreateInfo frameBufferCreateInfo;
-	memset(&frameBufferCreateInfo, 0, sizeof(VkFramebufferCreateInfo));
-	frameBufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-	frameBufferCreateInfo.renderPass = swapChain->renderPass;
-	frameBufferCreateInfo.attachmentCount = 2;
-	frameBufferCreateInfo.pAttachments = frameBufferAttachments;
-	frameBufferCreateInfo.width = swapChain->width;
-	frameBufferCreateInfo.height = swapChain->height;
-	frameBufferCreateInfo.layers = 1;
-
-	swapChain->frameBuffers = malloc_c(sizeof(VkFramebuffer) * swapChain->imageCount);
-	for (uint32_t i = 0; i < swapChain->imageCount; ++i) {
-		frameBufferAttachments[0] = swapChain->presentImageViews[i];
-		VLKCheck(device->pvkCreateFramebuffer(device->device, &frameBufferCreateInfo, device->instance->allocator, &swapChain->frameBuffers[i]),
-			"Failed to create framebuffer");
+		vklEndCommandBuffer(device, swapChain->cmdBuffers[i]);
 	}
 
 	*pSwapChain = swapChain;
@@ -335,19 +262,18 @@ int vklCreateSwapChain(VKLDeviceGraphicsContext* context, VKLSwapChain** pSwapCh
 	return 0;
 }
 
+int vklGetBackBuffer(VKLSwapChain* swapChain, VKLFrameBuffer** pFrameBuffer) {
+	*pFrameBuffer = swapChain->backBuffer;
+}
+
 int vklDestroySwapChain(VKLSwapChain* swapChain) {
 	VKLDevice* device = swapChain->context->device;
 
+	vklDestroyFrameBuffer(device, swapChain->backBuffer);
+
 	for (uint32_t i = 0; i < swapChain->imageCount;i++) {
-		device->pvkDestroyFramebuffer(device->device, swapChain->frameBuffers[i], device->instance->allocator);
 		device->pvkDestroyImageView(device->device, swapChain->presentImageViews[i], device->instance->allocator);
 	}
-
-	device->pvkFreeMemory(device->device, swapChain->depthImageMemory, device->instance->allocator);
-	device->pvkDestroyImageView(device->device, swapChain->depthImageView, device->instance->allocator);
-	device->pvkDestroyImage(device->device, swapChain->depthImage, device->instance->allocator);
-
-	device->pvkDestroyRenderPass(device->device, swapChain->renderPass, device->instance->allocator);
 
 	swapChain->context->device->pvkDestroySwapchainKHR(swapChain->context->device->device, 
 		swapChain->swapChain, swapChain->context->device->instance->allocator);
@@ -356,15 +282,7 @@ int vklDestroySwapChain(VKLSwapChain* swapChain) {
 	return 0;
 }
 
-int vklSetClearColor(VKLSwapChain* swapChain, float r, float g, float b, float a) {
-	swapChain->clearR = r;
-	swapChain->clearG = g;
-	swapChain->clearB = b;
-	swapChain->clearA = a;
-	return 0;
-}
-
-int vklClearScreen(VKLSwapChain* swapChain) {
+int vklPresent(VKLSwapChain* swapChain) {
 	VKLDevice* device = swapChain->context->device;
 
 	VkSemaphoreCreateInfo semaphoreCreateInfo;
@@ -375,137 +293,30 @@ int vklClearScreen(VKLSwapChain* swapChain) {
 	device->pvkCreateSemaphore(device->device, &semaphoreCreateInfo, NULL, &swapChain->presentCompleteSemaphore);
 	device->pvkCreateSemaphore(device->device, &semaphoreCreateInfo, NULL, &swapChain->renderingCompleteSemaphore);
 
-	VkResult result = device->pvkAcquireNextImageKHR(device->device, swapChain->swapChain, UINT64_MAX,
+	device->pvkAcquireNextImageKHR(device->device, swapChain->swapChain, UINT64_MAX,
 		swapChain->presentCompleteSemaphore, VK_NULL_HANDLE, &swapChain->nextImageIdx);
 
-	swapChain->waitForRender = 0;
+	VkPipelineStageFlags waitStageMash[] = { VK_PIPELINE_STAGE_ALL_COMMANDS_BIT };
 
-	return 0;
-}
-
-int vklBeginRenderRecording(VKLSwapChain* swapChain, VkCommandBuffer cmdBuffer) {
-	VKLDevice* device = swapChain->context->device;
-
-	VkCommandBufferBeginInfo beginInfo;
-	memset(&beginInfo, 0, sizeof(VkCommandBufferBeginInfo));
-	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-
-	device->pvkBeginCommandBuffer(cmdBuffer, &beginInfo);
-
-	VkImageMemoryBarrier layoutTransitionBarrier;
-	memset(&layoutTransitionBarrier, 0, sizeof(VkImageMemoryBarrier));
-	layoutTransitionBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-	layoutTransitionBarrier.srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;
-	layoutTransitionBarrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT |
-		VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-	layoutTransitionBarrier.oldLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-	layoutTransitionBarrier.newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-	layoutTransitionBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-	layoutTransitionBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-	layoutTransitionBarrier.image = swapChain->presentImages[swapChain->nextImageIdx];
-	layoutTransitionBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-	layoutTransitionBarrier.subresourceRange.baseMipLevel = 0;
-	layoutTransitionBarrier.subresourceRange.levelCount = 1;
-	layoutTransitionBarrier.subresourceRange.baseArrayLayer = 0;
-	layoutTransitionBarrier.subresourceRange.layerCount = 1;
-
-	device->pvkCmdPipelineBarrier(cmdBuffer,
-		VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-		VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-		0,
-		0, NULL,
-		0, NULL,
-		1, &layoutTransitionBarrier);
-
-	VkClearValue clearValue[] = {
-		{ swapChain->clearR, swapChain->clearG, swapChain->clearB, swapChain->clearA },
-		{ 1.0, 0.0 } };
-
-	VkRenderPassBeginInfo renderPassBeginInfo;
-	memset(&renderPassBeginInfo, 0, sizeof(VkRenderPassBeginInfo));
-	renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-	renderPassBeginInfo.renderPass = swapChain->renderPass;
-	renderPassBeginInfo.framebuffer = swapChain->frameBuffers[swapChain->nextImageIdx];
-	renderPassBeginInfo.renderArea.offset.x = 0;
-	renderPassBeginInfo.renderArea.offset.y = 0;
-	renderPassBeginInfo.renderArea.extent.width = swapChain->width;
-	renderPassBeginInfo.renderArea.extent.height = swapChain->height;
-	renderPassBeginInfo.clearValueCount = 2;
-	renderPassBeginInfo.pClearValues = clearValue;
-	device->pvkCmdBeginRenderPass(cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-	return 0;
-}
-
-int vklEndRenderRecording(VKLSwapChain* swapChain, VkCommandBuffer cmdBuffer) {
-	VKLDevice* device = swapChain->context->device;
-
-	device->pvkCmdEndRenderPass(cmdBuffer);
-
-	VkImageMemoryBarrier prePresentBarrier;
-	memset(&prePresentBarrier, 0, sizeof(VkImageMemoryBarrier));
-	prePresentBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-	prePresentBarrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-	prePresentBarrier.dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
-	prePresentBarrier.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-	prePresentBarrier.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-	prePresentBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-	prePresentBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-	prePresentBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-	prePresentBarrier.subresourceRange.baseMipLevel = 0;
-	prePresentBarrier.subresourceRange.levelCount = 1;
-	prePresentBarrier.subresourceRange.baseArrayLayer = 0;
-	prePresentBarrier.subresourceRange.layerCount = 1;
-	prePresentBarrier.image = swapChain->presentImages[swapChain->nextImageIdx];
-
-	device->pvkCmdPipelineBarrier(cmdBuffer,
-		VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-		VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-		0,
-		0, NULL,
-		0, NULL,
-		1, &prePresentBarrier);
-
-	device->pvkEndCommandBuffer(cmdBuffer);
-
-	return 0;
-}
-
-int vklRenderRecording(VKLSwapChain* swapChain, VkCommandBuffer cmdBuffer) {
-	VKLDevice* device = swapChain->context->device;
-
-	VkPipelineStageFlags waitStageMash = { VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT };
 	VkSubmitInfo submitInfo;
 	memset(&submitInfo, 0, sizeof(VkSubmitInfo));
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 	submitInfo.waitSemaphoreCount = 1;
 	submitInfo.pWaitSemaphores = &swapChain->presentCompleteSemaphore;
-	submitInfo.pWaitDstStageMask = &waitStageMash;
+	submitInfo.pWaitDstStageMask = waitStageMash;
 	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &cmdBuffer;
+	submitInfo.pCommandBuffers = &swapChain->cmdBuffers[swapChain->nextImageIdx];
 	submitInfo.signalSemaphoreCount = 1;
 	submitInfo.pSignalSemaphores = &swapChain->renderingCompleteSemaphore;
-	device->pvkQueueSubmit(swapChain->context->queue, 1, &submitInfo, VK_NULL_HANDLE);
 
-	swapChain->waitForRender = 1;
-
-	return 0;
-}
-
-int vklSwapBuffers(VKLSwapChain* swapChain) {
-	VKLDevice* device = swapChain->context->device;
-
+	VLKCheck(device->pvkQueueSubmit(swapChain->context->queue, 1, &submitInfo, VK_NULL_HANDLE),
+		"Could not submit Queue");
+	
 	VkPresentInfoKHR presentInfo;
 	memset(&presentInfo, 0, sizeof(VkPresentInfoKHR));
 	presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 	presentInfo.waitSemaphoreCount = 1;
-	
-	if (swapChain->waitForRender) {
-		presentInfo.pWaitSemaphores = &swapChain->renderingCompleteSemaphore;
-	} else {
-		presentInfo.pWaitSemaphores = &swapChain->presentCompleteSemaphore;
-	}
-	
+	presentInfo.pWaitSemaphores = &swapChain->renderingCompleteSemaphore;
 	presentInfo.swapchainCount = 1;
 	presentInfo.pSwapchains = &swapChain->swapChain;
 	presentInfo.pImageIndices = &swapChain->nextImageIdx;
@@ -513,6 +324,8 @@ int vklSwapBuffers(VKLSwapChain* swapChain) {
 	device->pvkQueuePresentKHR(swapChain->context->queue, &presentInfo);
 
 	device->pvkQueueWaitIdle(swapChain->context->queue);
+
+	device->pvkResetCommandBuffer(swapChain->context->setupCmdBuffer, 0);
 
 	device->pvkDestroySemaphore(device->device, swapChain->presentCompleteSemaphore, NULL);
 	device->pvkDestroySemaphore(device->device, swapChain->renderingCompleteSemaphore, NULL);

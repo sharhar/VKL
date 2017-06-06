@@ -424,6 +424,8 @@ int vklCreateDevice(VKLInstance* instance, VKLDevice** pDevice, VKLSurface** pSu
 		}
 	}
 
+	device->instance->pvkGetPhysicalDeviceMemoryProperties(device->physicalDevice, &device->memoryProperties);
+
 	return 0;
 }
 
@@ -459,4 +461,16 @@ int vklAllocateCommandBuffer(VKLDeviceGraphicsContext* context, VkCommandBuffer*
 		"Failed to allocate setup command buffer");
 
 	return 0;
+}
+
+int vklBeginCommandBuffer(VKLDevice* device, VkCommandBuffer cmdBuffer) {
+	VkCommandBufferBeginInfo beginInfo;
+	memset(&beginInfo, 0, sizeof(VkCommandBufferBeginInfo));
+	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+
+	device->pvkBeginCommandBuffer(cmdBuffer, &beginInfo);
+}
+
+int vklEndCommandBuffer(VKLDevice* device, VkCommandBuffer cmdBuffer) {
+	device->pvkEndCommandBuffer(cmdBuffer);
 }

@@ -27,7 +27,9 @@ int main() {
 	VKLDeviceGraphicsContext* devCon = deviceContexts[0];
 	
 	VKLSwapChain* swapChain;
+	VKLFrameBuffer* backBuffer;
 	vklCreateSwapChain(devCon, &swapChain, VK_TRUE);
+	vklGetBackBuffer(swapChain, &backBuffer);
 
 	float data[] = {
 		-0.5f, -0.5f, 0.0f, 0.0f,
@@ -84,7 +86,7 @@ int main() {
 	VKLPipelineCreateInfo pipelineCreateInfo;
 	memset(&pipelineCreateInfo, 0, sizeof(VKLPipelineCreateInfo));
 	pipelineCreateInfo.shader = shader;
-	pipelineCreateInfo.renderPass = swapChain->renderPass;
+	pipelineCreateInfo.renderPass = backBuffer->renderPass;
 	pipelineCreateInfo.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 	pipelineCreateInfo.cullMode = VK_CULL_MODE_NONE;
 	pipelineCreateInfo.extent.width = swapChain->width;
@@ -133,7 +135,32 @@ int main() {
 
 	vklSetUniformTexture(device, uniform, texture, 1);
 
-	vklSetClearColor(swapChain, 0.25f, 0.45f, 1.0f, 1.0f);
+	vklSetClearColor(backBuffer, 0.25f, 0.45f, 1.0f, 1.0f);
+
+	{ //Record rendering commands
+		vklBeginCommandBuffer(device, cmdBuffer);
+
+		vklBeginRender(device, backBuffer, cmdBuffer);
+
+		VkViewport viewport = { 0, 0, swapChain->width, swapChain->height, 0, 1 };
+		VkRect2D scissor = { 0, 0, swapChain->width, swapChain->height };
+		VkDeviceSize vertexOffsets = 0;
+
+		device->pvkCmdSetViewport(cmdBuffer, 0, 1, &viewport);
+		device->pvkCmdSetScissor(cmdBuffer, 0, 1, &scissor);
+
+		device->pvkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->pipeline);
+		device->pvkCmdBindVertexBuffers(cmdBuffer, 0, 1, &buffer->buffer, &vertexOffsets);
+
+		device->pvkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+			pipeline->pipelineLayout, 0, 1, &uniform->descriptorSet, 0, NULL);
+
+		device->pvkCmdDraw(cmdBuffer, 6, 1, 0, 0);
+
+		vklEndRender(device, backBuffer, cmdBuffer);
+
+		vklEndCommandBuffer(device, cmdBuffer);
+	}
 
 	while (!glfwWindowShouldClose(window)) {
 		glfwPollEvents();
@@ -141,31 +168,10 @@ int main() {
 		proj[12] = glfwGetTime() / 10.0f;
 
 		vklWriteToMemory(device, uniformBuffer->memory, proj, sizeof(float) * 16);
-
-		vklClearScreen(swapChain);
-
-		vklBeginRenderRecording(swapChain, cmdBuffer);
 		
-		VkViewport viewport = { 0, 0, swapChain->width, swapChain->height, 0, 1 };
-		VkRect2D scissor = { 0, 0, swapChain->width, swapChain->height };
-		VkDeviceSize offsets = 0;
+		vklRenderRecording(devCon, backBuffer, cmdBuffer);
 
-		device->pvkCmdSetViewport(cmdBuffer, 0, 1, &viewport);
-		device->pvkCmdSetScissor(cmdBuffer, 0, 1, &scissor);
-		
-		device->pvkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->pipeline);
-		device->pvkCmdBindVertexBuffers(cmdBuffer, 0, 1, &buffer->buffer, &offsets);
-
-		device->pvkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 
-			pipeline->pipelineLayout, 0, 1, &uniform->descriptorSet, 0, NULL);
-
-		device->pvkCmdDraw(cmdBuffer, 6, 1, 0, 0);
-		
-		vklEndRenderRecording(swapChain, cmdBuffer);
-
-		vklRenderRecording(swapChain, cmdBuffer);
-
-		vklSwapBuffers(swapChain);
+		vklPresent(swapChain);
 	}
 
 	vklDestroyTexture(device, texture);

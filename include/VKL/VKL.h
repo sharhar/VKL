@@ -30,6 +30,7 @@ struct VKLShader;
 struct VKLGraphicsPipeline;
 struct VKLUniformObject;
 struct VKLTexture;
+struct VKLFrameBuffer;
 
 typedef struct VKLInstance VKLInstance;
 typedef struct VKLSurface VKLSurface;
@@ -42,6 +43,7 @@ typedef struct VKLShader VKLShader;
 typedef struct VKLGraphicsPipeline VKLGraphicsPipeline;
 typedef struct VKLUniformObject VKLUniformObject;
 typedef struct VKLTexture VKLTexture;
+typedef struct VKLFrameBuffer VKLFrameBuffer;
 
 typedef struct VKLInstance {
 	PFN_vkCreateInstance pvkCreateInstance;
@@ -257,19 +259,13 @@ typedef struct VKLDeviceComputeContext {
 typedef struct VKLSwapChain {
 	VkSwapchainKHR swapChain;
 	VkImage* presentImages;
-	VkImageView *presentImageViews;
-	VkImage depthImage;
-	VkDeviceMemory depthImageMemory;
-	VkImageView depthImageView;
-	VkRenderPass renderPass;
-	VkFramebuffer* frameBuffers;
+	VkImageView* presentImageViews;
 	VkSemaphore presentCompleteSemaphore, renderingCompleteSemaphore;
+
+	VkCommandBuffer* cmdBuffers;
+	VKLFrameBuffer* backBuffer;
 	
 	uint32_t width, height, nextImageIdx, imageCount;
-
-	float clearR, clearG, clearB, clearA;
-
-	VkBool32 waitForRender;
 
 	VKLDeviceGraphicsContext* context;
 } VKLSwapChain;
@@ -320,6 +316,25 @@ typedef struct VKLTexture {
 	VkBool32 temporary;
 } VKLTexture;
 
+typedef struct VKLFrameBuffer {
+	uint32_t width;
+	uint32_t height;
+
+	VkImage image;
+	VkDeviceMemory imageMemory;
+	VkImageView imageView;
+	VkImage depthImage;
+	VkDeviceMemory depthImageMemory;
+	VkImageView depthImageView;
+	VkRenderPass renderPass;
+	VkFramebuffer frameBuffer;
+
+	float clearR, clearG, clearB, clearA;
+
+	VkAccessFlags accessMask;
+	VkImageLayout layout;
+} VKLFrameBuffer;
+
 #ifdef VKL_USE_WSI_WIN32
 #include <windows.h>
 int vklCreateWin32Surface(VKLInstance* instance, VKLSurface** pSurface, HWND hWnd);
@@ -337,15 +352,13 @@ int vklCreateDevice(VKLInstance* instance, VKLDevice** pDevice, VKLSurface** pSu
 	uint32_t deviceComputeContextCount, VKLDeviceComputeContext*** pDeviceComputeContexts);
 int vklDestroyDevice(VKLDevice* device);
 int vklAllocateCommandBuffer(VKLDeviceGraphicsContext* context, VkCommandBuffer* cmdBuffer, VkCommandBufferLevel level, uint32_t count);
+int vklBeginCommandBuffer(VKLDevice* device, VkCommandBuffer cmdBuffer);
+int vklEndCommandBuffer(VKLDevice* device, VkCommandBuffer cmdBuffer);
 
 int vklCreateSwapChain(VKLDeviceGraphicsContext* context, VKLSwapChain** swapChain, VkBool32 vSync);
+int vklGetBackBuffer(VKLSwapChain* swapChain, VKLFrameBuffer** pFrameBuffer);
 int vklDestroySwapChain(VKLSwapChain* swapChain);
-int vklSetClearColor(VKLSwapChain* swapChain, float r, float g, float b, float a);
-int vklClearScreen(VKLSwapChain* swapChain);
-int vklBeginRenderRecording(VKLSwapChain* swapChain, VkCommandBuffer cmdBuffer);
-int vklEndRenderRecording(VKLSwapChain* swapChain, VkCommandBuffer cmdBuffer);
-int vklRenderRecording(VKLSwapChain* swapChain, VkCommandBuffer cmdBuffer);
-int vklSwapBuffers(VKLSwapChain* swapChain);
+int vklPresent(VKLSwapChain* swapChain);
 
 int vklAllocateMemory(VKLDevice* device, VkDeviceMemory* memory, VkMemoryPropertyFlags desiredMemoryFlags, VkMemoryRequirements memoryRequirements);
 int vklAllocateImageMemory(VKLDevice* device, VkDeviceMemory* memory, VkImage image, VkMemoryPropertyFlags desiredMemoryFlags);
@@ -405,6 +418,13 @@ int vklSetTextureData(VKLDevice* device, VKLTexture* texture, uint8_t* data);
 int vklCreateStagedTexture(VKLDeviceGraphicsContext* devCon, VKLTexture** pTexture, VKLTextureCreateInfo* createInfo, uint8_t* data);
 int vklImageLayoutTransition(VKLDevice* device, VKLTexture* texture, VkCommandBuffer cmdBuffer, VkAccessFlags accessMask, VkImageLayout layout);
 int vklDestroyTexture(VKLDevice* device, VKLTexture* texture);
+
+int vklCreateFrameBuffer(VKLDeviceGraphicsContext* devCon, VKLFrameBuffer** pFrameBuffer, uint32_t width, uint32_t height, VkFormat imageFormat, VkAccessFlags accessMask, VkImageLayout layout);
+int vklSetClearColor(VKLFrameBuffer* frameBuffer, float r, float g, float b, float a);
+int vklBeginRender(VKLDevice* device, VKLFrameBuffer* frameBuffer, VkCommandBuffer cmdBuffer);
+int vklEndRender(VKLDevice* device, VKLFrameBuffer* frameBuffer, VkCommandBuffer cmdBuffer);
+int vklRenderRecording(VKLDeviceGraphicsContext* devCon, VKLFrameBuffer* frameBuffer, VkCommandBuffer cmdBuffer);
+int vklDestroyFrameBuffer(VKLDevice* device, VKLFrameBuffer* frameBuffer);
 
 #ifdef __cplusplus
 }

@@ -4,10 +4,12 @@
 
 layout (location = 0) out vec4 uFragColor;
 
+layout (binding = 1) uniform sampler2D tex;
+
 layout ( location = 0 ) in struct fragment_in {
     vec2 uv;
 } IN;
 
 void main() {
-	uFragColor = vec4(IN.uv.x, IN.uv.y, 0.5, 1.0);
+	uFragColor = texture(tex, IN.uv);
 }
