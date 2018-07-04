@@ -19,7 +19,7 @@ int vklCreateShader(VKLDevice* device, VKLShader** pShader, VKLShaderCreateInfo*
 		shaderModuleCreateInfo.pCode = (uint32_t*)shaderCode;
 
 		VLKCheck(device->pvkCreateShaderModule(device->device, &shaderModuleCreateInfo, device->instance->allocator, &shader->shaderModules[i]),
-			"Failed to create vertex shader module");
+			"Failed to create shader module");
 
 		shader->shaderStageCreateInfos[i].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 		shader->shaderStageCreateInfos[i].stage = shaderCreateInfo->shaderStages[i];
