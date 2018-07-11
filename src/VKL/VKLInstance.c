@@ -20,15 +20,20 @@ int vklCreateInstance(VKLInstance** pInstace, VkAllocationCallbacks* allocator, 
 	instance->pvkEnumerateInstanceLayerProperties = (PFN_vkEnumerateInstanceLayerProperties)instance->pvkGetInstanceProcAddr(NULL, "vkEnumerateInstanceLayerProperties");
 	instance->pvkEnumerateInstanceExtensionProperties = (PFN_vkEnumerateInstanceExtensionProperties)instance->pvkGetInstanceProcAddr(NULL, "vkEnumerateInstanceExtensionProperties");
 
+	uint32_t layerCount = 0;
+	VkLayerProperties* layersAvailable;
+	uint32_t extensionCountEXT = 0;
+	VkExtensionProperties* extensionsAvailable;
+
 	if (debug) {
-		uint32_t layerCount = 0;
+		
 		instance->pvkEnumerateInstanceLayerProperties(&layerCount, NULL);
 		if (layerCount == 0) {
 			printf("Could not find any layers!\n");
 			return -1;
 		}
 
-		VkLayerProperties* layersAvailable = (VkLayerProperties*)malloc_c(sizeof(VkLayerProperties) * layerCount);
+		layersAvailable = (VkLayerProperties*)malloc_c(sizeof(VkLayerProperties) * layerCount);
 		instance->pvkEnumerateInstanceLayerProperties(&layerCount, layersAvailable);
 
 		uint8_t foundValidation = 0;
@@ -39,8 +44,7 @@ int vklCreateInstance(VKLInstance** pInstace, VkAllocationCallbacks* allocator, 
 		}
 
 		if (!foundValidation) {
-			printf("Could ont find validation layers!\n");
-			return -1;
+			printf("Warning: Could not find validation layers! (VK_LAYER_LUNARG_standard_validation)\n");
 		}
 
 		instance->layers = (char**)malloc_c(sizeof(char*) * 1);
@@ -68,9 +72,8 @@ int vklCreateInstance(VKLInstance** pInstace, VkAllocationCallbacks* allocator, 
 	}
 
 	if (debug) {
-		uint32_t extensionCountEXT = 0;
 		instance->pvkEnumerateInstanceExtensionProperties(NULL, &extensionCountEXT, NULL);
-		VkExtensionProperties* extensionsAvailable = (VkExtensionProperties*)malloc_c(sizeof(VkExtensionProperties) * extensionCountEXT);
+		extensionsAvailable = (VkExtensionProperties*)malloc_c(sizeof(VkExtensionProperties) * extensionCountEXT);
 		instance->pvkEnumerateInstanceExtensionProperties(NULL, &extensionCountEXT, extensionsAvailable);
 
 		char *extentionEXT = "VK_EXT_debug_report";
@@ -82,8 +85,7 @@ int vklCreateInstance(VKLInstance** pInstace, VkAllocationCallbacks* allocator, 
 		}
 
 		if (!foundExtensions) {
-			printf("Could not get required extentions!\n");
-			return -1;
+			printf("Warning: Could not get required extentions! (%s)\n", extentionEXT);
 		}
 
 
@@ -116,6 +118,44 @@ int vklCreateInstance(VKLInstance** pInstace, VkAllocationCallbacks* allocator, 
 	instanceInfo.ppEnabledLayerNames = (const char**)instance->layers;
 	instanceInfo.enabledExtensionCount = extensionCount;
 	instanceInfo.ppEnabledExtensionNames = (const char**)extensions;
+
+	if (debug) {
+		printf("Layers:\n");
+		for (uint32_t i = 0; i < layerCount; ++i) {
+			printf("\tLayer ");
+			if (i < 10) {
+				printf(" ");
+			}
+			printf(" %d: %s", i, layersAvailable[i].layerName);
+			for (uint32_t j = 0; j < instance->layerCount; ++j) {
+				if (strcmp(layersAvailable[i].layerName, instance->layers[j]) == 0) {
+					for (int k = 0; k < 50 - strlen(layersAvailable[i].layerName); k++) {
+						printf(" ");
+					}
+					printf(" - Selected");
+				}
+			}
+			printf("\n");
+		}
+
+		printf("Extensions:\n");
+		for (uint32_t i = 0; i < extensionCountEXT; ++i) {
+			printf("\tExtension ");
+			if (i < 10) {
+				printf(" ");
+			}
+			printf(" %d: %s", i, extensionsAvailable[i].extensionName);
+			for (uint32_t j = 0; j < extensionCount; ++j) {
+				if (strcmp(extensionsAvailable[i].extensionName, extensions[j]) == 0) {
+					for (int k = 0; k < 50-strlen(extensionsAvailable[i].extensionName);k++) {
+						printf(" ");
+					}
+					printf(" - Selected");
+				}
+			}
+			printf("\n");
+		}
+	}
 
 	VLKCheck(instance->pvkCreateInstance(&instanceInfo, instance->allocator, &instance->instance),
 		"Failed to create Vulkan Instance");

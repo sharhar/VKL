@@ -207,7 +207,7 @@ int vklCreateDevice(VKLInstance* instance, VKLDevice** pDevice, VKLSurface** pSu
 	VkPhysicalDeviceFeatures features;
 	instance->pvkGetPhysicalDeviceFeatures(device->physicalDevice, &features);
 
-	if (features.shaderClipDistance != VK_TRUE) {
+	if (features.shaderClipDistance != VK_TRUE || features.dualSrcBlend != VK_TRUE) {
 		printf("Device does not support required features!\n");
 		return -1;
 	}
