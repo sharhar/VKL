@@ -154,11 +154,12 @@ int vklCreateDevice(VKLInstance* instance, VKLDevice** pDevice, VKLSurface** pSu
 		}
 
 		queueCreateInfos[1].sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-		queueCreateInfos[0].pNext = NULL;
-		queueCreateInfos[0].flags = 0;
+		queueCreateInfos[1].pNext = NULL;
+		queueCreateInfos[1].flags = 0;
 		queueCreateInfos[1].queueFamilyIndex = computeQueueIndex;
 		queueCreateInfos[1].queueCount = deviceComputeContextCount;
 		queueCreateInfos[1].pQueuePriorities = computeQueuePriorities;
+
 	} else if (deviceGraphicsContextCount > 0 && deviceComputeContextCount == 0) {
 		queueCreateInfos = (VkDeviceQueueCreateInfo*)malloc_c(sizeof(VkDeviceQueueCreateInfo) * 1);
 		queueCreateCount = 1;
@@ -174,6 +175,7 @@ int vklCreateDevice(VKLInstance* instance, VKLDevice** pDevice, VKLSurface** pSu
 		queueCreateInfos[0].queueFamilyIndex = graphicsQueueIndex;
 		queueCreateInfos[0].queueCount = deviceGraphicsContextCount;
 		queueCreateInfos[0].pQueuePriorities = graphicsQueuePriorities;
+
 	} else if (deviceGraphicsContextCount == 0 && deviceComputeContextCount > 0) {
 		queueCreateInfos = (VkDeviceQueueCreateInfo*)malloc_c(sizeof(VkDeviceQueueCreateInfo) * 1);
 		queueCreateCount = 1;
@@ -183,12 +185,12 @@ int vklCreateDevice(VKLInstance* instance, VKLDevice** pDevice, VKLSurface** pSu
 			computeQueuePriorities[i] = 1.0f;
 		}
 
-		queueCreateInfos[1].sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-		queueCreateInfos[1].pNext = NULL;
-		queueCreateInfos[1].flags = 0;
-		queueCreateInfos[1].queueFamilyIndex = computeQueueIndex;
-		queueCreateInfos[1].queueCount = deviceComputeContextCount;
-		queueCreateInfos[1].pQueuePriorities = computeQueuePriorities;
+		queueCreateInfos[0].sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+		queueCreateInfos[0].pNext = NULL;
+		queueCreateInfos[0].flags = 0;
+		queueCreateInfos[0].queueFamilyIndex = computeQueueIndex;
+		queueCreateInfos[0].queueCount = deviceComputeContextCount;
+		queueCreateInfos[0].pQueuePriorities = computeQueuePriorities;
 	}
 
 	VkDeviceCreateInfo deviceInfo;
@@ -346,82 +348,28 @@ int vklCreateDevice(VKLInstance* instance, VKLDevice** pDevice, VKLSurface** pSu
 	device->pvkAcquireNextImageKHR = (PFN_vkAcquireNextImageKHR)device->pvkGetDeviceProcAddr(device->device, "vkAcquireNextImageKHR");
 	device->pvkQueuePresentKHR = (PFN_vkQueuePresentKHR)device->pvkGetDeviceProcAddr(device->device, "vkQueuePresentKHR");
 
-	if (deviceGraphicsContextCount > 0 && deviceComputeContextCount > 0 && graphicsQueueIndex == computeQueueIndex) {
-		VkCommandPoolCreateInfo commandPoolCreateInfo;
-		commandPoolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-		commandPoolCreateInfo.pNext = NULL;
-		commandPoolCreateInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-		commandPoolCreateInfo.queueFamilyIndex = graphicsQueueIndex;
+	VkCommandPoolCreateInfo commandPoolCreateInfo;
+	commandPoolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+	commandPoolCreateInfo.pNext = NULL;
+	commandPoolCreateInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+	commandPoolCreateInfo.queueFamilyIndex = graphicsQueueIndex;
 
-		for (int i = 0; i < deviceGraphicsContextCount; i++) {
-			device->pvkGetDeviceQueue(device->device, graphicsQueueIndex, i, &device->deviceGraphicsContexts[i]->queue);
-			VLKCheck(device->pvkCreateCommandPool(device->device, &commandPoolCreateInfo, device->instance->allocator, &device->deviceGraphicsContexts[i]->commandPool),
-				"Failed to create command pool");
+	for (int i = 0; i < deviceGraphicsContextCount; i++) {
+		device->pvkGetDeviceQueue(device->device, graphicsQueueIndex, i, &device->deviceGraphicsContexts[i]->queue);
+		VLKCheck(device->pvkCreateCommandPool(device->device, &commandPoolCreateInfo, device->instance->allocator, &device->deviceGraphicsContexts[i]->commandPool),
+			"Failed to create command pool");
+			
+		vklAllocateCommandBuffer(device->deviceGraphicsContexts[i], &device->deviceGraphicsContexts[i]->setupCmdBuffer, VK_COMMAND_BUFFER_LEVEL_PRIMARY, 1);
+	}
 
-			vklAllocateCommandBuffer(device->deviceGraphicsContexts[i], &device->deviceGraphicsContexts[i]->setupCmdBuffer, VK_COMMAND_BUFFER_LEVEL_PRIMARY, 1);
-		}
+	commandPoolCreateInfo.queueFamilyIndex = computeQueueIndex;
 
-		commandPoolCreateInfo.queueFamilyIndex = computeQueueIndex;
+	for (int i = 0; i < deviceComputeContextCount; i++) {
+		device->pvkGetDeviceQueue(device->device, computeQueueIndex, i, &device->deviceComputeContexts[i]->queue);
+		VLKCheck(device->pvkCreateCommandPool(device->device, &commandPoolCreateInfo, device->instance->allocator, &device->deviceComputeContexts[i]->commandPool),
+			"Failed to create command pool");
 
-		for (int i = deviceGraphicsContextCount; i < deviceGraphicsContextCount + deviceComputeContextCount; i++) {
-			device->pvkGetDeviceQueue(device->device, computeQueueIndex, i, &device->deviceComputeContexts[i - deviceGraphicsContextCount]->queue);
-			VLKCheck(device->pvkCreateCommandPool(device->device, &commandPoolCreateInfo, device->instance->allocator, &device->deviceComputeContexts[i - deviceGraphicsContextCount]->commandPool),
-				"Failed to create command pool");
-
-			vklAllocateCommandBuffer(device->deviceComputeContexts[i - deviceGraphicsContextCount], &device->deviceComputeContexts[i - deviceGraphicsContextCount]->setupCmdBuffer, VK_COMMAND_BUFFER_LEVEL_PRIMARY, 1);
-		}
-	} else if (deviceGraphicsContextCount > 0 && deviceComputeContextCount > 0 && graphicsQueueIndex != computeQueueIndex) {
-		VkCommandPoolCreateInfo commandPoolCreateInfo;
-		commandPoolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-		commandPoolCreateInfo.pNext = NULL;
-		commandPoolCreateInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-		commandPoolCreateInfo.queueFamilyIndex = graphicsQueueIndex;
-
-		for (int i = 0; i < deviceGraphicsContextCount; i++) {
-			device->pvkGetDeviceQueue(device->device, graphicsQueueIndex, i, &device->deviceGraphicsContexts[i]->queue);
-			VLKCheck(device->pvkCreateCommandPool(device->device, &commandPoolCreateInfo, device->instance->allocator, &device->deviceGraphicsContexts[i]->commandPool),
-				"Failed to create command pool");
-
-			vklAllocateCommandBuffer(device->deviceGraphicsContexts[i], &device->deviceGraphicsContexts[i]->setupCmdBuffer, VK_COMMAND_BUFFER_LEVEL_PRIMARY, 1);
-		}
-
-		commandPoolCreateInfo.queueFamilyIndex = computeQueueIndex;
-
-		for (int i = 0; i < deviceComputeContextCount; i++) {
-			device->pvkGetDeviceQueue(device->device, computeQueueIndex, i, &device->deviceComputeContexts[i]->queue);
-			VLKCheck(device->pvkCreateCommandPool(device->device, &commandPoolCreateInfo, device->instance->allocator, &device->deviceComputeContexts[i]->commandPool),
-				"Failed to create command pool");
-
-			vklAllocateCommandBuffer(device->deviceComputeContexts[i], &device->deviceComputeContexts[i]->setupCmdBuffer, VK_COMMAND_BUFFER_LEVEL_PRIMARY, 1);
-		}
-	} else if (deviceGraphicsContextCount > 0 && deviceComputeContextCount == 0) {
-		VkCommandPoolCreateInfo commandPoolCreateInfo;
-		commandPoolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-		commandPoolCreateInfo.pNext = 0;
-		commandPoolCreateInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-		commandPoolCreateInfo.queueFamilyIndex = graphicsQueueIndex;
-
-		for (int i = 0; i < deviceGraphicsContextCount; i++) {
-			device->pvkGetDeviceQueue(device->device, graphicsQueueIndex, i, &device->deviceGraphicsContexts[i]->queue);
-			VLKCheck(device->pvkCreateCommandPool(device->device, &commandPoolCreateInfo, device->instance->allocator, &device->deviceGraphicsContexts[i]->commandPool),
-				"Failed to create command pool");
-
-			vklAllocateCommandBuffer(device->deviceGraphicsContexts[i], &device->deviceGraphicsContexts[i]->setupCmdBuffer, VK_COMMAND_BUFFER_LEVEL_PRIMARY, 1);
-		}
-	} else if (deviceGraphicsContextCount == 0 && deviceComputeContextCount > 0) {
-		VkCommandPoolCreateInfo commandPoolCreateInfo;
-		commandPoolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-		commandPoolCreateInfo.pNext = NULL;
-		commandPoolCreateInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-		commandPoolCreateInfo.queueFamilyIndex = computeQueueIndex;
-
-		for (int i = 0; i < deviceComputeContextCount; i++) {
-			device->pvkGetDeviceQueue(device->device, computeQueueIndex, i, &device->deviceComputeContexts[i]->queue);
-			VLKCheck(device->pvkCreateCommandPool(device->device, &commandPoolCreateInfo, device->instance->allocator, &device->deviceComputeContexts[i]->commandPool),
-				"Failed to create command pool");
-
-			vklAllocateCommandBuffer(device->deviceComputeContexts[i], &device->deviceComputeContexts[i]->setupCmdBuffer, VK_COMMAND_BUFFER_LEVEL_PRIMARY, 1);
-		}
+		vklAllocateCommandBuffer(device->deviceComputeContexts[i], &device->deviceComputeContexts[i]->setupCmdBuffer, VK_COMMAND_BUFFER_LEVEL_PRIMARY, 1);
 	}
 
 	device->instance->pvkGetPhysicalDeviceMemoryProperties(device->physicalDevice, &device->memoryProperties);
