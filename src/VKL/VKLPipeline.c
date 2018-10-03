@@ -1,7 +1,7 @@
 #include <VKL/VKL.h>
 
-int vklCreateGraphicsPipeline(VKLDevice* device, VKLGraphicsPipeline** pPipeline, VKLPipelineCreateInfo* createInfo) {
-	VKLGraphicsPipeline* pipeline = malloc_c(sizeof(VKLGraphicsPipeline));
+int vklCreateGraphicsPipeline(VKLDevice* device, VKLPipeline** pPipeline, VKLGraphicsPipelineCreateInfo* createInfo) {
+	VKLPipeline* pipeline = malloc_c(sizeof(VKLPipeline));
 
 	VkPipelineLayoutCreateInfo layoutCreateInfo;
 	memset(&layoutCreateInfo, 0, sizeof(VkPipelineLayoutCreateInfo));
@@ -149,7 +149,36 @@ int vklCreateGraphicsPipeline(VKLDevice* device, VKLGraphicsPipeline** pPipeline
 	return 0;
 }
 
-int vklDestroyGraphicsPipeline(VKLDevice* device, VKLGraphicsPipeline* pipeline) {
+int vklCreateComputePipeline(VKLDevice* device, VKLPipeline** pPipeline, VKLShader* shader) {
+	VKLPipeline* pipeline = malloc_c(sizeof(VKLPipeline));
+
+	VkPipelineLayoutCreateInfo layoutCreateInfo;
+	memset(&layoutCreateInfo, 0, sizeof(VkPipelineLayoutCreateInfo));
+	layoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+	layoutCreateInfo.setLayoutCount = 1;
+	layoutCreateInfo.pSetLayouts = &shader->descriptorSetLayout;
+	layoutCreateInfo.pushConstantRangeCount = 0;
+	layoutCreateInfo.pPushConstantRanges = NULL;
+
+	VLKCheck(device->pvkCreatePipelineLayout(device->device, &layoutCreateInfo, device->instance->allocator, &pipeline->pipelineLayout),
+		"Failed to create pipeline layout");
+
+	VkComputePipelineCreateInfo pipelineCreateInfo;
+	pipelineCreateInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
+	pipelineCreateInfo.pNext = NULL;
+	pipelineCreateInfo.flags = 0;
+	pipelineCreateInfo.layout = pipeline->pipelineLayout;
+	pipelineCreateInfo.stage = shader->shaderStageCreateInfos[0];
+
+	VLKCheck(device->pvkCreateComputePipelines(device->device, NULL, 1, &pipelineCreateInfo, NULL, &pipeline->pipeline),
+		"Failed to create compute pipeline");
+
+	*pPipeline = pipeline;
+
+	return 0;
+}
+
+int vklDestroyPipeline(VKLDevice* device, VKLPipeline* pipeline) {
 	device->pvkDestroyPipeline(device->device, pipeline->pipeline, device->instance->allocator);
 	device->pvkDestroyPipelineLayout(device->device, pipeline->pipelineLayout, device->instance->allocator);
 

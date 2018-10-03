@@ -40,32 +40,34 @@ int vklCreateShader(VKLDevice* device, VKLShader** pShader, VKLShaderCreateInfo*
 	VLKCheck(device->pvkCreateDescriptorSetLayout(device->device, &setLayoutCreateInfo, device->instance->allocator, &shader->descriptorSetLayout),
 		"Failed to create DescriptorSetLayout");
 
-	VkVertexInputBindingDescription* vertexBindingDescription = malloc_c(sizeof(VkVertexInputBindingDescription));
-	vertexBindingDescription->binding = 0;
-	vertexBindingDescription->stride = shaderCreateInfo->vertexInputAttributeStride;
-	vertexBindingDescription->inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-
-	VkVertexInputAttributeDescription* vertexAttributeDescritpion = malloc_c(sizeof(VkVertexInputAttributeDescription) * shaderCreateInfo->vertexInputAttributesCount);
-	for (int i = 0; i < shaderCreateInfo->vertexInputAttributesCount; i++) {
-		vertexAttributeDescritpion[i].location = i;
-		vertexAttributeDescritpion[i].binding = 0;
-		vertexAttributeDescritpion[i].format = shaderCreateInfo->vertexInputAttributeFormats[i];
-		vertexAttributeDescritpion[i].offset = shaderCreateInfo->vertexInputAttributeOffsets[i];
-	}
-
-	shader->vertexInputStateCreateInfo = malloc_c(sizeof(VkPipelineVertexInputStateCreateInfo));
-	shader->vertexInputStateCreateInfo->sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-	shader->vertexInputStateCreateInfo->vertexBindingDescriptionCount = 1;
-	shader->vertexInputStateCreateInfo->pVertexBindingDescriptions = vertexBindingDescription;
-	shader->vertexInputStateCreateInfo->vertexAttributeDescriptionCount = shaderCreateInfo->vertexInputAttributesCount;
-	shader->vertexInputStateCreateInfo->pVertexAttributeDescriptions = vertexAttributeDescritpion;
-
 	shader->descriptorPoolSizesCount = shaderCreateInfo->bindingsCount;
 	shader->descriptorPoolSizes = malloc_c(sizeof(VkDescriptorPoolSize) * shader->descriptorPoolSizesCount);
 
-	for (uint32_t i = 0; i < shader->descriptorPoolSizesCount;i++) {
+	for (uint32_t i = 0; i < shader->descriptorPoolSizesCount; i++) {
 		shader->descriptorPoolSizes[i].type = shaderCreateInfo->bindings[i].descriptorType;
 		shader->descriptorPoolSizes[i].descriptorCount = shaderCreateInfo->bindings[i].descriptorCount;
+	}
+
+	if (shaderCreateInfo->vertexInputAttributesCount > 0) {
+		VkVertexInputBindingDescription* vertexBindingDescription = malloc_c(sizeof(VkVertexInputBindingDescription));
+		vertexBindingDescription->binding = 0;
+		vertexBindingDescription->stride = shaderCreateInfo->vertexInputAttributeStride;
+		vertexBindingDescription->inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+		VkVertexInputAttributeDescription* vertexAttributeDescritpion = malloc_c(sizeof(VkVertexInputAttributeDescription) * shaderCreateInfo->vertexInputAttributesCount);
+		for (int i = 0; i < shaderCreateInfo->vertexInputAttributesCount; i++) {
+			vertexAttributeDescritpion[i].location = i;
+			vertexAttributeDescritpion[i].binding = 0;
+			vertexAttributeDescritpion[i].format = shaderCreateInfo->vertexInputAttributeFormats[i];
+			vertexAttributeDescritpion[i].offset = shaderCreateInfo->vertexInputAttributeOffsets[i];
+		}
+
+		shader->vertexInputStateCreateInfo = malloc_c(sizeof(VkPipelineVertexInputStateCreateInfo));
+		shader->vertexInputStateCreateInfo->sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+		shader->vertexInputStateCreateInfo->vertexBindingDescriptionCount = 1;
+		shader->vertexInputStateCreateInfo->pVertexBindingDescriptions = vertexBindingDescription;
+		shader->vertexInputStateCreateInfo->vertexAttributeDescriptionCount = shaderCreateInfo->vertexInputAttributesCount;
+		shader->vertexInputStateCreateInfo->pVertexAttributeDescriptions = vertexAttributeDescritpion;
 	}
 
 	*pShader = shader;

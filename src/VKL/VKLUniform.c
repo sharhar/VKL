@@ -52,6 +52,30 @@ int vklSetUniformBuffer(VKLDevice* device, VKLUniformObject* uniform, VKLBuffer*
 	return 0;
 }
 
+int vklSetUniformStorageBuffer(VKLDevice* device, VKLUniformObject* uniform, VKLBuffer* buffer, uint32_t index) {
+	VkDescriptorBufferInfo descriptorBufferInfo;
+	memset(&descriptorBufferInfo, 0, sizeof(VkDescriptorBufferInfo));
+	descriptorBufferInfo.buffer = buffer->buffer;
+	descriptorBufferInfo.offset = 0;
+	descriptorBufferInfo.range = VK_WHOLE_SIZE;
+
+	VkWriteDescriptorSet writeDescriptor;
+	memset(&writeDescriptor, 0, sizeof(VkWriteDescriptorSet));
+	writeDescriptor.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	writeDescriptor.dstSet = uniform->descriptorSet;
+	writeDescriptor.dstBinding = index;
+	writeDescriptor.dstArrayElement = 0;
+	writeDescriptor.descriptorCount = 1;
+	writeDescriptor.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+	writeDescriptor.pImageInfo = NULL;
+	writeDescriptor.pBufferInfo = &descriptorBufferInfo;
+	writeDescriptor.pTexelBufferView = NULL;
+
+	device->pvkUpdateDescriptorSets(device->device, 1, &writeDescriptor, 0, NULL);
+
+	return 0;
+}
+
 int vklSetUniformTexture(VKLDevice* device, VKLUniformObject* uniform, VKLTexture* texture, uint32_t index) {
 	VkDescriptorImageInfo descriptorImageInfo;
 	memset(&descriptorImageInfo, 0, sizeof(VkDescriptorImageInfo));

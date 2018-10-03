@@ -61,3 +61,13 @@ int vklWriteToMemory(VKLDevice* device, VkDeviceMemory memory, void* data, size_
 	return 0;
 }
 
+int vklReadFromMemory(VKLDevice* device, VkDeviceMemory memory, void* data, size_t size) {
+	void *mapped;
+	VLKCheck(device->pvkMapMemory(device->device, memory, 0, VK_WHOLE_SIZE, 0, &mapped),
+		"Failed to map buffer memory");
+
+	memcpy(data, mapped, size);
+
+	device->pvkUnmapMemory(device->device, memory);
+	return 0;
+}
