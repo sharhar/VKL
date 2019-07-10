@@ -264,6 +264,8 @@ int vklCreateSwapChain(VKLDeviceGraphicsContext* context, VKLSwapChain** pSwapCh
 
 int vklGetBackBuffer(VKLSwapChain* swapChain, VKLFrameBuffer** pFrameBuffer) {
 	*pFrameBuffer = swapChain->backBuffer;
+
+	return 0;
 }
 
 int vklDestroySwapChain(VKLSwapChain* swapChain) {

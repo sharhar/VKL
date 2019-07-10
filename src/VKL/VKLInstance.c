@@ -8,13 +8,13 @@ VKAPI_ATTR VkBool32 VKAPI_CALL DebugReportCallback(VkDebugReportFlagsEXT flags,
 	return VK_FALSE;
 }
 
-int vklCreateInstance(VKLInstance** pInstace, VkAllocationCallbacks* allocator, VkBool32 debug, char* wsiExtName) {
+int vklCreateInstance(VKLInstance** pInstace, VkAllocationCallbacks* allocator, VkBool32 debug, char* wsiExtName, PFN_vkGetInstanceProcAddr vkFunct) {
 	*pInstace = (VKLInstance*)malloc_c(sizeof(VKLInstance));
 	VKLInstance* instance = *pInstace;
 
 	instance->debug = debug;
 	instance->allocator = allocator;
-	instance->pvkGetInstanceProcAddr = (PFN_vkGetInstanceProcAddr)glfwGetInstanceProcAddress(NULL, "vkGetInstanceProcAddr");
+	instance->pvkGetInstanceProcAddr = vkFunct;
 
 	instance->pvkCreateInstance = (PFN_vkCreateInstance)instance->pvkGetInstanceProcAddr(NULL, "vkCreateInstance");
 	instance->pvkEnumerateInstanceLayerProperties = (PFN_vkEnumerateInstanceLayerProperties)instance->pvkGetInstanceProcAddr(NULL, "vkEnumerateInstanceLayerProperties");
@@ -59,17 +59,17 @@ int vklCreateInstance(VKLInstance** pInstace, VkAllocationCallbacks* allocator, 
 	uint32_t extensionCount;
 	char** extensions;
 
-	if (wsiExtName == NULL) {
-		uint32_t extensionCountGLFW = 0;
-		char** extensionsGLFW = (char**)glfwGetRequiredInstanceExtensions(&extensionCountGLFW);
-		extensionCount = extensionCountGLFW;
-		extensions = extensionsGLFW;
-	} else {
+	//if (wsiExtName == NULL) {
+	//	uint32_t extensionCountGLFW = 0;
+	//	char** extensionsGLFW = (char**)glfwGetRequiredInstanceExtensions(&extensionCountGLFW);
+	//	extensionCount = extensionCountGLFW;
+	//	extensions = extensionsGLFW;
+	//} else {
 		extensionCount = 2;
 		extensions = malloc_c(sizeof(char*) * 2);
 		extensions[0] = VK_KHR_SURFACE_EXTENSION_NAME;
 		extensions[1] = wsiExtName;
-	}
+	//}
 
 	if (debug) {
 		instance->pvkEnumerateInstanceExtensionProperties(NULL, &extensionCountEXT, NULL);

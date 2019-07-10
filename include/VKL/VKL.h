@@ -6,7 +6,6 @@ extern "C" {
 
 #define VK_NO_PROTOTYPES
 #include <vulkan/vulkan.h>
-#include <GLFW/glfw3.h>
 
 #include <assert.h>
 #include <stdio.h>
@@ -18,6 +17,8 @@ void* malloc_c(size_t size);
 void free_c(void* block);
 void* realloc_c(void* pOriginal, size_t size);
 char* readFileFromPath(char *filename, size_t* size);
+
+typedef void*(*PFN_vklLoadFunct)(VkInstance* instance, char* name);
 
 struct VKLInstance;
 struct VKLSurface;
@@ -335,14 +336,7 @@ typedef struct VKLFrameBuffer {
 	VkImageLayout layout;
 } VKLFrameBuffer;
 
-#ifdef VKL_USE_WSI_WIN32
-#include <windows.h>
-int vklCreateWin32Surface(VKLInstance* instance, VKLSurface** pSurface, HWND hWnd);
-#else
-int vklCreateGLFWSurface(VKLInstance* instance, VKLSurface** pSurface, GLFWwindow* window);
-#endif
-
-int vklCreateInstance(VKLInstance** pInstace, VkAllocationCallbacks* allocator, VkBool32 debug, char* wsiExtName);
+int vklCreateInstance(VKLInstance** pInstace, VkAllocationCallbacks* allocator, VkBool32 debug, char* wsiExtName, PFN_vkGetInstanceProcAddr vkFunct);
 int vklDestroyInstance(VKLInstance* instance);
 
 int vklDestroySurface(VKLInstance* instance, VKLSurface* surface);
