@@ -1,6 +1,6 @@
 #include <VKL/VKL.h>
 
-VKAPI_ATTR VkBool32 VKAPI_CALL DebugReportCallback(VkDebugReportFlagsEXT flags,
+VKAPI_ATTR VkBool32 VKAPI_CALL __DebugReportCallback(VkDebugReportFlagsEXT flags,
 	VkDebugReportObjectTypeEXT objectType, uint64_t object, size_t location,
 	int32_t messageCode, const char* pLayerPrefix, const char* pMessage, void* pUserData) {
 
@@ -8,7 +8,7 @@ VKAPI_ATTR VkBool32 VKAPI_CALL DebugReportCallback(VkDebugReportFlagsEXT flags,
 	return VK_FALSE;
 }
 
-int vklCreateInstance(VKLInstance** pInstace, VkAllocationCallbacks* allocator, VkBool32 debug, char* wsiExtName, PFN_vkGetInstanceProcAddr vkFunct) {
+int vklCreateInstance(VKLInstance** pInstace, VkAllocationCallbacks* allocator, char* wsiExtName, PFN_vkGetInstanceProcAddr vkFunct, VkBool32 debug) {
 	*pInstace = (VKLInstance*)malloc_c(sizeof(VKLInstance));
 	VKLInstance* instance = *pInstace;
 
@@ -26,7 +26,6 @@ int vklCreateInstance(VKLInstance** pInstace, VkAllocationCallbacks* allocator, 
 	VkExtensionProperties* extensionsAvailable;
 
 	if (debug) {
-		
 		instance->pvkEnumerateInstanceLayerProperties(&layerCount, NULL);
 		if (layerCount == 0) {
 			printf("Could not find any layers!\n");
@@ -59,17 +58,10 @@ int vklCreateInstance(VKLInstance** pInstace, VkAllocationCallbacks* allocator, 
 	uint32_t extensionCount;
 	char** extensions;
 
-	//if (wsiExtName == NULL) {
-	//	uint32_t extensionCountGLFW = 0;
-	//	char** extensionsGLFW = (char**)glfwGetRequiredInstanceExtensions(&extensionCountGLFW);
-	//	extensionCount = extensionCountGLFW;
-	//	extensions = extensionsGLFW;
-	//} else {
-		extensionCount = 2;
-		extensions = malloc_c(sizeof(char*) * 2);
-		extensions[0] = VK_KHR_SURFACE_EXTENSION_NAME;
-		extensions[1] = wsiExtName;
-	//}
+	extensionCount = 2;
+	extensions = malloc_c(sizeof(char*) * 2);
+	extensions[0] = VK_KHR_SURFACE_EXTENSION_NAME;
+	extensions[1] = wsiExtName;
 
 	if (debug) {
 		instance->pvkEnumerateInstanceExtensionProperties(NULL, &extensionCountEXT, NULL);
@@ -182,10 +174,6 @@ int vklCreateInstance(VKLInstance** pInstace, VkAllocationCallbacks* allocator, 
 	instance->pvkGetPhysicalDeviceSurfaceFormatsKHR = (PFN_vkGetPhysicalDeviceSurfaceFormatsKHR)instance->pvkGetInstanceProcAddr(instance->instance, "vkGetPhysicalDeviceSurfaceFormatsKHR");
 	instance->pvkGetPhysicalDeviceSurfacePresentModesKHR = (PFN_vkGetPhysicalDeviceSurfacePresentModesKHR)instance->pvkGetInstanceProcAddr(instance->instance, "vkGetPhysicalDeviceSurfacePresentModesKHR");
 
-#ifdef VKL_USE_WSI_WIN32
-	instance->pvkCreateWin32SurfaceKHR = (PFN_vkCreateWin32SurfaceKHR)instance->pvkGetInstanceProcAddr(instance->instance, "vkCreateWin32SurfaceKHR");
-#endif
-
 	instance->pvkGetPhysicalDeviceDisplayPropertiesKHR = (PFN_vkGetPhysicalDeviceDisplayPropertiesKHR)instance->pvkGetInstanceProcAddr(instance->instance, "vkGetPhysicalDeviceDisplayPropertiesKHR");
 	instance->pvkGetPhysicalDeviceDisplayPlanePropertiesKHR = (PFN_vkGetPhysicalDeviceDisplayPlanePropertiesKHR)instance->pvkGetInstanceProcAddr(instance->instance, "vkGetPhysicalDeviceDisplayPlanePropertiesKHR");
 	instance->pvkGetDisplayPlaneSupportedDisplaysKHR = (PFN_vkGetDisplayPlaneSupportedDisplaysKHR)instance->pvkGetInstanceProcAddr(instance->instance, "vkGetDisplayPlaneSupportedDisplaysKHR");
@@ -201,11 +189,11 @@ int vklCreateInstance(VKLInstance** pInstace, VkAllocationCallbacks* allocator, 
 		callbackCreateInfo.flags = VK_DEBUG_REPORT_ERROR_BIT_EXT |
 			VK_DEBUG_REPORT_WARNING_BIT_EXT |
 			VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT;
-		callbackCreateInfo.pfnCallback = &DebugReportCallback;
+		callbackCreateInfo.pfnCallback = &__DebugReportCallback;
 		callbackCreateInfo.pUserData = NULL;
 
-		VLKCheck(instance->pvkCreateDebugReportCallbackEXT(instance->instance, &callbackCreateInfo, instance->allocator, &instance->callback),
-			"Could not create Debug Callback");
+		//VLKCheck(instance->pvkCreateDebugReportCallbackEXT(instance->instance, &callbackCreateInfo, instance->allocator, &instance->callback),
+		//	"Could not create Debug Callback");
 	}
 
 	*pInstace = instance;
@@ -215,7 +203,7 @@ int vklCreateInstance(VKLInstance** pInstace, VkAllocationCallbacks* allocator, 
 
 int vklDestroyInstance(VKLInstance* instance) {
 	if (instance->debug) {
-		instance->pvkDestroyDebugReportCallbackEXT(instance->instance, instance->callback, instance->allocator);
+		//instance->pvkDestroyDebugReportCallbackEXT(instance->instance, instance->callback, instance->allocator);
 	}
 
 	instance->pvkDestroyInstance(instance->instance, instance->allocator);

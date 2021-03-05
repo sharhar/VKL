@@ -336,7 +336,7 @@ typedef struct VKLFrameBuffer {
 	VkImageLayout layout;
 } VKLFrameBuffer;
 
-int vklCreateInstance(VKLInstance** pInstace, VkAllocationCallbacks* allocator, VkBool32 debug, char* wsiExtName, PFN_vkGetInstanceProcAddr vkFunct);
+int vklCreateInstance(VKLInstance** pInstace, VkAllocationCallbacks* allocator, char* wsiExtName, PFN_vkGetInstanceProcAddr vkFunct, VkBool32 debug);
 int vklDestroyInstance(VKLInstance* instance);
 
 int vklDestroySurface(VKLInstance* instance, VKLSurface* surface);
