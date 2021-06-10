@@ -329,6 +329,9 @@ typedef struct VKLFrameBuffer {
 	VkImageView depthImageView;
 	VkRenderPass renderPass;
 	VkFramebuffer frameBuffer;
+	
+	
+	VkSampler sampler;
 
 	float clearR, clearG, clearB, clearA;
 
@@ -399,6 +402,7 @@ int vklCreateUniformObject(VKLDevice* device, VKLUniformObject** pUniform, VKLSh
 int vklSetUniformBuffer(VKLDevice* device, VKLUniformObject* uniform, VKLBuffer* buffer, uint32_t index);
 int vklSetUniformStorageBuffer(VKLDevice* device, VKLUniformObject* uniform, VKLBuffer* buffer, uint32_t index);
 int vklSetUniformTexture(VKLDevice* device, VKLUniformObject* uniform, VKLTexture* texture, uint32_t index);
+int vklSetUniformFramebuffer(VKLDevice* device, VKLUniformObject* uniform, VKLFrameBuffer* framebuffer, uint32_t index);
 int vklDestroyUniformObject(VKLDevice* device, VKLUniformObject* uniform);
 
 typedef struct VKLTextureCreateInfo {

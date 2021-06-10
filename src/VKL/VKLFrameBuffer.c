@@ -223,6 +223,26 @@ int vklCreateFrameBuffer(VKLDeviceGraphicsContext* devCon, VKLFrameBuffer** pFra
 
 	VLKCheck(device->pvkCreateFramebuffer(device->device, &frameBufferCreateInfo, device->instance->allocator, &frameBuffer->frameBuffer),
 		"Failed to create framebuffer");
+	
+	VkSamplerCreateInfo samplerCreateInfo;
+	memset(&samplerCreateInfo, 0, sizeof(VkSamplerCreateInfo));
+	samplerCreateInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+	samplerCreateInfo.magFilter = VK_FILTER_NEAREST;
+	samplerCreateInfo.minFilter = VK_FILTER_NEAREST;
+	samplerCreateInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+	samplerCreateInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+	samplerCreateInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+	samplerCreateInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+	samplerCreateInfo.mipLodBias = 0;
+	samplerCreateInfo.anisotropyEnable = VK_FALSE;
+	samplerCreateInfo.maxAnisotropy = 0;
+	samplerCreateInfo.minLod = 0;
+	samplerCreateInfo.maxLod = 0;
+	samplerCreateInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+	samplerCreateInfo.unnormalizedCoordinates = VK_FALSE;
+
+	VLKCheck(device->pvkCreateSampler(device->device, &samplerCreateInfo, NULL, &frameBuffer->sampler),
+		"Failed to create sampler");
 
 	*pFrameBuffer = frameBuffer;
 
