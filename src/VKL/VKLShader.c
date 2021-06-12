@@ -42,29 +42,31 @@ int vklCreateShader(VKLDevice* device, VKLShader** pShader, VKLShaderCreateInfo*
 
 	shader->descriptorPoolSizesCount = shaderCreateInfo->bindingsCount;
 	shader->descriptorPoolSizes = malloc_c(sizeof(VkDescriptorPoolSize) * shader->descriptorPoolSizesCount);
-
+	
 	for (uint32_t i = 0; i < shader->descriptorPoolSizesCount; i++) {
 		shader->descriptorPoolSizes[i].type = shaderCreateInfo->bindings[i].descriptorType;
 		shader->descriptorPoolSizes[i].descriptorCount = shaderCreateInfo->bindings[i].descriptorCount;
 	}
-
+	
 	if (shaderCreateInfo->vertexInputAttributesCount > 0) {
-		VkVertexInputBindingDescription* vertexBindingDescription = malloc_c(sizeof(VkVertexInputBindingDescription));
-		vertexBindingDescription->binding = 0;
-		vertexBindingDescription->stride = shaderCreateInfo->vertexInputAttributeStride;
-		vertexBindingDescription->inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-
+		VkVertexInputBindingDescription* vertexBindingDescription = malloc_c(sizeof(VkVertexInputBindingDescription) * shaderCreateInfo->vertexBindingsCount);
+		for (int i = 0; i < shaderCreateInfo->vertexBindingsCount; i++) {
+			vertexBindingDescription[i].binding = i;
+			vertexBindingDescription[i].stride = shaderCreateInfo->vertexBindingStrides[i];
+			vertexBindingDescription[i].inputRate = shaderCreateInfo->vertexBindingInputRates[i];
+		}
+		
 		VkVertexInputAttributeDescription* vertexAttributeDescritpion = malloc_c(sizeof(VkVertexInputAttributeDescription) * shaderCreateInfo->vertexInputAttributesCount);
 		for (int i = 0; i < shaderCreateInfo->vertexInputAttributesCount; i++) {
 			vertexAttributeDescritpion[i].location = i;
-			vertexAttributeDescritpion[i].binding = 0;
+			vertexAttributeDescritpion[i].binding = shaderCreateInfo->vertexInputAttributeBindings[i];
 			vertexAttributeDescritpion[i].format = shaderCreateInfo->vertexInputAttributeFormats[i];
 			vertexAttributeDescritpion[i].offset = shaderCreateInfo->vertexInputAttributeOffsets[i];
 		}
 
 		shader->vertexInputStateCreateInfo = malloc_c(sizeof(VkPipelineVertexInputStateCreateInfo));
 		shader->vertexInputStateCreateInfo->sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-		shader->vertexInputStateCreateInfo->vertexBindingDescriptionCount = 1;
+		shader->vertexInputStateCreateInfo->vertexBindingDescriptionCount = shaderCreateInfo->vertexBindingsCount;
 		shader->vertexInputStateCreateInfo->pVertexBindingDescriptions = vertexBindingDescription;
 		shader->vertexInputStateCreateInfo->vertexAttributeDescriptionCount = shaderCreateInfo->vertexInputAttributesCount;
 		shader->vertexInputStateCreateInfo->pVertexAttributeDescriptions = vertexAttributeDescritpion;

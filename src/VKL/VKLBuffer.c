@@ -44,7 +44,7 @@ int vklCreateStagedBuffer(VKLDeviceGraphicsContext* context, VKLBuffer** pBuffer
 	VKLBuffer* stagedBuffer;
 	vklCreateBuffer(device, &stagedBuffer, VK_FALSE, size, usage | VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
 
-	vklWriteToMemory(device, stagedBuffer->memory, data, size);
+	vklWriteToMemory(device, stagedBuffer->memory, data, size, 0);
 
 	vklCreateBuffer(device, pBuffer, VK_TRUE, size, usage | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
 

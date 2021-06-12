@@ -417,10 +417,14 @@ int vklBeginCommandBuffer(VKLDevice* device, VkCommandBuffer cmdBuffer) {
 	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
 	device->pvkBeginCommandBuffer(cmdBuffer, &beginInfo);
+	
+	return 0;
 }
 
 int vklEndCommandBuffer(VKLDevice* device, VkCommandBuffer cmdBuffer) {
 	device->pvkEndCommandBuffer(cmdBuffer);
+	
+	return 0;
 }
 
 int vklExecuteCommandBuffer(VKLDeviceGraphicsContext* devCon, VkCommandBuffer cmdBuffer) {

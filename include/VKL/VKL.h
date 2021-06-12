@@ -362,8 +362,8 @@ int vklPresent(VKLSwapChain* swapChain);
 int vklAllocateMemory(VKLDevice* device, VkDeviceMemory* memory, VkMemoryPropertyFlags desiredMemoryFlags, VkMemoryRequirements memoryRequirements);
 int vklAllocateImageMemory(VKLDevice* device, VkDeviceMemory* memory, VkImage image, VkMemoryPropertyFlags desiredMemoryFlags);
 int vklAllocateBufferMemory(VKLDevice* device, VkDeviceMemory* memory, VkBuffer buffer, VkMemoryPropertyFlags desiredMemoryFlags);
-int vklWriteToMemory(VKLDevice* device, VkDeviceMemory memory, void* data, size_t size);
-int vklReadFromMemory(VKLDevice* device, VkDeviceMemory memory, void* data, size_t size);
+int vklWriteToMemory(VKLDevice* device, VkDeviceMemory memory, void* data, size_t size, size_t offset);
+int vklReadFromMemory(VKLDevice* device, VkDeviceMemory memory, void* data, size_t size, size_t offset);
 
 int vklCreateBuffer(VKLDevice* device, VKLBuffer** pBuffer, VkBool32 deviceLocal, size_t size, VkBufferUsageFlags usage);
 int vklDestroyBuffer(VKLDevice* device, VKLBuffer* buffer);
@@ -377,10 +377,13 @@ typedef struct VKLShaderCreateInfo {
 	uint32_t descriptorPoolSizesCount;
 	VkDescriptorSetLayoutBinding* bindings;
 	uint32_t bindingsCount;
-	size_t vertexInputAttributeStride;
 	size_t* vertexInputAttributeOffsets;
 	VkFormat* vertexInputAttributeFormats;
 	uint32_t vertexInputAttributesCount;
+	uint32_t* vertexInputAttributeBindings;
+	size_t* vertexBindingStrides;
+	VkVertexInputRate* vertexBindingInputRates;
+	uint32_t vertexBindingsCount;
 } VKLShaderCreateInfo;
 
 int vklCreateShader(VKLDevice* device, VKLShader** pShader, VKLShaderCreateInfo* shaderCreateInfo);
