@@ -52,10 +52,18 @@ int vklAllocateBufferMemory(VKLDevice* device, VkDeviceMemory* memory, VkBuffer 
 
 int vklWriteToMemory(VKLDevice* device, VkDeviceMemory memory, void* data, size_t size, size_t offset) {
 	void *mapped;
-	VLKCheck(device->pvkMapMemory(device->device, memory, 0, VK_WHOLE_SIZE, 0, &mapped),
+	VLKCheck(device->pvkMapMemory(device->device, memory, offset, size, 0, &mapped),
 		"Failed to map buffer memory");
 
-	memcpy(mapped+offset, data, size);
+	memcpy(mapped, data, size);
+	
+	VkMappedMemoryRange memoryRange;
+	memset(&memoryRange, 0, sizeof(VkMappedMemoryRange));
+	memoryRange.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+	memoryRange.memory = memory;
+	memoryRange.offset = offset;
+	memoryRange.size = size;
+	device->pvkFlushMappedMemoryRanges(device->device, 1, &memoryRange);
 
 	device->pvkUnmapMemory(device->device, memory);
 	return 0;
@@ -63,11 +71,11 @@ int vklWriteToMemory(VKLDevice* device, VkDeviceMemory memory, void* data, size_
 
 int vklReadFromMemory(VKLDevice* device, VkDeviceMemory memory, void* data, size_t size, size_t offset) {
 	void *mapped;
-	VLKCheck(device->pvkMapMemory(device->device, memory, 0, VK_WHOLE_SIZE, 0, &mapped),
+	VLKCheck(device->pvkMapMemory(device->device, memory, offset, size, 0, &mapped),
 		"Failed to map buffer memory");
 
-	memcpy(data, mapped+offset, size);
-
+	memcpy(data, mapped, size);
+	
 	device->pvkUnmapMemory(device->device, memory);
 	return 0;
 }

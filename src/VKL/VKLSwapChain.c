@@ -62,8 +62,9 @@ int vklCreateSwapChain(VKLDeviceGraphicsContext* context, VKLSwapChain** pSwapCh
 	VkPresentModeKHR presentationMode = VK_PRESENT_MODE_FIFO_KHR;
 	if (!vSync) {
 		for (uint32_t i = 0; i < presentModeCount; ++i) {
-			if (presentModes[i] == VK_PRESENT_MODE_MAILBOX_KHR) {
-				presentationMode = VK_PRESENT_MODE_MAILBOX_KHR;
+			printf("mode: %d\n", presentModes[i]);
+			if (presentModes[i] == VK_PRESENT_MODE_IMMEDIATE_KHR) {
+				presentationMode = VK_PRESENT_MODE_IMMEDIATE_KHR;
 				break;
 			}
 		}
