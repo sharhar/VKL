@@ -267,6 +267,7 @@ typedef struct VKLSwapChain {
 	VKLFrameBuffer* backBuffer;
 	
 	uint32_t width, height, nextImageIdx, imageCount;
+	VkBool32 vSync;
 
 	VKLDeviceGraphicsContext* context;
 } VKLSwapChain;
@@ -330,11 +331,11 @@ typedef struct VKLFrameBuffer {
 	VkRenderPass renderPass;
 	VkFramebuffer frameBuffer;
 	
-	
 	VkSampler sampler;
 
 	float clearR, clearG, clearB, clearA;
 
+	VkFormat imageFormat;
 	VkAccessFlags accessMask;
 	VkImageLayout layout;
 } VKLFrameBuffer;
@@ -355,6 +356,7 @@ int vklEndCommandBuffer(VKLDevice* device, VkCommandBuffer cmdBuffer);
 int vklExecuteCommandBuffer(VKLDeviceGraphicsContext* devCon, VkCommandBuffer cmdBuffer);
 
 int vklCreateSwapChain(VKLDeviceGraphicsContext* context, VKLSwapChain** swapChain, VkBool32 vSync);
+int vklRecreateSwapChain(VKLDeviceGraphicsContext* context, VKLSwapChain* swapChain);
 int vklGetBackBuffer(VKLSwapChain* swapChain, VKLFrameBuffer** pFrameBuffer);
 int vklDestroySwapChain(VKLSwapChain* swapChain);
 int vklPresent(VKLSwapChain* swapChain);
@@ -426,6 +428,7 @@ int vklImageLayoutTransition(VKLDevice* device, VKLTexture* texture, VkCommandBu
 int vklDestroyTexture(VKLDevice* device, VKLTexture* texture);
 
 int vklCreateFrameBuffer(VKLDeviceGraphicsContext* devCon, VKLFrameBuffer** pFrameBuffer, uint32_t width, uint32_t height, VkFormat imageFormat, VkAccessFlags accessMask, VkImageLayout layout);
+int vklRecreateFrameBuffer(VKLDeviceGraphicsContext* devCon, VKLFrameBuffer* framebuffer, int width, int height);
 int vklSetClearColor(VKLFrameBuffer* frameBuffer, float r, float g, float b, float a);
 int vklBeginRender(VKLDevice* device, VKLFrameBuffer* frameBuffer, VkCommandBuffer cmdBuffer);
 int vklEndRender(VKLDevice* device, VKLFrameBuffer* frameBuffer, VkCommandBuffer cmdBuffer);

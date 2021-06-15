@@ -1,10 +1,11 @@
 #include <VKL/VKL.h>
 
-int vklCreateSwapChain(VKLDeviceGraphicsContext* context, VKLSwapChain** pSwapChain, VkBool32 vSync) {
+static int _vklCreateSwapChain(VKLDeviceGraphicsContext* context, VKLSwapChain** pSwapChain, VkBool32 vSync, VkSwapchainKHR oldSwapChain) {
 	VKLSwapChain* swapChain = (VKLSwapChain*)malloc_c(sizeof(VKLSwapChain));
 	VKLDevice* device = context->device;
 
 	swapChain->context = context;
+	swapChain->vSync = vSync;
 
 	uint32_t formatCount = 0;
 	device->instance->pvkGetPhysicalDeviceSurfaceFormatsKHR(device->physicalDevice, context->surface->surface, &formatCount, NULL);
@@ -87,6 +88,7 @@ int vklCreateSwapChain(VKLDeviceGraphicsContext* context, VKLSwapChain** pSwapCh
 	swapChainCreateInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
 	swapChainCreateInfo.presentMode = presentationMode;
 	swapChainCreateInfo.clipped = VK_TRUE;
+	swapChainCreateInfo.oldSwapchain = oldSwapChain;
 
 	VLKCheck(device->pvkCreateSwapchainKHR(device->device, &swapChainCreateInfo, device->instance->allocator, &swapChain->swapChain),
 		"Failed to create swapchain");
@@ -263,13 +265,7 @@ int vklCreateSwapChain(VKLDeviceGraphicsContext* context, VKLSwapChain** pSwapCh
 	return 0;
 }
 
-int vklGetBackBuffer(VKLSwapChain* swapChain, VKLFrameBuffer** pFrameBuffer) {
-	*pFrameBuffer = swapChain->backBuffer;
-
-	return 0;
-}
-
-int vklDestroySwapChain(VKLSwapChain* swapChain) {
+static int _vklDestroySwapChain(VKLSwapChain* swapChain, VkBool32 free) {
 	VKLDevice* device = swapChain->context->device;
 
 	vklDestroyFrameBuffer(device, swapChain->backBuffer);
@@ -278,11 +274,36 @@ int vklDestroySwapChain(VKLSwapChain* swapChain) {
 		device->pvkDestroyImageView(device->device, swapChain->presentImageViews[i], device->instance->allocator);
 	}
 
-	swapChain->context->device->pvkDestroySwapchainKHR(swapChain->context->device->device, 
+	swapChain->context->device->pvkDestroySwapchainKHR(swapChain->context->device->device,
 		swapChain->swapChain, swapChain->context->device->instance->allocator);
 
-	free_c(swapChain);
+	if(free) {
+		free_c(swapChain);
+	}
 	return 0;
+}
+
+int vklCreateSwapChain(VKLDeviceGraphicsContext* context, VKLSwapChain** pSwapChain, VkBool32 vSync) {
+	return _vklCreateSwapChain(context, pSwapChain, vSync, VK_NULL_HANDLE);
+}
+
+int vklRecreateSwapChain(VKLDeviceGraphicsContext* context, VKLSwapChain* swapChain) {
+	VKLSwapChain* temp_swapChain;
+	_vklCreateSwapChain(context, &temp_swapChain, swapChain->vSync, swapChain->swapChain);
+	_vklDestroySwapChain(swapChain, VK_FALSE);
+	memcpy(swapChain, temp_swapChain, sizeof(VKLSwapChain));
+	free_c(temp_swapChain);
+	return 0;
+}
+
+int vklGetBackBuffer(VKLSwapChain* swapChain, VKLFrameBuffer** pFrameBuffer) {
+	*pFrameBuffer = swapChain->backBuffer;
+
+	return 0;
+}
+
+int vklDestroySwapChain(VKLSwapChain* swapChain) {
+	return _vklDestroySwapChain(swapChain, VK_TRUE);
 }
 
 int vklPresent(VKLSwapChain* swapChain) {

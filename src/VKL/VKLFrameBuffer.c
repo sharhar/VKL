@@ -1,19 +1,13 @@
 #include <VKL/VKL.h>
 
-int vklCreateFrameBuffer(VKLDeviceGraphicsContext* devCon, VKLFrameBuffer** pFrameBuffer, uint32_t width, uint32_t height, VkFormat imageFormat, VkAccessFlags accessMask, VkImageLayout layout) {
-	VKLFrameBuffer* frameBuffer = malloc_c(sizeof(VKLFrameBuffer));
+static int _vklFillFrameBuffer(VKLDeviceGraphicsContext* devCon, VKLFrameBuffer* frameBuffer) {
 	VKLDevice* device = devCon->device;
-
-	frameBuffer->width = width;
-	frameBuffer->height = height;
-	frameBuffer->accessMask = accessMask;
-	frameBuffer->layout = layout;
-
+	
 	VkImageCreateInfo imageCreateInfo;
 	memset(&imageCreateInfo, 0, sizeof(VkImageCreateInfo));
 	imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
 	imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
-	imageCreateInfo.format = imageFormat;
+	imageCreateInfo.format = frameBuffer->imageFormat;
 	imageCreateInfo.extent.width = frameBuffer->width;
 	imageCreateInfo.extent.height = frameBuffer->height;
 	imageCreateInfo.extent.depth = 1;
@@ -65,9 +59,9 @@ int vklCreateFrameBuffer(VKLDeviceGraphicsContext* devCon, VKLFrameBuffer** pFra
 	memset(&layoutTransitionBarrier, 0, sizeof(VkImageMemoryBarrier));
 	layoutTransitionBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
 	layoutTransitionBarrier.srcAccessMask = 0;
-	layoutTransitionBarrier.dstAccessMask = accessMask;
+	layoutTransitionBarrier.dstAccessMask = frameBuffer->accessMask;
 	layoutTransitionBarrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-	layoutTransitionBarrier.newLayout = layout;
+	layoutTransitionBarrier.newLayout = frameBuffer->layout;
 	layoutTransitionBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 	layoutTransitionBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 	layoutTransitionBarrier.image = frameBuffer->image;
@@ -127,7 +121,7 @@ int vklCreateFrameBuffer(VKLDeviceGraphicsContext* devCon, VKLFrameBuffer** pFra
 	imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
 	imageViewCreateInfo.image = frameBuffer->image;
 	imageViewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-	imageViewCreateInfo.format = imageFormat;
+	imageViewCreateInfo.format = frameBuffer->imageFormat;
 	imageViewCreateInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
 	imageViewCreateInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
 	imageViewCreateInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
@@ -161,7 +155,7 @@ int vklCreateFrameBuffer(VKLDeviceGraphicsContext* devCon, VKLFrameBuffer** pFra
 
 	VkAttachmentDescription passAttachments[2];
 	memset(passAttachments, 0, sizeof(VkAttachmentDescription) * 2);
-	passAttachments[0].format = imageFormat;
+	passAttachments[0].format = frameBuffer->imageFormat;
 	passAttachments[0].samples = VK_SAMPLE_COUNT_1_BIT;
 	passAttachments[0].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 	passAttachments[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -243,13 +237,11 @@ int vklCreateFrameBuffer(VKLDeviceGraphicsContext* devCon, VKLFrameBuffer** pFra
 
 	VLKCheck(device->pvkCreateSampler(device->device, &samplerCreateInfo, NULL, &frameBuffer->sampler),
 		"Failed to create sampler");
-
-	*pFrameBuffer = frameBuffer;
-
+	
 	return 0;
 }
 
-int vklDestroyFrameBuffer(VKLDevice* device, VKLFrameBuffer* frameBuffer) {
+static int _vklDestroyFrameBuffer(VKLDevice* device, VKLFrameBuffer* frameBuffer, VkBool32 free) {
 
 	device->pvkDestroyFramebuffer(device->device, frameBuffer->frameBuffer, device->instance->allocator);
 	device->pvkDestroyRenderPass(device->device, frameBuffer->renderPass, device->instance->allocator);
@@ -263,8 +255,42 @@ int vklDestroyFrameBuffer(VKLDevice* device, VKLFrameBuffer* frameBuffer) {
 	device->pvkDestroyImage(device->device, frameBuffer->image, device->instance->allocator);
 	device->pvkDestroyImage(device->device, frameBuffer->depthImage, device->instance->allocator);
 
-	free_c(frameBuffer);
+	if(free) {
+		free_c(frameBuffer);
+	}
 	return 0;
+}
+
+int vklCreateFrameBuffer(VKLDeviceGraphicsContext* devCon, VKLFrameBuffer** pFrameBuffer, uint32_t width, uint32_t height, VkFormat imageFormat, VkAccessFlags accessMask, VkImageLayout layout) {
+	VKLFrameBuffer* frameBuffer = malloc_c(sizeof(VKLFrameBuffer));
+	VKLDevice* device = devCon->device;
+
+	frameBuffer->width = width;
+	frameBuffer->height = height;
+	frameBuffer->accessMask = accessMask;
+	frameBuffer->layout = layout;
+	frameBuffer->imageFormat = imageFormat;
+	
+	_vklFillFrameBuffer(devCon, frameBuffer);
+	
+	*pFrameBuffer = frameBuffer;
+
+	return 0;
+}
+
+int vklRecreateFrameBuffer(VKLDeviceGraphicsContext* devCon, VKLFrameBuffer* framebuffer, int width, int height) {
+	framebuffer->width = width;
+	framebuffer->height = height;
+	
+	_vklDestroyFrameBuffer(devCon->device, framebuffer, VK_FALSE);
+	
+	_vklFillFrameBuffer(devCon, framebuffer);
+	
+	return 0;
+}
+
+int vklDestroyFrameBuffer(VKLDevice* device, VKLFrameBuffer* frameBuffer) {
+	return _vklDestroyFrameBuffer(device, frameBuffer, VK_TRUE);
 }
 
 int vklSetClearColor(VKLFrameBuffer* frameBuffer, float r, float g, float b, float a) {
