@@ -97,6 +97,8 @@ int vklCreateDevice(VKLInstance* instance, VKLDevice** pDevice, VKLSurface** pSu
 	}
 
 	free_c(physicalDevices);
+	
+	printf("%d\n", device->physicalDeviceProperties.limits.maxPushConstantsSize);
 
 	if (device->physicalDevice == 0) {
 		return -1;

@@ -397,6 +397,8 @@ typedef struct VKLGraphicsPipelineCreateInfo {
 	VkCullModeFlags cullMode;
 	VkRenderPass renderPass;
 	VkExtent2D extent;
+	VkPushConstantRange* pushConstantRanges;
+	uint32_t pushConstantRangeCount;
 } VKLGraphicsPipelineCreateInfo;
 
 int vklCreateGraphicsPipeline(VKLDevice* device, VKLPipeline** pPipeline, VKLGraphicsPipelineCreateInfo* createInfo);

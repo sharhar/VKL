@@ -8,8 +8,8 @@ int vklCreateGraphicsPipeline(VKLDevice* device, VKLPipeline** pPipeline, VKLGra
 	layoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 	layoutCreateInfo.setLayoutCount = 1;
 	layoutCreateInfo.pSetLayouts = &createInfo->shader->descriptorSetLayout;
-	layoutCreateInfo.pushConstantRangeCount = 0;
-	layoutCreateInfo.pPushConstantRanges = NULL;
+	layoutCreateInfo.pushConstantRangeCount = createInfo->pushConstantRangeCount;
+	layoutCreateInfo.pPushConstantRanges = createInfo->pushConstantRanges;
 
 	VLKCheck(device->pvkCreatePipelineLayout(device->device, &layoutCreateInfo, device->instance->allocator, &pipeline->pipelineLayout),
 		"Failed to create pipeline layout");
