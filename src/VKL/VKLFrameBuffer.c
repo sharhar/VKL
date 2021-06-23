@@ -29,7 +29,7 @@ static int _vklFillFrameBuffer(VKLDeviceGraphicsContext* devCon, VKLFrameBuffer*
 	memset(&imageCreateInfo, 0, sizeof(VkImageCreateInfo));
 	imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
 	imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
-	imageCreateInfo.format = VK_FORMAT_D16_UNORM;
+	imageCreateInfo.format = VK_FORMAT_D32_SFLOAT;
 	imageCreateInfo.extent.width = frameBuffer->width;
 	imageCreateInfo.extent.height = frameBuffer->height;
 	imageCreateInfo.extent.depth = 1;
@@ -139,7 +139,7 @@ static int _vklFillFrameBuffer(VKLDeviceGraphicsContext* devCon, VKLFrameBuffer*
 	imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
 	imageViewCreateInfo.image = frameBuffer->depthImage;
 	imageViewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-	imageViewCreateInfo.format = VK_FORMAT_D16_UNORM;
+	imageViewCreateInfo.format = VK_FORMAT_D32_SFLOAT;
 	imageViewCreateInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
 	imageViewCreateInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
 	imageViewCreateInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
@@ -164,7 +164,7 @@ static int _vklFillFrameBuffer(VKLDeviceGraphicsContext* devCon, VKLFrameBuffer*
 	passAttachments[0].initialLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 	passAttachments[0].finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
-	passAttachments[1].format = VK_FORMAT_D16_UNORM;
+	passAttachments[1].format = VK_FORMAT_D32_SFLOAT;
 	passAttachments[1].samples = VK_SAMPLE_COUNT_1_BIT;
 	passAttachments[1].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 	passAttachments[1].storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
