@@ -70,7 +70,7 @@ static int _vklFillFrameBuffer(VKLDeviceGraphicsContext* devCon, VKLFrameBuffer*
 
 	device->pvkCmdPipelineBarrier(devCon->setupCmdBuffer,
 		VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-		VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+		frameBuffer->pipelineStage,
 		0,
 		0, NULL,
 		0, NULL,
@@ -91,7 +91,7 @@ static int _vklFillFrameBuffer(VKLDeviceGraphicsContext* devCon, VKLFrameBuffer*
 
 	device->pvkCmdPipelineBarrier(devCon->setupCmdBuffer,
 		VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-		VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+		VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
 		0,
 		0, NULL,
 		0, NULL,
@@ -243,6 +243,8 @@ static int _vklFillFrameBuffer(VKLDeviceGraphicsContext* devCon, VKLFrameBuffer*
 
 static int _vklDestroyFrameBuffer(VKLDevice* device, VKLFrameBuffer* frameBuffer, VkBool32 free) {
 
+	device->pvkDestroySampler(device->device, frameBuffer->sampler, device->instance->allocator);
+
 	device->pvkDestroyFramebuffer(device->device, frameBuffer->frameBuffer, device->instance->allocator);
 	device->pvkDestroyRenderPass(device->device, frameBuffer->renderPass, device->instance->allocator);
 	
@@ -261,7 +263,7 @@ static int _vklDestroyFrameBuffer(VKLDevice* device, VKLFrameBuffer* frameBuffer
 	return 0;
 }
 
-int vklCreateFrameBuffer(VKLDeviceGraphicsContext* devCon, VKLFrameBuffer** pFrameBuffer, uint32_t width, uint32_t height, VkFormat imageFormat, VkAccessFlags accessMask, VkImageLayout layout) {
+int vklCreateFrameBuffer(VKLDeviceGraphicsContext* devCon, VKLFrameBuffer** pFrameBuffer, uint32_t width, uint32_t height, VkFormat imageFormat, VkAccessFlags accessMask, VkImageLayout layout, VkPipelineStageFlags pipelineStage) {
 	VKLFrameBuffer* frameBuffer = malloc_c(sizeof(VKLFrameBuffer));
 	VKLDevice* device = devCon->device;
 
@@ -270,6 +272,7 @@ int vklCreateFrameBuffer(VKLDeviceGraphicsContext* devCon, VKLFrameBuffer** pFra
 	frameBuffer->accessMask = accessMask;
 	frameBuffer->layout = layout;
 	frameBuffer->imageFormat = imageFormat;
+	frameBuffer->pipelineStage = pipelineStage;
 	
 	_vklFillFrameBuffer(devCon, frameBuffer);
 	
@@ -306,8 +309,7 @@ int vklBeginRender(VKLDevice* device, VKLFrameBuffer* frameBuffer, VkCommandBuff
 	memset(&layoutTransitionBarrier, 0, sizeof(VkImageMemoryBarrier));
 	layoutTransitionBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
 	layoutTransitionBarrier.srcAccessMask = frameBuffer->accessMask;
-	layoutTransitionBarrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT |
-		VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+	layoutTransitionBarrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 	layoutTransitionBarrier.oldLayout = frameBuffer->layout;
 	layoutTransitionBarrier.newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 	layoutTransitionBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
@@ -320,8 +322,8 @@ int vklBeginRender(VKLDevice* device, VKLFrameBuffer* frameBuffer, VkCommandBuff
 	layoutTransitionBarrier.subresourceRange.layerCount = 1;
 
 	device->pvkCmdPipelineBarrier(cmdBuffer,
-		VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-		VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+		frameBuffer->pipelineStage,
+		VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
 		0,
 		0, NULL,
 		0, NULL,
@@ -367,8 +369,8 @@ int vklEndRender(VKLDevice* device, VKLFrameBuffer* frameBuffer, VkCommandBuffer
 	prePresentBarrier.image = frameBuffer->image;
 
 	device->pvkCmdPipelineBarrier(cmdBuffer,
-		VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-		VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+		VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+		frameBuffer->pipelineStage,
 		0,
 		0, NULL,
 		0, NULL,

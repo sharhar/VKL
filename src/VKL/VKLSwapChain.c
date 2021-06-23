@@ -63,7 +63,6 @@ static int _vklCreateSwapChain(VKLDeviceGraphicsContext* context, VKLSwapChain**
 	VkPresentModeKHR presentationMode = VK_PRESENT_MODE_FIFO_KHR;
 	if (!vSync) {
 		for (uint32_t i = 0; i < presentModeCount; ++i) {
-			printf("mode: %d\n", presentModes[i]);
 			if (presentModes[i] == VK_PRESENT_MODE_IMMEDIATE_KHR) {
 				presentationMode = VK_PRESENT_MODE_IMMEDIATE_KHR;
 				break;
@@ -175,8 +174,8 @@ static int _vklCreateSwapChain(VKLDeviceGraphicsContext* context, VKLSwapChain**
 			"Coud not create image view");
 	}
 
-	vklCreateFrameBuffer(context, &swapChain->backBuffer, swapChain->width, swapChain->height, colorFormat, VK_ACCESS_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
-
+	vklCreateFrameBuffer(context, &swapChain->backBuffer, swapChain->width, swapChain->height, colorFormat, VK_ACCESS_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_PIPELINE_STAGE_TRANSFER_BIT);
+	
 	swapChain->cmdBuffers = malloc_c(sizeof(VkCommandBuffer) * swapChain->imageCount);
 	vklAllocateCommandBuffer(context, swapChain->cmdBuffers, VK_COMMAND_BUFFER_LEVEL_PRIMARY, swapChain->imageCount);
 
@@ -201,7 +200,7 @@ static int _vklCreateSwapChain(VKLDeviceGraphicsContext* context, VKLSwapChain**
 
 		device->pvkCmdPipelineBarrier(swapChain->cmdBuffers[i],
 			VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-			VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+			VK_PIPELINE_STAGE_TRANSFER_BIT,
 			0,
 			0, NULL,
 			0, NULL,
@@ -250,7 +249,7 @@ static int _vklCreateSwapChain(VKLDeviceGraphicsContext* context, VKLSwapChain**
 		layoutTransitionBarrier.subresourceRange.layerCount = 1;
 
 		device->pvkCmdPipelineBarrier(swapChain->cmdBuffers[i],
-			VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+			VK_PIPELINE_STAGE_TRANSFER_BIT,
 			VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
 			0,
 			0, NULL,

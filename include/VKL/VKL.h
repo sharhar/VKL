@@ -314,6 +314,7 @@ typedef struct VKLTexture {
 
 	VkAccessFlags accessMask;
 	VkImageLayout layout;
+	VkPipelineStageFlags pipelineStage;
 
 	VkBool32 temporary;
 } VKLTexture;
@@ -338,6 +339,7 @@ typedef struct VKLFrameBuffer {
 	VkFormat imageFormat;
 	VkAccessFlags accessMask;
 	VkImageLayout layout;
+	VkPipelineStageFlags pipelineStage;
 } VKLFrameBuffer;
 
 int vklCreateInstance(VKLInstance** pInstace, VkAllocationCallbacks* allocator, char* wsiExtName, PFN_vkGetInstanceProcAddr vkFunct, VkBool32 debug);
@@ -426,10 +428,10 @@ typedef struct VKLTextureCreateInfo {
 int vklCreateTexture(VKLDevice* device, VKLTexture** pTexture, VKLTextureCreateInfo* createInfo, VkBool32 deviceLocal);
 int vklSetTextureData(VKLDevice* device, VKLTexture* texture, uint8_t* data);
 int vklCreateStagedTexture(VKLDeviceGraphicsContext* devCon, VKLTexture** pTexture, VKLTextureCreateInfo* createInfo, uint8_t* data);
-int vklImageLayoutTransition(VKLDevice* device, VKLTexture* texture, VkCommandBuffer cmdBuffer, VkAccessFlags accessMask, VkImageLayout layout);
+int vklImageLayoutTransition(VKLDevice* device, VKLTexture* texture, VkCommandBuffer cmdBuffer, VkAccessFlags accessMask, VkImageLayout layout, VkPipelineStageFlags pipelineStage);
 int vklDestroyTexture(VKLDevice* device, VKLTexture* texture);
 
-int vklCreateFrameBuffer(VKLDeviceGraphicsContext* devCon, VKLFrameBuffer** pFrameBuffer, uint32_t width, uint32_t height, VkFormat imageFormat, VkAccessFlags accessMask, VkImageLayout layout);
+int vklCreateFrameBuffer(VKLDeviceGraphicsContext* devCon, VKLFrameBuffer** pFrameBuffer, uint32_t width, uint32_t height, VkFormat imageFormat, VkAccessFlags accessMask, VkImageLayout layout, VkPipelineStageFlags pipelineStage);
 int vklRecreateFrameBuffer(VKLDeviceGraphicsContext* devCon, VKLFrameBuffer* framebuffer, int width, int height);
 int vklSetClearColor(VKLFrameBuffer* frameBuffer, float r, float g, float b, float a);
 int vklBeginRender(VKLDevice* device, VKLFrameBuffer* frameBuffer, VkCommandBuffer cmdBuffer);

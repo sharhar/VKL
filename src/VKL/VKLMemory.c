@@ -57,13 +57,13 @@ int vklWriteToMemory(VKLDevice* device, VkDeviceMemory memory, void* data, size_
 
 	memcpy(mapped, data, size);
 	
-	VkMappedMemoryRange memoryRange;
-	memset(&memoryRange, 0, sizeof(VkMappedMemoryRange));
-	memoryRange.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
-	memoryRange.memory = memory;
-	memoryRange.offset = offset;
-	memoryRange.size = size;
-	device->pvkFlushMappedMemoryRanges(device->device, 1, &memoryRange);
+	//VkMappedMemoryRange memoryRange;
+	//memset(&memoryRange, 0, sizeof(VkMappedMemoryRange));
+	//memoryRange.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+	//memoryRange.memory = memory;
+	//memoryRange.offset = offset;
+	//memoryRange.size = size;
+	//device->pvkFlushMappedMemoryRanges(device->device, 1, &memoryRange);
 
 	device->pvkUnmapMemory(device->device, memory);
 	return 0;

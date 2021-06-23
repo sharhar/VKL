@@ -34,6 +34,7 @@ int vklCreateTexture(VKLDevice* device, VKLTexture** pTexture, VKLTextureCreateI
 
 	texture->layout = VK_IMAGE_LAYOUT_PREINITIALIZED;
 	texture->accessMask = VK_ACCESS_HOST_WRITE_BIT;
+	texture->pipelineStage = VK_PIPELINE_STAGE_HOST_BIT;
 
 	texture->temporary = VK_TRUE;
 
@@ -157,8 +158,8 @@ int vklCreateStagedTexture(VKLDeviceGraphicsContext* devCon, VKLTexture** pTextu
 
 	device->pvkBeginCommandBuffer(devCon->setupCmdBuffer, &beginInfo);
 
-	vklImageLayoutTransition(device, stagedTexture, devCon->setupCmdBuffer, VK_ACCESS_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
-	vklImageLayoutTransition(device, texture, devCon->setupCmdBuffer, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+	vklImageLayoutTransition(device, stagedTexture, devCon->setupCmdBuffer, VK_ACCESS_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_PIPELINE_STAGE_TRANSFER_BIT);
+	vklImageLayoutTransition(device, texture, devCon->setupCmdBuffer, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_PIPELINE_STAGE_TRANSFER_BIT);
 
 	VkImageSubresourceLayers subResource;
 	memset(&subResource, 0, sizeof(VkImageSubresourceLayers));
@@ -187,7 +188,7 @@ int vklCreateStagedTexture(VKLDeviceGraphicsContext* devCon, VKLTexture** pTextu
 		texture->image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 		1, &region);
 
-	vklImageLayoutTransition(device, texture, devCon->setupCmdBuffer, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+	vklImageLayoutTransition(device, texture, devCon->setupCmdBuffer, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
 
 	device->pvkEndCommandBuffer(devCon->setupCmdBuffer);
 
@@ -215,7 +216,7 @@ int vklCreateStagedTexture(VKLDeviceGraphicsContext* devCon, VKLTexture** pTextu
 	return 0;
 }
 
-int vklImageLayoutTransition(VKLDevice* device, VKLTexture* texture, VkCommandBuffer cmdBuffer, VkAccessFlags accessMask, VkImageLayout layout) {
+int vklImageLayoutTransition(VKLDevice* device, VKLTexture* texture, VkCommandBuffer cmdBuffer, VkAccessFlags accessMask, VkImageLayout layout, VkPipelineStageFlags pipelineStage) {
 	VkImageMemoryBarrier layoutTransitionBarrier;
 	memset(&layoutTransitionBarrier, 0, sizeof(VkImageMemoryBarrier));
 	layoutTransitionBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -230,8 +231,8 @@ int vklImageLayoutTransition(VKLDevice* device, VKLTexture* texture, VkCommandBu
 	layoutTransitionBarrier.subresourceRange = resourceRange;
 
 	device->pvkCmdPipelineBarrier(cmdBuffer,
-		VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-		VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+		texture->pipelineStage,
+		pipelineStage,
 		0,
 		0, NULL,
 		0, NULL,
@@ -239,6 +240,7 @@ int vklImageLayoutTransition(VKLDevice* device, VKLTexture* texture, VkCommandBu
 
 	texture->accessMask = accessMask;
 	texture->layout = layout;
+	texture->pipelineStage = pipelineStage;
 	
 	return 0;
 }
