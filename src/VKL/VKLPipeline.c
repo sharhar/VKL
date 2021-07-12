@@ -49,7 +49,7 @@ int vklCreateGraphicsPipeline(VKLDevice* device, VKLPipeline** pPipeline, VKLGra
 	rasterizationState.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
 	rasterizationState.depthClampEnable = VK_FALSE;
 	rasterizationState.rasterizerDiscardEnable = VK_FALSE;
-	rasterizationState.polygonMode = VK_POLYGON_MODE_FILL;
+	rasterizationState.polygonMode = (createInfo->polyMode == 0 ? VK_POLYGON_MODE_FILL : createInfo->polyMode);
 	rasterizationState.cullMode = createInfo->cullMode;
 	rasterizationState.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
 	rasterizationState.depthBiasEnable = VK_FALSE;
