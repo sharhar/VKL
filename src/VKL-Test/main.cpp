@@ -1,4 +1,5 @@
 #include <VKL/VKlInstance.h>
+#include <VKL/VKLSurface.h>
 
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
@@ -16,16 +17,20 @@ int main() {
 	debug = 1;
 #endif
 
-	uint32_t GLFWextensionCount = 0;
-	char** GLFWextensions = (char**)glfwGetRequiredInstanceExtensions(&GLFWextensionCount);
+	uint32_t glfwExtensionCount = 0;
+	char** glfwExtensions = (char**)glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
 
 	VKLInstanceOptions instanceOptions;
-	instanceOptions.addExtensions(GLFWextensions, GLFWextensionCount);
+	instanceOptions.addExtensions(glfwExtensions, glfwExtensionCount);
 	instanceOptions.setDebug(debug);
 
 	VKLInstance instance(glfwGetInstanceProcAddress, &instanceOptions);
 
+	VkSurfaceKHR glfwSurface = VK_NULL_HANDLE;
+	glfwCreateWindowSurface(instance.handle(), window, NULL, &glfwSurface);
 
+	VKLSurface surface(glfwSurface, &instance);
+	surface.setSize(800, 600);
 	/*
 	
 	VKLSurface* surface = (VKLSurface*)malloc(sizeof(VKLSurface));
@@ -208,10 +213,9 @@ int main() {
 	vklDestroyBuffer(device, buffer);
 	vklDestroySwapChain(swapChain);
 	vklDestroyDevice(device);
-	vklDestroySurface(instance, surface);
-	vklDestroyInstance(instance);
 	*/
 
+	surface.destroy();
 	instance.destroy();
 
 	glfwTerminate();
