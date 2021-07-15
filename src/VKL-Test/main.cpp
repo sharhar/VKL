@@ -1,4 +1,6 @@
-#include <VKL/VKL.h>
+#include <VKL/VKlInstance.h>
+
+#define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 #include <math.h>
 
@@ -14,11 +16,23 @@ int main() {
 	debug = 1;
 #endif
 
-	VKLInstance* instance;
-	vklCreateInstance(&instance, NULL, debug, NULL);
+	uint32_t GLFWextensionCount = 0;
+	char** GLFWextensions = (char**)glfwGetRequiredInstanceExtensions(&GLFWextensionCount);
+
+	VKLInstanceOptions instanceOptions;
+	instanceOptions.addExtensions(GLFWextensions, GLFWextensionCount);
+	instanceOptions.setDebug(debug);
+
+	VKLInstance instance(glfwGetInstanceProcAddress, &instanceOptions);
+
+
+	/*
 	
-	VKLSurface* surface;
-	vklCreateGLFWSurface(instance, &surface, window);
+	VKLSurface* surface = (VKLSurface*)malloc(sizeof(VKLSurface));
+	glfwCreateWindowSurface(instance->instance, window, NULL, &surface->surface);
+
+	surface->width = 800;
+	surface->height = 600;
 
 	VKLDevice* device;
 	VKLDeviceGraphicsContext** deviceContexts;
@@ -68,6 +82,8 @@ int main() {
 	bindings[1].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 	bindings[1].pImmutableSamplers = NULL;
 
+	uint32_t vertexInputAttributeBindings[] = { 0 , 0 };
+
 	VKLShaderCreateInfo shaderCreateInfo;
 	memset(&shaderCreateInfo, 0, sizeof(VKLShaderCreateInfo));
 	shaderCreateInfo.shaderPaths = shaderPaths;
@@ -75,16 +91,22 @@ int main() {
 	shaderCreateInfo.shaderCount = 2;
 	shaderCreateInfo.bindings = bindings;
 	shaderCreateInfo.bindingsCount = 2;
-	shaderCreateInfo.vertexInputAttributeStride = sizeof(float) * 4;
 	shaderCreateInfo.vertexInputAttributesCount = 2;
 	shaderCreateInfo.vertexInputAttributeOffsets = offsets;
 	shaderCreateInfo.vertexInputAttributeFormats = formats;
+	shaderCreateInfo.vertexInputAttributeBindings = vertexInputAttributeBindings;
+
+	VkVertexInputRate vertInputRate[] = { VK_VERTEX_INPUT_RATE_VERTEX };
+	size_t stride[] = { sizeof(float) * 4 };
+	shaderCreateInfo.vertexBindingsCount = 1;
+	shaderCreateInfo.vertexBindingInputRates = vertInputRate;
+	shaderCreateInfo.vertexBindingStrides = stride;
 
 	VKLShader* shader;
 	vklCreateShader(device, &shader, &shaderCreateInfo);
 
-	VKLPipelineCreateInfo pipelineCreateInfo;
-	memset(&pipelineCreateInfo, 0, sizeof(VKLPipelineCreateInfo));
+	VKLGraphicsPipelineCreateInfo pipelineCreateInfo;
+	memset(&pipelineCreateInfo, 0, sizeof(VKLGraphicsPipelineCreateInfo));
 	pipelineCreateInfo.shader = shader;
 	pipelineCreateInfo.renderPass = backBuffer->renderPass;
 	pipelineCreateInfo.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
@@ -92,7 +114,7 @@ int main() {
 	pipelineCreateInfo.extent.width = swapChain->width;
 	pipelineCreateInfo.extent.height = swapChain->height;
 
-	VKLGraphicsPipeline* pipeline;
+	VKLPipeline* pipeline;
 	vklCreateGraphicsPipeline(device, &pipeline, &pipelineCreateInfo);
 	
 	VkCommandBuffer cmdBuffer;
@@ -162,21 +184,25 @@ int main() {
 		vklEndCommandBuffer(device, cmdBuffer);
 	}
 
+	*/
+
 	while (!glfwWindowShouldClose(window)) {
 		glfwPollEvents();
-
+		/*
 		proj[12] = glfwGetTime() / 10.0f;
 
-		vklWriteToMemory(device, uniformBuffer->memory, proj, sizeof(float) * 16);
+		vklWriteToMemory(device, uniformBuffer->memory, proj, sizeof(float) * 16, 0);
 		
 		vklExecuteCommandBuffer(devCon, cmdBuffer);
 
 		vklPresent(swapChain);
+		*/
 	}
 
+	/*
 	vklDestroyTexture(device, texture);
 	vklDestroyUniformObject(device, uniform);
-	vklDestroyGraphicsPipeline(device, pipeline);
+	vklDestroyPipeline(device, pipeline);
 	vklDestroyShader(device, shader);
 	vklDestroyBuffer(device, uniformBuffer);
 	vklDestroyBuffer(device, buffer);
@@ -184,10 +210,10 @@ int main() {
 	vklDestroyDevice(device);
 	vklDestroySurface(instance, surface);
 	vklDestroyInstance(instance);
+	*/
+
+	instance.destroy();
 
 	glfwTerminate();
-	
-	printf("Enter a key to exit:");
-	getchar();
 	return 0;
 }

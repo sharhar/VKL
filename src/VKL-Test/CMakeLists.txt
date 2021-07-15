@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.8.11)
 
-file(GLOB_RECURSE VKL_TEST_SRC *.c)
+file(GLOB_RECURSE VKL_TEST_SRC *.cpp)
 
 if(MSVC)
 	add_executable(VKL-Test ${VKL_TEST_SRC})
