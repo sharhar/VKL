@@ -1,0 +1,31 @@
+#ifndef VKLPhysicalDevice_h
+#define VKLPhysicalDevice_h
+
+#include "VKL_base.h"
+
+#include <vector>
+
+class VKLPhysicalDevice {
+public:
+	VKLPhysicalDevice(VkPhysicalDevice physicalDevice, VKLInstance& instance);
+
+	VkPhysicalDevice handle();
+
+	VkPhysicalDeviceFeatures getFeatures();
+	VkFormatProperties getFormatProperties(VkFormat format);
+	VkImageFormatProperties getImageFormatProperties(VkFormat format, VkImageType type, VkImageTiling tiling, VkImageUsageFlags usage, VkImageCreateFlags flags);
+	VkPhysicalDeviceProperties getProperties();
+	const std::vector<VkQueueFamilyProperties>& getQueueFamilyProperties();
+	VkPhysicalDeviceMemoryProperties getMemoryProperties();
+	std::vector<VkSparseImageFormatProperties> getSparseImageProperties(VkFormat format, VkImageType type, VkSampleCountFlagBits samples, VkImageUsageFlags usage, VkImageTiling tiling);
+private:
+	VkPhysicalDevice m_physicalDevice;
+	VKLInstance& m_instance;
+
+	VkPhysicalDeviceFeatures m_features;
+	VkPhysicalDeviceProperties m_properties;
+	std::vector<VkQueueFamilyProperties> m_queueFamilyProperties;
+	VkPhysicalDeviceMemoryProperties m_memoryProperties;
+};
+
+#endif

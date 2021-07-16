@@ -29,15 +29,13 @@ int main() {
 	VkSurfaceKHR glfwSurface = VK_NULL_HANDLE;
 	glfwCreateWindowSurface(instance.handle(), window, NULL, &glfwSurface);
 
-	VKLSurface surface(glfwSurface, &instance);
+	VKLSurface surface(glfwSurface, instance);
 	surface.setSize(800, 600);
-	/*
-	
-	VKLSurface* surface = (VKLSurface*)malloc(sizeof(VKLSurface));
-	glfwCreateWindowSurface(instance->instance, window, NULL, &surface->surface);
 
-	surface->width = 800;
-	surface->height = 600;
+	VKLPhysicalDevice physicalDevice = instance.getPhysicalDevices()[0];
+
+
+	/*
 
 	VKLDevice* device;
 	VKLDeviceGraphicsContext** deviceContexts;

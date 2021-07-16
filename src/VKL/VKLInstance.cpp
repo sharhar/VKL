@@ -1,11 +1,12 @@
 #include <VKL/VKLInstance.h>
-
+#include <VKL/VKLPhysicalDevice.h>
 
 VKLInstance::VKLInstance() {
 	m_instance = VK_NULL_HANDLE;
 	m_allocator = NULL;
 	m_debugCallback = NULL;
 	m_debug = VK_FALSE;
+	memset(&vk, 0, sizeof(VKLInstancePFNS));
 }
 
 VKLInstance::VKLInstance(PFN_vkGetInstanceProcAddr vkFunct, VKLInstanceOptions* options) {
@@ -13,6 +14,7 @@ VKLInstance::VKLInstance(PFN_vkGetInstanceProcAddr vkFunct, VKLInstanceOptions* 
 	m_allocator = NULL;
 	m_debugCallback = NULL;
 	m_debug = VK_FALSE;
+	memset(&vk, 0, sizeof(VKLInstancePFNS));
 	create(vkFunct, options);
 }
 
@@ -22,11 +24,11 @@ void VKLInstance::create(PFN_vkGetInstanceProcAddr vkFunct, VKLInstanceOptions* 
 		m_allocator = options->m_allocator;
 	}
 
-	m_vkGetInstanceProcAddr = vkFunct;
+	vk.GetInstanceProcAddr = vkFunct;
 
-	m_vkCreateInstance = (PFN_vkCreateInstance)m_vkGetInstanceProcAddr(NULL, "vkCreateInstance");
-	m_vkEnumerateInstanceLayerProperties = (PFN_vkEnumerateInstanceLayerProperties)m_vkGetInstanceProcAddr(NULL, "vkEnumerateInstanceLayerProperties");
-	m_vkEnumerateInstanceExtensionProperties = (PFN_vkEnumerateInstanceExtensionProperties)m_vkGetInstanceProcAddr(NULL, "vkEnumerateInstanceExtensionProperties");
+	vk.CreateInstance = (PFN_vkCreateInstance)procAddr("vkCreateInstance");
+	vk.EnumerateInstanceLayerProperties = (PFN_vkEnumerateInstanceLayerProperties)procAddr("vkEnumerateInstanceLayerProperties");
+	vk.EnumerateInstanceExtensionProperties = (PFN_vkEnumerateInstanceExtensionProperties)procAddr("vkEnumerateInstanceExtensionProperties");
 
 	uint32_t layerCount = 0;
 	VkLayerProperties* layersAvailable = NULL;
@@ -40,11 +42,11 @@ void VKLInstance::create(PFN_vkGetInstanceProcAddr vkFunct, VKLInstanceOptions* 
 	}
 
 	if (m_debug) {
-		vkEnumerateInstanceLayerProperties(&layerCount, NULL);
+		VK_CALL(vk.EnumerateInstanceLayerProperties(&layerCount, NULL));
 
 		if (layerCount > 0) {
 			layersAvailable = (VkLayerProperties*)malloc(sizeof(VkLayerProperties) * layerCount);
-			vkEnumerateInstanceLayerProperties(&layerCount, layersAvailable);
+			VK_CALL(vk.EnumerateInstanceLayerProperties(&layerCount, layersAvailable));
 
 			for (int i = 0; i < layerCount; ++i) {
 				if (strcmp(layersAvailable[i].layerName, "VK_LAYER_LUNARG_standard_validation") == 0) {
@@ -59,10 +61,10 @@ void VKLInstance::create(PFN_vkGetInstanceProcAddr vkFunct, VKLInstanceOptions* 
 			printf("WARNING: Could not find any layers\n");
 		}
 
-		vkEnumerateInstanceExtensionProperties(NULL, &extensionCountEXT, NULL);
+		VK_CALL(vk.EnumerateInstanceExtensionProperties(NULL, &extensionCountEXT, NULL));
 		if (extensionCountEXT > 0) {
 			extensionsAvailable = (VkExtensionProperties*)malloc(sizeof(VkExtensionProperties) * extensionCountEXT);
-			vkEnumerateInstanceExtensionProperties(NULL, &extensionCountEXT, extensionsAvailable);
+			VK_CALL(vk.EnumerateInstanceExtensionProperties(NULL, &extensionCountEXT, extensionsAvailable));
 
 			uint32_t initialExtensionCount = m_extensions.size();
 
@@ -135,34 +137,66 @@ void VKLInstance::create(PFN_vkGetInstanceProcAddr vkFunct, VKLInstanceOptions* 
 	instanceInfo.enabledExtensionCount = m_extensions.size();
 	instanceInfo.ppEnabledExtensionNames = m_extensions.data();
 
-	vkCreateInstance(&instanceInfo, m_allocator, &m_instance);
+	VK_CALL(vk.CreateInstance(&instanceInfo, m_allocator, &m_instance));
 
-	m_vkDestroyInstance = (PFN_vkDestroyInstance)m_vkGetInstanceProcAddr(m_instance, "vkDestroyInstance");
-	m_vkEnumeratePhysicalDevices = (PFN_vkEnumeratePhysicalDevices)m_vkGetInstanceProcAddr(m_instance, "vkEnumeratePhysicalDevices");
-	m_vkGetPhysicalDeviceFeatures = (PFN_vkGetPhysicalDeviceFeatures)m_vkGetInstanceProcAddr(m_instance, "vkGetPhysicalDeviceFeatures");
-	m_vkGetPhysicalDeviceFormatProperties = (PFN_vkGetPhysicalDeviceFormatProperties)m_vkGetInstanceProcAddr(m_instance, "vkGetPhysicalDeviceFormatProperties");
-	m_vkGetPhysicalDeviceImageFormatProperties = (PFN_vkGetPhysicalDeviceImageFormatProperties)m_vkGetInstanceProcAddr(m_instance, "vkGetPhysicalDeviceImageFormatProperties");
-	m_vkGetPhysicalDeviceProperties = (PFN_vkGetPhysicalDeviceProperties)m_vkGetInstanceProcAddr(m_instance, "vkGetPhysicalDeviceProperties");
-	m_vkGetPhysicalDeviceQueueFamilyProperties = (PFN_vkGetPhysicalDeviceQueueFamilyProperties)m_vkGetInstanceProcAddr(m_instance, "vkGetPhysicalDeviceQueueFamilyProperties");
-	m_vkGetPhysicalDeviceMemoryProperties = (PFN_vkGetPhysicalDeviceMemoryProperties)m_vkGetInstanceProcAddr(m_instance, "vkGetPhysicalDeviceMemoryProperties");
-	m_vkCreateDevice = (PFN_vkCreateDevice)m_vkGetInstanceProcAddr(m_instance, "vkCreateDevice");
-	m_vkDestroyDevice = (PFN_vkDestroyDevice)m_vkGetInstanceProcAddr(m_instance, "vkDestroyDevice");
-	m_vkEnumerateDeviceExtensionProperties = (PFN_vkEnumerateDeviceExtensionProperties)m_vkGetInstanceProcAddr(m_instance, "vkEnumerateDeviceExtensionProperties");
-	m_vkEnumerateDeviceLayerProperties = (PFN_vkEnumerateDeviceLayerProperties)m_vkGetInstanceProcAddr(m_instance, "vkEnumerateDeviceLayerProperties");
+	vk.DestroyInstance = (PFN_vkDestroyInstance)procAddr("vkDestroyInstance");
+	vk.EnumeratePhysicalDevices = (PFN_vkEnumeratePhysicalDevices)procAddr("vkEnumeratePhysicalDevices");
+
+	vk.CreateDebugReportCallbackEXT = (PFN_vkCreateDebugReportCallbackEXT)procAddr("vkCreateDebugReportCallbackEXT");
+	vk.DestroyDebugReportCallbackEXT = (PFN_vkDestroyDebugReportCallbackEXT)procAddr("vkDestroyDebugReportCallbackEXT");
+	vk.DebugReportMessageEXT = (PFN_vkDebugReportMessageEXT)procAddr("vkDebugReportMessageEXT");
+
+	vk.GetPhysicalDeviceFeatures = (PFN_vkGetPhysicalDeviceFeatures)procAddr("vkGetPhysicalDeviceFeatures");
+	vk.GetPhysicalDeviceFormatProperties = (PFN_vkGetPhysicalDeviceFormatProperties)procAddr("vkGetPhysicalDeviceFormatProperties");
+	vk.GetPhysicalDeviceImageFormatProperties = (PFN_vkGetPhysicalDeviceImageFormatProperties)procAddr("vkGetPhysicalDeviceImageFormatProperties");
+	vk.GetPhysicalDeviceProperties = (PFN_vkGetPhysicalDeviceProperties)procAddr("vkGetPhysicalDeviceProperties");
+	vk.GetPhysicalDeviceQueueFamilyProperties = (PFN_vkGetPhysicalDeviceQueueFamilyProperties)procAddr("vkGetPhysicalDeviceQueueFamilyProperties");
+	vk.GetPhysicalDeviceMemoryProperties = (PFN_vkGetPhysicalDeviceMemoryProperties)procAddr("vkGetPhysicalDeviceMemoryProperties");
+	vk.GetPhysicalDeviceSparseImageFormatProperties = (PFN_vkGetPhysicalDeviceSparseImageFormatProperties)procAddr("vkGetPhysicalDeviceSparseImageFormatProperties");
+
+	vk.CreateDevice = (PFN_vkCreateDevice)procAddr("vkCreateDevice");
+	vk.DestroyDevice = (PFN_vkDestroyDevice)procAddr("vkDestroyDevice");
+	vk.EnumerateDeviceExtensionProperties = (PFN_vkEnumerateDeviceExtensionProperties)procAddr("vkEnumerateDeviceExtensionProperties");
+	vk.EnumerateDeviceLayerProperties = (PFN_vkEnumerateDeviceLayerProperties)procAddr("vkEnumerateDeviceLayerProperties");
 	
-	m_vkCreateDebugReportCallbackEXT = (PFN_vkCreateDebugReportCallbackEXT)m_vkGetInstanceProcAddr(m_instance, "vkCreateDebugReportCallbackEXT");
-	m_vkDestroyDebugReportCallbackEXT = (PFN_vkDestroyDebugReportCallbackEXT)m_vkGetInstanceProcAddr(m_instance, "vkDestroyDebugReportCallbackEXT");
-	m_vkDebugReportMessageEXT = (PFN_vkDebugReportMessageEXT)m_vkGetInstanceProcAddr(m_instance, "vkDebugReportMessageEXT");
-	
-	__vkDestroySurfaceKHR = (PFN_vkDestroySurfaceKHR)m_vkGetInstanceProcAddr(m_instance, "vkDestroySurfaceKHR");
-	__vkGetPhysicalDeviceSurfaceSupportKHR = (PFN_vkGetPhysicalDeviceSurfaceSupportKHR)m_vkGetInstanceProcAddr(m_instance, "vkGetPhysicalDeviceSurfaceSupportKHR");
-	__vkGetPhysicalDeviceSurfaceCapabilitiesKHR = (PFN_vkGetPhysicalDeviceSurfaceCapabilitiesKHR)m_vkGetInstanceProcAddr(m_instance, "vkGetPhysicalDeviceSurfaceCapabilitiesKHR");
-	__vkGetPhysicalDeviceSurfaceFormatsKHR = (PFN_vkGetPhysicalDeviceSurfaceFormatsKHR)m_vkGetInstanceProcAddr(m_instance, "vkGetPhysicalDeviceSurfaceFormatsKHR");
-	__vkGetPhysicalDeviceSurfacePresentModesKHR = (PFN_vkGetPhysicalDeviceSurfacePresentModesKHR)m_vkGetInstanceProcAddr(m_instance, "vkGetPhysicalDeviceSurfacePresentModesKHR");
+	vk.DestroySurfaceKHR = (PFN_vkDestroySurfaceKHR)procAddr("vkDestroySurfaceKHR");
+	vk.GetPhysicalDeviceSurfaceSupportKHR = (PFN_vkGetPhysicalDeviceSurfaceSupportKHR)procAddr("vkGetPhysicalDeviceSurfaceSupportKHR");
+	vk.GetPhysicalDeviceSurfaceCapabilitiesKHR = (PFN_vkGetPhysicalDeviceSurfaceCapabilitiesKHR)procAddr("vkGetPhysicalDeviceSurfaceCapabilitiesKHR");
+	vk.GetPhysicalDeviceSurfaceFormatsKHR = (PFN_vkGetPhysicalDeviceSurfaceFormatsKHR)procAddr("vkGetPhysicalDeviceSurfaceFormatsKHR");
+	vk.GetPhysicalDeviceSurfacePresentModesKHR = (PFN_vkGetPhysicalDeviceSurfacePresentModesKHR)procAddr("vkGetPhysicalDeviceSurfacePresentModesKHR");
+
+	VkPhysicalDevice* physicalDevices = NULL;
+	uint32_t physicalDeviceCount = 0;
+
+	VK_CALL(vk.EnumeratePhysicalDevices(m_instance, &physicalDeviceCount, NULL));
+	physicalDevices = (VkPhysicalDevice*)malloc(sizeof(VkPhysicalDevice*) * physicalDeviceCount);
+	VK_CALL(vk.EnumeratePhysicalDevices(m_instance, &physicalDeviceCount, physicalDevices));
+
+	for (int i = 0; i < physicalDeviceCount; i++) {
+		m_physicalDevices.push_back(VKLPhysicalDevice(physicalDevices[i], *this));
+	}
+
+	free(physicalDevices);
 }
 
 VkAllocationCallbacks* VKLInstance::allocator() {
 	return m_allocator;
+}
+
+PFN_vkVoidFunction VKLInstance::procAddr(const char* name) {
+	return vk.GetInstanceProcAddr(m_instance, name);
+}
+
+const std::vector<char*>& VKLInstance::getLayers() {
+	return m_layers;
+}
+
+const std::vector<char*>& VKLInstance::getExtensions() {
+	return m_extensions;
+}
+
+const std::vector<VKLPhysicalDevice>& VKLInstance::getPhysicalDevices() {
+	return m_physicalDevices;
 }
 
 VkInstance VKLInstance::handle() {
@@ -170,7 +204,7 @@ VkInstance VKLInstance::handle() {
 }
 
 void VKLInstance::destroy() {
-	vkDestroyInstance(m_allocator);
+	vk.DestroyInstance(m_instance, m_allocator);
 }
 
 VKLInstanceOptions::VKLInstanceOptions() {
@@ -200,63 +234,4 @@ void VKLInstanceOptions::addExtensions(std::vector<char*> extensions) {
 
 void VKLInstanceOptions::setDebug(VkBool32 debug) {
 	m_debug = debug;
-}
-
-void VKLInstance::vkCreateInstance(const VkInstanceCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkInstance* pInstance) {
-	VK_CALL(m_vkCreateInstance(pCreateInfo, pAllocator, pInstance));
-}
-void VKLInstance::vkDestroyInstance(const VkAllocationCallbacks* pAllocator) {
-	m_vkDestroyInstance(m_instance, pAllocator);
-}
-void VKLInstance::vkEnumeratePhysicalDevices(uint32_t* pPhysicalDeviceCount, VkPhysicalDevice* pPhysicalDevices) {
-	VK_CALL(m_vkEnumeratePhysicalDevices(m_instance, pPhysicalDeviceCount, pPhysicalDevices));
-}
-void VKLInstance::vkGetPhysicalDeviceFeatures(VkPhysicalDevice physicalDevice, VkPhysicalDeviceFeatures* pFeatures) {
-	m_vkGetPhysicalDeviceFeatures(physicalDevice, pFeatures);
-}
-void VKLInstance::vkGetPhysicalDeviceFormatProperties(VkPhysicalDevice physicalDevice, VkFormat format, VkFormatProperties* pFormatProperties) {
-	m_vkGetPhysicalDeviceFormatProperties(physicalDevice, format, pFormatProperties);
-}
-void VKLInstance::vkGetPhysicalDeviceImageFormatProperties(VkPhysicalDevice physicalDevice, VkFormat format, VkImageType type, VkImageTiling tiling, VkImageUsageFlags usage, VkImageCreateFlags flags, VkImageFormatProperties* pImageFormatProperties) {
-	VK_CALL(m_vkGetPhysicalDeviceImageFormatProperties(physicalDevice, format, type, tiling, usage, flags, pImageFormatProperties));
-}
-void VKLInstance::vkGetPhysicalDeviceProperties(VkPhysicalDevice physicalDevice, VkPhysicalDeviceProperties* pProperties) {
-	m_vkGetPhysicalDeviceProperties(physicalDevice, pProperties);
-}
-void VKLInstance::vkGetPhysicalDeviceQueueFamilyProperties(VkPhysicalDevice physicalDevice, uint32_t* pQueueFamilyPropertyCount, VkQueueFamilyProperties* pQueueFamilyProperties) {
-	m_vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, pQueueFamilyPropertyCount, pQueueFamilyProperties);
-}
-void VKLInstance::vkGetPhysicalDeviceMemoryProperties(VkPhysicalDevice physicalDevice, VkPhysicalDeviceMemoryProperties* pMemoryProperties) {
-	m_vkGetPhysicalDeviceMemoryProperties(physicalDevice, pMemoryProperties);
-}
-PFN_vkVoidFunction VKLInstance::vkGetInstanceProcAddr(const char* pName) {
-	return m_vkGetInstanceProcAddr(m_instance, pName);
-}
-void VKLInstance::vkCreateDevice(VkPhysicalDevice physicalDevice, const VkDeviceCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDevice* pDevice) {
-	VK_CALL(m_vkCreateDevice(physicalDevice, pCreateInfo, pAllocator, pDevice));
-}
-void VKLInstance::vkDestroyDevice(VkDevice device, const VkAllocationCallbacks* pAllocator) {
-	m_vkDestroyDevice(device, pAllocator);
-}
-void VKLInstance::vkEnumerateInstanceExtensionProperties(const char* pLayerName, uint32_t* pPropertyCount, VkExtensionProperties* pProperties) {
-	VK_CALL(m_vkEnumerateInstanceExtensionProperties(pLayerName, pPropertyCount, pProperties));
-}
-void VKLInstance::vkEnumerateDeviceExtensionProperties(VkPhysicalDevice physicalDevice, const char* pLayerName, uint32_t* pPropertyCount, VkExtensionProperties* pProperties) {
-	VK_CALL(m_vkEnumerateDeviceExtensionProperties(physicalDevice, pLayerName, pPropertyCount, pProperties));
-}
-void VKLInstance::vkEnumerateInstanceLayerProperties(uint32_t* pPropertyCount, VkLayerProperties* pProperties) {
-	VK_CALL(m_vkEnumerateInstanceLayerProperties(pPropertyCount, pProperties));
-}
-void VKLInstance::vkEnumerateDeviceLayerProperties(VkPhysicalDevice physicalDevice, uint32_t* pPropertyCount, VkLayerProperties* pProperties) {
-	VK_CALL(m_vkEnumerateDeviceLayerProperties(physicalDevice, pPropertyCount, pProperties));
-}
-
-void VKLInstance::vkCreateDebugReportCallbackEXT(const VkDebugReportCallbackCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugReportCallbackEXT* pCallback) {
-	VK_CALL(m_vkCreateDebugReportCallbackEXT(m_instance, pCreateInfo, pAllocator, pCallback));
-}
-void VKLInstance::vkDestroyDebugReportCallbackEXT(VkDebugReportCallbackEXT callback, const VkAllocationCallbacks* pAllocator) {
-	m_vkDestroyDebugReportCallbackEXT(m_instance, callback, pAllocator);
-}
-void VKLInstance::vkDebugReportMessageEXT(VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objectType, uint64_t object, size_t location, int32_t messageCode, const char* pLayerPrefix, const char* pMessage) {
-	m_vkDebugReportMessageEXT(m_instance, flags, objectType, object, location, messageCode, pLayerPrefix, pMessage);
 }
