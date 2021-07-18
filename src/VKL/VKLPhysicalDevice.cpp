@@ -1,19 +1,20 @@
 #include <VKL/VKLPhysicalDevice.h>
 #include <VKL/VKLInstance.h>
 
-VKLPhysicalDevice::VKLPhysicalDevice(VkPhysicalDevice physicalDevice, VKLInstance& instance) : m_instance(instance) {
-	m_physicalDevice = physicalDevice;
+VKLPhysicalDevice::VKLPhysicalDevice(VkPhysicalDevice physicalDevice, VKLInstance* instance) {
+	m_handle = physicalDevice;
+	m_instance = instance;
 
-	m_instance.vk.GetPhysicalDeviceFeatures(m_physicalDevice, &m_features);
-	m_instance.vk.GetPhysicalDeviceProperties(m_physicalDevice, &m_properties);
-	m_instance.vk.GetPhysicalDeviceMemoryProperties(m_physicalDevice, &m_memoryProperties);
+	m_instance->vk.GetPhysicalDeviceFeatures(m_handle, &m_features);
+	m_instance->vk.GetPhysicalDeviceProperties(m_handle, &m_properties);
+	m_instance->vk.GetPhysicalDeviceMemoryProperties(m_handle, &m_memoryProperties);
 
 	VkQueueFamilyProperties* queueFamilyProperties = NULL;
 	uint32_t queueFamilyPropertyCount = 0;
 
-	m_instance.vk.GetPhysicalDeviceQueueFamilyProperties(m_physicalDevice, &queueFamilyPropertyCount, NULL);
+	m_instance->vk.GetPhysicalDeviceQueueFamilyProperties(m_handle, &queueFamilyPropertyCount, NULL);
 	queueFamilyProperties = (VkQueueFamilyProperties*)malloc(sizeof(VkQueueFamilyProperties) * queueFamilyPropertyCount);
-	m_instance.vk.GetPhysicalDeviceQueueFamilyProperties(m_physicalDevice, &queueFamilyPropertyCount, queueFamilyProperties);
+	m_instance->vk.GetPhysicalDeviceQueueFamilyProperties(m_handle, &queueFamilyPropertyCount, queueFamilyProperties);
 
 	for (int i = 0; i < queueFamilyPropertyCount; i++) {
 		m_queueFamilyProperties.push_back(queueFamilyProperties[i]);
@@ -23,7 +24,7 @@ VKLPhysicalDevice::VKLPhysicalDevice(VkPhysicalDevice physicalDevice, VKLInstanc
 }
 
 VkPhysicalDevice VKLPhysicalDevice::handle() {
-	return m_physicalDevice;
+	return m_handle;
 }
 
 VkPhysicalDeviceFeatures VKLPhysicalDevice::getFeatures() {
@@ -32,13 +33,13 @@ VkPhysicalDeviceFeatures VKLPhysicalDevice::getFeatures() {
 
 VkFormatProperties VKLPhysicalDevice::getFormatProperties(VkFormat format) {
 	VkFormatProperties result;
-	m_instance.vk.GetPhysicalDeviceFormatProperties(m_physicalDevice, format, &result);
+	m_instance->vk.GetPhysicalDeviceFormatProperties(m_handle, format, &result);
 	return result;
 }
 
 VkImageFormatProperties VKLPhysicalDevice::getImageFormatProperties(VkFormat format, VkImageType type, VkImageTiling tiling, VkImageUsageFlags usage, VkImageCreateFlags flags) {
 	VkImageFormatProperties result;
-	VK_CALL(m_instance.vk.GetPhysicalDeviceImageFormatProperties(m_physicalDevice, format, type, tiling, usage, flags, &result));
+	VK_CALL(m_instance->vk.GetPhysicalDeviceImageFormatProperties(m_handle, format, type, tiling, usage, flags, &result));
 	return result;
 }
 
@@ -60,9 +61,9 @@ std::vector<VkSparseImageFormatProperties> VKLPhysicalDevice::getSparseImageProp
 	VkSparseImageFormatProperties* sparseImageFormatProperties = NULL;
 	uint32_t sparseImageFormatPropertyCount = 0;
 
-	m_instance.vk.GetPhysicalDeviceSparseImageFormatProperties(m_physicalDevice, format, type, samples, usage, tiling, &sparseImageFormatPropertyCount, NULL);
+	m_instance->vk.GetPhysicalDeviceSparseImageFormatProperties(m_handle, format, type, samples, usage, tiling, &sparseImageFormatPropertyCount, NULL);
 	sparseImageFormatProperties = (VkSparseImageFormatProperties*)malloc(sizeof(VkSparseImageFormatProperties) * sparseImageFormatPropertyCount);
-	m_instance.vk.GetPhysicalDeviceSparseImageFormatProperties(m_physicalDevice, format, type, samples, usage, tiling, &sparseImageFormatPropertyCount, sparseImageFormatProperties);
+	m_instance->vk.GetPhysicalDeviceSparseImageFormatProperties(m_handle, format, type, samples, usage, tiling, &sparseImageFormatPropertyCount, sparseImageFormatProperties);
 
 	for (int i = 0; i < sparseImageFormatPropertyCount; i++) {
 		result.push_back(sparseImageFormatProperties[i]);

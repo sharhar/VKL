@@ -173,7 +173,7 @@ void VKLInstance::create(PFN_vkGetInstanceProcAddr vkFunct, VKLInstanceOptions* 
 	VK_CALL(vk.EnumeratePhysicalDevices(m_instance, &physicalDeviceCount, physicalDevices));
 
 	for (int i = 0; i < physicalDeviceCount; i++) {
-		m_physicalDevices.push_back(VKLPhysicalDevice(physicalDevices[i], *this));
+		m_physicalDevices.push_back(new VKLPhysicalDevice(physicalDevices[i], this));
 	}
 
 	free(physicalDevices);
@@ -195,7 +195,7 @@ const std::vector<char*>& VKLInstance::getExtensions() {
 	return m_extensions;
 }
 
-const std::vector<VKLPhysicalDevice>& VKLInstance::getPhysicalDevices() {
+const std::vector<VKLPhysicalDevice*>& VKLInstance::getPhysicalDevices() {
 	return m_physicalDevices;
 }
 
@@ -204,6 +204,10 @@ VkInstance VKLInstance::handle() {
 }
 
 void VKLInstance::destroy() {
+	for (int i = 0; i < m_physicalDevices.size(); i++) {
+		//delete m_physicalDevices[i];
+	}
+
 	vk.DestroyInstance(m_instance, m_allocator);
 }
 

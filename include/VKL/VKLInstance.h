@@ -4,7 +4,6 @@
 #include "VKL_base.h"
 
 #include <vector>
-#include <VKL/VKLPhysicalDevice.h>
 
 typedef struct VKLInstanceOptions {
 
@@ -64,7 +63,7 @@ private:
 
 	std::vector<char*> m_layers;
 	std::vector<char*> m_extensions;
-	std::vector<VKLPhysicalDevice> m_physicalDevices;
+	std::vector<VKLPhysicalDevice*> m_physicalDevices;
 
 	VkBool32 m_debug;
 public:
@@ -76,7 +75,7 @@ public:
 	PFN_vkVoidFunction procAddr(const char* name);
 	const std::vector<char*>& getLayers();
 	const std::vector<char*>& getExtensions();
-	const std::vector<VKLPhysicalDevice>& getPhysicalDevices();
+	const std::vector<VKLPhysicalDevice*>& getPhysicalDevices();
 	VkInstance handle();
 	void destroy();
 

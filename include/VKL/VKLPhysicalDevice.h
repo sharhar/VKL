@@ -7,7 +7,7 @@
 
 class VKLPhysicalDevice {
 public:
-	VKLPhysicalDevice(VkPhysicalDevice physicalDevice, VKLInstance& instance);
+	VKLPhysicalDevice(VkPhysicalDevice physicalDevice, VKLInstance* instance);
 
 	VkPhysicalDevice handle();
 
@@ -19,8 +19,8 @@ public:
 	VkPhysicalDeviceMemoryProperties getMemoryProperties();
 	std::vector<VkSparseImageFormatProperties> getSparseImageProperties(VkFormat format, VkImageType type, VkSampleCountFlagBits samples, VkImageUsageFlags usage, VkImageTiling tiling);
 private:
-	VkPhysicalDevice m_physicalDevice;
-	VKLInstance& m_instance;
+	VkPhysicalDevice m_handle;
+	VKLInstance* m_instance;
 
 	VkPhysicalDeviceFeatures m_features;
 	VkPhysicalDeviceProperties m_properties;

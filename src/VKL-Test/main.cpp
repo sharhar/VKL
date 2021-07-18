@@ -1,5 +1,8 @@
 #include <VKL/VKlInstance.h>
 #include <VKL/VKLSurface.h>
+#include <VKL/VKLQueue.h>
+#include <VKL/VKLDevice.h>
+#include <VKL/VKLPhysicalDevice.h>
 
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
@@ -29,19 +32,31 @@ int main() {
 	VkSurfaceKHR glfwSurface = VK_NULL_HANDLE;
 	glfwCreateWindowSurface(instance.handle(), window, NULL, &glfwSurface);
 
-	VKLSurface surface(glfwSurface, instance);
+	VKLSurface surface(glfwSurface, &instance);
 	surface.setSize(800, 600);
 
-	VKLPhysicalDevice physicalDevice = instance.getPhysicalDevices()[0];
+	VKLPhysicalDevice physicalDevice = *instance.getPhysicalDevices()[0];
 
+	for (int i = 0; i < physicalDevice.getQueueFamilyProperties().size(); i++) {
+		printf("%d: %d (%d)\n", i, physicalDevice.getQueueFamilyProperties()[i].queueFlags, physicalDevice.getQueueFamilyProperties()[i].queueCount);
+	}
+
+	VKLQueueCreateInfo queueCreateInfo(3, &physicalDevice);
+
+	queueCreateInfo.setQueueType(0, 1, queueCreateInfo.getQueueFamilyIndexWithSurfaceSupport(VK_QUEUE_GRAPHICS_BIT, 0, surface));
+	queueCreateInfo.setQueueType(1, 1, queueCreateInfo.getQueueFamilyIndex(VK_QUEUE_COMPUTE_BIT, VK_QUEUE_GRAPHICS_BIT));
+	queueCreateInfo.setQueueType(2, 1, queueCreateInfo.getQueueFamilyIndex(VK_QUEUE_TRANSFER_BIT, VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT));
+
+	VKLDeviceCreateInfo deviceCreateInfo(&instance, &physicalDevice, &queueCreateInfo);
+	deviceCreateInfo.addExtension("VK_KHR_swapchain");
+
+	VKLDevice device(&deviceCreateInfo);
+
+	VKLQueue graphicsQueue = device.getQueue(0, 0);
+	VKLQueue computeQueue =  device.getQueue(1, 0);
+	VKLQueue transferQueue = device.getQueue(2, 0);
 
 	/*
-
-	VKLDevice* device;
-	VKLDeviceGraphicsContext** deviceContexts;
-	vklCreateDevice(instance, &device, &surface, 1, &deviceContexts, 0, NULL);
-
-	VKLDeviceGraphicsContext* devCon = deviceContexts[0];
 	
 	VKLSwapChain* swapChain;
 	VKLFrameBuffer* backBuffer;
@@ -210,9 +225,9 @@ int main() {
 	vklDestroyBuffer(device, uniformBuffer);
 	vklDestroyBuffer(device, buffer);
 	vklDestroySwapChain(swapChain);
-	vklDestroyDevice(device);
 	*/
 
+	device.destroy();
 	surface.destroy();
 	instance.destroy();
 

@@ -5,19 +5,21 @@
 
 class VKLSurface {
 public:
-	VKLSurface(VkSurfaceKHR surface, VKLInstance& instance);
+	VKLSurface(VkSurfaceKHR surface, VKLInstance* instance);
 
 	VkSurfaceKHR handle();
 	void setSize(int width, int height);
 	void destroy();
 
-	//void _vkGetPhysicalDeviceSurfaceSupportKHR(VkPhysicalDevice physicalDevice, uint32_t queueFamilyIndex, VkBool32* pSupported);
+	VkBool32 getPhysicalDeviceSupport(VKLPhysicalDevice* physicalDevice, uint32_t queueFamilyIndex);
+
 	//void _vkGetPhysicalDeviceSurfaceCapabilitiesKHR(VkPhysicalDevice physicalDevice, VkSurfaceCapabilitiesKHR* pSurfaceCapabilities);
 	//void _vkGetPhysicalDeviceSurfaceFormatsKHR(VkPhysicalDevice physicalDevice, uint32_t* pSurfaceFormatCount, VkSurfaceFormatKHR* pSurfaceFormats);
 	//void _vkGetPhysicalDeviceSurfacePresentModesKHR(VkPhysicalDevice physicalDevice, uint32_t* pPresentModeCount, VkPresentModeKHR* pPresentModes);
 private:
-	VkSurfaceKHR m_surface;
-	VKLInstance& m_instance;
+	VkSurfaceKHR m_handle;
+
+	VKLInstance* m_instance;
 	int m_width, m_height;
 };
 
