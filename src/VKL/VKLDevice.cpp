@@ -155,18 +155,38 @@ VKLDevice::VKLDevice(VKLDeviceCreateInfo* createInfo) {
 	vk.AcquireNextImageKHR = (PFN_vkAcquireNextImageKHR)procAddr("vkAcquireNextImageKHR");
 	vk.QueuePresentKHR = (PFN_vkQueuePresentKHR)procAddr("vkQueuePresentKHR");
 
+	vmaFuncs.vkGetPhysicalDeviceProperties = m_instance->vk.GetPhysicalDeviceProperties;
+	vmaFuncs.vkGetPhysicalDeviceMemoryProperties = m_instance->vk.GetPhysicalDeviceMemoryProperties;
+
+	vmaFuncs.vkAllocateMemory = vk.AllocateMemory;
+	vmaFuncs.vkFreeMemory = vk.FreeMemory;
+	vmaFuncs.vkMapMemory = vk.MapMemory;
+	vmaFuncs.vkUnmapMemory = vk.UnmapMemory;
+	vmaFuncs.vkFlushMappedMemoryRanges = vk.FlushMappedMemoryRanges;
+	vmaFuncs.vkInvalidateMappedMemoryRanges = vk.InvalidateMappedMemoryRanges;
+	vmaFuncs.vkBindBufferMemory = vk.BindBufferMemory;
+	vmaFuncs.vkBindImageMemory = vk.BindImageMemory;
+	vmaFuncs.vkGetBufferMemoryRequirements = vk.GetBufferMemoryRequirements;
+	vmaFuncs.vkGetImageMemoryRequirements = vk.GetImageMemoryRequirements;
+	vmaFuncs.vkCreateBuffer = vk.CreateBuffer;
+	vmaFuncs.vkDestroyBuffer = vk.DestroyBuffer;
+	vmaFuncs.vkCreateImage = vk.CreateImage;
+	vmaFuncs.vkDestroyImage = vk.DestroyImage;
+	vmaFuncs.vkCmdCopyBuffer = vk.CmdCopyBuffer;
+
 	m_queuesCount = createInfo->queueCreateInfo->typeCount;
 	m_queues = (VKLQueue**)malloc(sizeof(VKLQueue*) * m_queuesCount);
 
 	for (int i = 0; i < m_queuesCount; i++) {
 		uint32_t thisTypeCount = createInfo->queueCreateInfo->createInfos[i].queueCount;
+		uint32_t familyIndex = createInfo->queueCreateInfo->createInfos[i].queueFamilyIndex;
 
 		m_queues[i] = new VKLQueue[thisTypeCount];
 
 		for (int j = 0; j < thisTypeCount; j++) {
 			VkQueue queue;
-			vk.GetDeviceQueue(m_handle, createInfo->queueCreateInfo->createInfos[i].queueFamilyIndex, j, &queue);
-			m_queues[i][j].init(this, queue);
+			vk.GetDeviceQueue(m_handle, familyIndex, j, &queue);
+			m_queues[i][j].init(this, queue, familyIndex);
 		}
 	}
 }
@@ -183,6 +203,9 @@ PFN_vkVoidFunction VKLDevice::procAddr(const char* name) {
 	return vk.GetDeviceProcAddr(m_handle, name);
 }
 
+VKLPhysicalDevice& VKLDevice::physical() {
+	return *m_physicalDevice;
+}
 
 VKLQueue& VKLDevice::getQueue(uint32_t typeIndex, uint32_t queueIndex) {
 	return m_queues[typeIndex][queueIndex];

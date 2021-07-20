@@ -1,8 +1,4 @@
-#include <VKL/VKlInstance.h>
-#include <VKL/VKLSurface.h>
-#include <VKL/VKLQueue.h>
-#include <VKL/VKLDevice.h>
-#include <VKL/VKLPhysicalDevice.h>
+#include <VKL/VKL.h>
 
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
@@ -55,6 +51,18 @@ int main() {
 	VKLQueue graphicsQueue = device.getQueue(0, 0);
 	VKLQueue computeQueue =  device.getQueue(1, 0);
 	VKLQueue transferQueue = device.getQueue(2, 0);
+
+	VmaAllocatorCreateInfo vmaAllocatorCreateInfo;
+	memset(&vmaAllocatorCreateInfo, 0, sizeof(VmaAllocatorCreateInfo));
+	vmaAllocatorCreateInfo.instance = instance.handle();
+	vmaAllocatorCreateInfo.physicalDevice = physicalDevice.handle();
+	vmaAllocatorCreateInfo.device = device.handle();
+	vmaAllocatorCreateInfo.pVulkanFunctions = &device.vmaFuncs;
+
+	VmaAllocator allocator;
+	vmaCreateAllocator(&vmaAllocatorCreateInfo, &allocator);
+
+	VKLSwapChain swapChain(&device, &surface, &graphicsQueue);
 
 	/*
 	
@@ -226,6 +234,8 @@ int main() {
 	vklDestroyBuffer(device, buffer);
 	vklDestroySwapChain(swapChain);
 	*/
+
+	vmaDestroyAllocator(allocator);
 
 	device.destroy();
 	surface.destroy();

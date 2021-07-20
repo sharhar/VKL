@@ -23,8 +23,9 @@ typedef struct VKLQueueCreateInfo {
 class VKLQueue {
 public:
 	VKLQueue();
-	void init(VKLDevice* device, VkQueue queue);
+	void init(VKLDevice* device, VkQueue queue, uint32_t familyIndex);
 
+	uint32_t getFamilyIndex();
 	VkQueue handle();
 
 	//typedef VkResult (VKAPI_PTR *PFN_vkQueueSubmit)(VkQueue queue, uint32_t submitCount, const VkSubmitInfo* pSubmits, VkFence fence);
@@ -32,6 +33,7 @@ public:
 	//typedef VkResult (VKAPI_PTR *PFN_vkQueueBindSparse)(VkQueue queue, uint32_t bindInfoCount, const VkBindSparseInfo* pBindInfo, VkFence fence);
 private:
 	VkQueue m_handle;
+	uint32_t m_familyIndex;
 
 	VKLDevice* m_device;
 };

@@ -6,7 +6,6 @@
 #include <vector>
 
 typedef struct VKLInstanceOptions {
-
 	VKLInstanceOptions();
 
 	void setAllocator(VkAllocationCallbacks* allocator);

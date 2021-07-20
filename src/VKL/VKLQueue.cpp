@@ -5,15 +5,21 @@
 VKLQueue::VKLQueue() {
 	m_handle = VK_NULL_HANDLE;
 	m_device = NULL;
+	m_familyIndex = -1;
 }
 
-void VKLQueue::init(VKLDevice* device, VkQueue queue) {
+void VKLQueue::init(VKLDevice* device, VkQueue queue, uint32_t familyIndex) {
 	m_handle = queue;
 	m_device = device;
+	m_familyIndex = familyIndex;
 }
 
 VkQueue VKLQueue::handle() {
 	return m_handle;
+}
+
+uint32_t VKLQueue::getFamilyIndex() {
+	return m_familyIndex;
 }
 
 VKLQueueCreateInfo::VKLQueueCreateInfo(uint32_t typeCount, VKLPhysicalDevice* physicalDevice) {

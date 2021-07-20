@@ -155,10 +155,14 @@ public:
 	VkDevice handle();
 	VkAllocationCallbacks* allocator();
 	PFN_vkVoidFunction procAddr(const char* name);
+	VKLPhysicalDevice& physical();
 	VKLQueue& getQueue(uint32_t typeIndex, uint32_t queueIndex);
 	void destroy();
 
+	//typedef VkResult (VKAPI_PTR *PFN_vkDeviceWaitIdle)(VkDevice device);
+
 	VKLDevicePFNS vk;
+	VmaVulkanFunctions vmaFuncs;
 private:
 	VkDevice m_handle;
 

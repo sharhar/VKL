@@ -2232,6 +2232,10 @@ typedef struct VkDrawIndirectCommand {
     uint32_t    firstInstance;
 } VkDrawIndirectCommand;
 
+typedef struct VkBaseInStructure {
+	VkStructureType                    sType;
+	const struct VkBaseInStructure* pNext;
+} VkBaseInStructure;
 
 typedef VkResult (VKAPI_PTR *PFN_vkCreateInstance)(const VkInstanceCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkInstance* pInstance);
 typedef void (VKAPI_PTR *PFN_vkDestroyInstance)(VkInstance instance, const VkAllocationCallbacks* pAllocator);
