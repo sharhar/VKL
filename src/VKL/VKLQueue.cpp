@@ -1,6 +1,4 @@
-#include <VKL/VKLQueue.h>
-#include <VKL/VKLPhysicalDevice.h>
-#include <VKL/VKLSurface.h>
+#include <VKL/VKL.h>
 
 VKLQueue::VKLQueue() {
 	m_handle = VK_NULL_HANDLE;
@@ -12,14 +10,46 @@ void VKLQueue::init(VKLDevice* device, VkQueue queue, uint32_t familyIndex) {
 	m_handle = queue;
 	m_device = device;
 	m_familyIndex = familyIndex;
+	
+	m_cmdBuffer = new VKLCommandBuffer(this);
 }
 
 VkQueue VKLQueue::handle() {
 	return m_handle;
 }
 
+VKLDevice* VKLQueue::getDevice() {
+	return m_device;
+}
+
+VKLCommandBuffer* VKLQueue::getCmdBuffer() {
+	return m_cmdBuffer;
+}
+
 uint32_t VKLQueue::getFamilyIndex() {
 	return m_familyIndex;
+}
+
+void VKLQueue::submit(VKLCommandBuffer* cmdBuffer) {
+	VkCommandBuffer cmdBuffHandle = cmdBuffer->handle();
+	
+	VkSubmitInfo submitInfo;
+	memset(&submitInfo, 0, sizeof(VkSubmitInfo));
+	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+	submitInfo.pNext = NULL;
+	submitInfo.waitSemaphoreCount = 0;
+	submitInfo.pWaitSemaphores = NULL;
+	submitInfo.pWaitDstStageMask = NULL;
+	submitInfo.commandBufferCount = 1;
+	submitInfo.pCommandBuffers = &cmdBuffHandle;
+	submitInfo.signalSemaphoreCount = 0;
+	submitInfo.pSignalSemaphores = NULL;
+	
+	VK_CALL(m_device->vk.QueueSubmit(m_handle, 1, &submitInfo, VK_NULL_HANDLE));
+}
+
+void VKLQueue::waitIdle() {
+	m_device->vk.QueueWaitIdle(m_handle);
 }
 
 VKLQueueCreateInfo::VKLQueueCreateInfo(uint32_t typeCount, VKLPhysicalDevice* physicalDevice) {

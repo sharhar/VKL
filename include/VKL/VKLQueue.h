@@ -27,6 +27,11 @@ public:
 
 	uint32_t getFamilyIndex();
 	VkQueue handle();
+	VKLDevice* getDevice();
+	VKLCommandBuffer* getCmdBuffer();
+	
+	void submit(VKLCommandBuffer* cmdBuffer);
+	void waitIdle();
 
 	//typedef VkResult (VKAPI_PTR *PFN_vkQueueSubmit)(VkQueue queue, uint32_t submitCount, const VkSubmitInfo* pSubmits, VkFence fence);
 	//typedef VkResult(VKAPI_PTR* PFN_vkQueueWaitIdle)(VkQueue queue);
@@ -34,6 +39,7 @@ public:
 private:
 	VkQueue m_handle;
 	uint32_t m_familyIndex;
+	VKLCommandBuffer* m_cmdBuffer;
 
 	VKLDevice* m_device;
 };

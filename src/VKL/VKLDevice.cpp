@@ -1,7 +1,4 @@
-#include <VKL/VKLDevice.h>
-#include <VKL/VKLInstance.h>
-#include <VKL/VKLPhysicalDevice.h>
-#include <VKL/VKLQueue.h>
+#include <VKL/VKL.h>
 
 VKLDevice::VKLDevice(VKLDeviceCreateInfo* createInfo) {
 	m_instance = createInfo->instance;
@@ -176,11 +173,13 @@ VKLDevice::VKLDevice(VKLDeviceCreateInfo* createInfo) {
 
 	m_queuesCount = createInfo->queueCreateInfo->typeCount;
 	m_queues = (VKLQueue**)malloc(sizeof(VKLQueue*) * m_queuesCount);
-
+	m_queueTypeCount = (uint32_t*)malloc(sizeof(uint32_t) * m_queuesCount);
+	
 	for (int i = 0; i < m_queuesCount; i++) {
 		uint32_t thisTypeCount = createInfo->queueCreateInfo->createInfos[i].queueCount;
 		uint32_t familyIndex = createInfo->queueCreateInfo->createInfos[i].queueFamilyIndex;
 
+		m_queueTypeCount[i] = thisTypeCount;
 		m_queues[i] = new VKLQueue[thisTypeCount];
 
 		for (int j = 0; j < thisTypeCount; j++) {
@@ -213,9 +212,14 @@ VKLQueue& VKLDevice::getQueue(uint32_t typeIndex, uint32_t queueIndex) {
 
 void VKLDevice::destroy() {
 	for (int i = 0; i < m_queuesCount; i++) {
+		for (int j = 0; j < m_queueTypeCount[i]; j++) {
+			m_queues[i][j].getCmdBuffer()->destroy();
+		}
+		
 		delete[] m_queues[i];
 	}
 
+	free(m_queueTypeCount);
 	free(m_queues);
 
 	vk.DestroyDevice(m_handle, allocator());

@@ -22,6 +22,7 @@ class VKLDevice;
 class VKLQueue;
 class VKLImage;
 class VKLSwapChain;
+class VKLCommandBuffer;
 
 #ifdef _DEBUG
 #define VK_CALL(result) {VkResult ___result = result; if(___result == VK_SUCCESS) { printf("(VkResult = %d) " #result " in " __FUNCTION__ " in " __FILE__ "\n", ___result); }}

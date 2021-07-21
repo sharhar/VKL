@@ -49,13 +49,13 @@ void VKLInstance::create(PFN_vkGetInstanceProcAddr vkFunct, VKLInstanceOptions* 
 			VK_CALL(vk.EnumerateInstanceLayerProperties(&layerCount, layersAvailable));
 
 			for (int i = 0; i < layerCount; ++i) {
-				if (strcmp(layersAvailable[i].layerName, "VK_LAYER_LUNARG_standard_validation") == 0) {
-					m_layers.push_back("VK_LAYER_LUNARG_standard_validation");
+				if (strcmp(layersAvailable[i].layerName, "VK_LAYER_KHRONOS_validation") == 0) {
+					m_layers.push_back("VK_LAYER_KHRONOS_validation");
 				}
 			}
 
 			if (m_layers.size() == 0) {
-				printf("Warning: Could not find validation layer! (VK_LAYER_LUNARG_standard_validation)\n");
+				printf("Warning: Could not find validation layer! (VK_LAYER_KHRONOS_validation)\n");
 			}
 		} else {
 			printf("WARNING: Could not find any layers\n");

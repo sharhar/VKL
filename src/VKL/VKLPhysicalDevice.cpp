@@ -21,6 +21,13 @@ VKLPhysicalDevice::VKLPhysicalDevice(VkPhysicalDevice physicalDevice, VKLInstanc
 	}
 
 	free(queueFamilyProperties);
+	
+	uint32_t extensionCount = 0;
+	instance->vk.EnumerateDeviceExtensionProperties(m_handle, NULL, &extensionCount, NULL);
+	m_extensions.resize(extensionCount);
+	instance->vk.EnumerateDeviceExtensionProperties(m_handle, NULL, &extensionCount, m_extensions.data());
+	
+	
 }
 
 VkPhysicalDevice VKLPhysicalDevice::handle() {
@@ -72,4 +79,9 @@ std::vector<VkSparseImageFormatProperties> VKLPhysicalDevice::getSparseImageProp
 	free(sparseImageFormatProperties);
 
 	return result;
+}
+
+
+std::vector<VkExtensionProperties>& VKLPhysicalDevice::getExtensions() {
+	return m_extensions;
 }

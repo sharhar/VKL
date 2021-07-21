@@ -167,6 +167,7 @@ private:
 	VkDevice m_handle;
 
 	VKLQueue** m_queues;
+	uint32_t* m_queueTypeCount;
 	uint32_t m_queuesCount;
 
 	VKLInstance* m_instance;

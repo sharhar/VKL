@@ -40,10 +40,10 @@ void VKLImage::create(VKLImageCreateInfo* createInfo, VKLDevice* device) {
 	imageViewCreateInfo.image = m_handle;
 	imageViewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
 	imageViewCreateInfo.format = createInfo->format;
-	imageViewCreateInfo.components.r = VK_COMPONENT_SWIZZLE_R;
-	imageViewCreateInfo.components.g = VK_COMPONENT_SWIZZLE_G;
-	imageViewCreateInfo.components.b = VK_COMPONENT_SWIZZLE_B;
-	imageViewCreateInfo.components.a = VK_COMPONENT_SWIZZLE_A;
+	imageViewCreateInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+	imageViewCreateInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+	imageViewCreateInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+	imageViewCreateInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
 	imageViewCreateInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 	imageViewCreateInfo.subresourceRange.baseMipLevel = 0;
 	imageViewCreateInfo.subresourceRange.levelCount = 1;
@@ -65,7 +65,7 @@ void VKLImage::destroy() {
 	m_device->vk.DestroyImageView(m_device->handle(), m_view, m_device->allocator());
 
 	if (m_allocation != VK_NULL_HANDLE) {
-		vmaDestroyImage(m_allocator, m_handle, m_allocation);
+		//vmaDestroyImage(m_allocator, m_handle, m_allocation);
 	}
 }
 

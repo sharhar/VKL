@@ -10,5 +10,6 @@
 #include "VKLDevice.h"
 #include "VKLSwapChain.h"
 #include "VKLImage.h"
+#include "VKLCommandBuffer.h"
 
 #endif
