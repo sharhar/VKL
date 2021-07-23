@@ -11,5 +11,7 @@
 #include "VKLSwapChain.h"
 #include "VKLImage.h"
 #include "VKLCommandBuffer.h"
+#include "VKLRenderTarget.h"
+#include "VKLBuffer.h"
 
 #endif

@@ -5,21 +5,6 @@
 
 #include <vector>
 
-typedef struct VKLInstanceOptions {
-	VKLInstanceOptions();
-
-	void setAllocator(VkAllocationCallbacks* allocator);
-	void addExtension(char* extension);
-	void addExtensions(char** extensions, uint32_t extensionCount);
-	void addExtensions(std::vector<char*> extensions);
-	void setDebug(VkBool32 debug);
-
-	VkAllocationCallbacks* m_allocator;
-	std::vector<char*> m_extensions;
-	VkBool32 m_debug;
-
-} VKLInstanceOptions;
-
 typedef struct VKLInstancePFNS {
 	PFN_vkCreateInstance CreateInstance;
 	PFN_vkDestroyInstance DestroyInstance;
@@ -52,11 +37,27 @@ typedef struct VKLInstancePFNS {
 	PFN_vkGetPhysicalDeviceSurfacePresentModesKHR GetPhysicalDeviceSurfacePresentModesKHR;
 } __VKLInstancePFNS;
 
-class VKLInstance {
-private:
-	VkInstance m_instance;
+class VKLInstance : public VKLObject<VkInstance> {
+public:
+	VKLInstance();
+	
+	VKLInstance& ciSetAllocationCallbacks(VkAllocationCallbacks* allocationCallbacks);
+	VKLInstance& ciAddExtension(char* extension);
+	VKLInstance& ciAddExtensions(char** extensions, uint32_t extensionCount);
+	VKLInstance& ciAddExtensions(std::vector<char*> extensions);
+	VKLInstance& ciSetDebug(VkBool32 debug);
+	VKLInstance& ciSetProcAddr(PFN_vkGetInstanceProcAddr vkFunc);
+	
+	VkAllocationCallbacks* allocationCallbacks();
+	PFN_vkVoidFunction procAddr(const char* name);
+	const std::vector<char*>& getLayers();
+	const std::vector<char*>& getExtensions();
+	const std::vector<VKLPhysicalDevice*>& getPhysicalDevices();
+	void destroy();
 
-	VkAllocationCallbacks* m_allocator;
+	VKLInstancePFNS vk;
+private:
+	VkAllocationCallbacks* m_allocationCallbacks;
 
 	VkDebugReportCallbackEXT m_debugCallback;
 
@@ -65,20 +66,10 @@ private:
 	std::vector<VKLPhysicalDevice*> m_physicalDevices;
 
 	VkBool32 m_debug;
-public:
-	VKLInstance();
-	VKLInstance(PFN_vkGetInstanceProcAddr vkFunct, VKLInstanceOptions* options);
-
-	void create(PFN_vkGetInstanceProcAddr vkFunct, VKLInstanceOptions* options);
-	VkAllocationCallbacks* allocator();
-	PFN_vkVoidFunction procAddr(const char* name);
-	const std::vector<char*>& getLayers();
-	const std::vector<char*>& getExtensions();
-	const std::vector<VKLPhysicalDevice*>& getPhysicalDevices();
-	VkInstance handle();
-	void destroy();
-
-	VKLInstancePFNS vk;
+	
+	void _build();
+	
+	std::vector<char*> m_configExtensions;
 };
 
 #endif

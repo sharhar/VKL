@@ -10,6 +10,11 @@ public:
 	VkCommandPool pool();
 	VkCommandBuffer handle();
 	
+	void imageBarrier(VKLImage* image, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask);
+	
+	void beginRender(VKLRenderTarget* renderTarget);
+	void endRender(VKLRenderTarget* renderTarget);
+	
 	void begin();
 	void end();
 	void reset();

@@ -13,9 +13,9 @@ typedef struct VKLImageCreateInfo {
 	VkSampleCountFlags sampleCount;
 	VkImageTiling tiling;
 	VkImageUsageFlags usage;
+	VkImageLayout initialLayout;
 
 	VkImage imgHandle;
-	VmaAllocator allocator;
 } VKLImageCreateInfo;
 
 class VKLImage {
@@ -24,6 +24,12 @@ public:
 	VKLImage(VKLImageCreateInfo* createInfo, VKLDevice* device);
 
 	void create(VKLImageCreateInfo* createInfo, VKLDevice* device);
+	
+	void setNewAccessMask(VkAccessFlags accessMask);
+	void setNewLayout(VkImageLayout layout);
+	
+	VkImageMemoryBarrier* getMemoryBarrier();
+	void resetBarrier();
 
 	VkImage handle();
 	VkImageView view();
@@ -31,8 +37,9 @@ public:
 private:
 	VkImage m_handle;
 	VkImageView m_view;
+	
+	VkImageMemoryBarrier m_memoryBarrier;
 
-	VmaAllocator m_allocator;
 	VmaAllocation m_allocation;
 
 	VKLDevice* m_device;

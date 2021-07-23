@@ -3,7 +3,6 @@
 
 VKLImage::VKLImage() {
 	m_device = NULL;
-	m_allocator = VK_NULL_HANDLE;
 	m_allocation = VK_NULL_HANDLE;
 	m_handle = VK_NULL_HANDLE;
 	m_view = VK_NULL_HANDLE;
@@ -11,7 +10,6 @@ VKLImage::VKLImage() {
 
 VKLImage::VKLImage(VKLImageCreateInfo* createInfo, VKLDevice* device) {
 	m_device = NULL;
-	m_allocator = VK_NULL_HANDLE;
 	m_allocation = VK_NULL_HANDLE;
 	m_handle = VK_NULL_HANDLE;
 	m_view = VK_NULL_HANDLE;
@@ -21,16 +19,12 @@ VKLImage::VKLImage(VKLImageCreateInfo* createInfo, VKLDevice* device) {
 void VKLImage::create(VKLImageCreateInfo* createInfo, VKLDevice* device) {
 	m_device = device;
 
-	if (createInfo->allocator != VK_NULL_HANDLE) {
-		m_allocator = createInfo->allocator;
-
-		m_handle = VK_NULL_HANDLE;
-		m_allocation = VK_NULL_HANDLE;
-	}
-	else {
+	if (createInfo->imgHandle != VK_NULL_HANDLE) {
 		m_handle = createInfo->imgHandle;
 		m_allocation = VK_NULL_HANDLE;
-		m_allocator = VK_NULL_HANDLE;
+	} else {
+		m_handle = VK_NULL_HANDLE;
+		m_allocation = VK_NULL_HANDLE;
 	}
 
 	VkImageViewCreateInfo imageViewCreateInfo;
@@ -50,7 +44,39 @@ void VKLImage::create(VKLImageCreateInfo* createInfo, VKLDevice* device) {
 	imageViewCreateInfo.subresourceRange.baseArrayLayer = 0;
 	imageViewCreateInfo.subresourceRange.layerCount = 1;
 
-	VK_CALL(device->vk.CreateImageView(device->handle(), &imageViewCreateInfo, device->allocator(), &m_view));
+	VK_CALL(device->vk.CreateImageView(device->handle(), &imageViewCreateInfo, device->allocationCallbacks(), &m_view));
+	
+	m_memoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+	m_memoryBarrier.pNext = NULL;
+	m_memoryBarrier.srcAccessMask = 0;
+	m_memoryBarrier.dstAccessMask = 0;
+	m_memoryBarrier.oldLayout = createInfo->initialLayout;
+	m_memoryBarrier.newLayout = createInfo->initialLayout;
+	m_memoryBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	m_memoryBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	m_memoryBarrier.image = m_handle;
+	m_memoryBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	m_memoryBarrier.subresourceRange.baseMipLevel = 0;
+	m_memoryBarrier.subresourceRange.levelCount = 1;
+	m_memoryBarrier.subresourceRange.baseArrayLayer = 0;
+	m_memoryBarrier.subresourceRange.layerCount = 1;
+}
+
+void VKLImage::setNewAccessMask(VkAccessFlags accessMask) {
+	m_memoryBarrier.dstAccessMask = accessMask;
+}
+
+void VKLImage::setNewLayout(VkImageLayout layout) {
+	m_memoryBarrier.newLayout = layout;
+}
+
+VkImageMemoryBarrier* VKLImage::getMemoryBarrier() {
+	return &m_memoryBarrier;
+}
+
+void VKLImage::resetBarrier() {
+	m_memoryBarrier.srcAccessMask = m_memoryBarrier.dstAccessMask;
+	m_memoryBarrier.oldLayout = m_memoryBarrier.newLayout;
 }
 
 VkImage VKLImage::handle() {
@@ -62,10 +88,10 @@ VkImageView VKLImage::view() {
 }
 
 void VKLImage::destroy() {
-	m_device->vk.DestroyImageView(m_device->handle(), m_view, m_device->allocator());
+	m_device->vk.DestroyImageView(m_device->handle(), m_view, m_device->allocationCallbacks());
 
 	if (m_allocation != VK_NULL_HANDLE) {
-		//vmaDestroyImage(m_allocator, m_handle, m_allocation);
+		vmaDestroyImage(m_device->allocator(), m_handle, m_allocation);
 	}
 }
 
@@ -82,6 +108,7 @@ VKLImageCreateInfo::VKLImageCreateInfo(VkFormat format, uint32_t width, uint32_t
 	this->sampleCount = VK_SAMPLE_COUNT_1_BIT;
 	this->tiling = VK_IMAGE_TILING_LINEAR;
 
-	this->allocator = VK_NULL_HANDLE;
 	this->imgHandle = VK_NULL_HANDLE;
+	
+	this->initialLayout = VK_IMAGE_LAYOUT_PREINITIALIZED;
 }

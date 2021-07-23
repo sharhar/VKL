@@ -152,12 +152,20 @@ class VKLDevice {
 public:
 	VKLDevice(VKLDeviceCreateInfo* createInfo);
 
-	VkDevice handle();
-	VkAllocationCallbacks* allocator();
-	PFN_vkVoidFunction procAddr(const char* name);
-	VKLPhysicalDevice& physical();
+	VkDevice handle() { return m_handle; }
+	VkAllocationCallbacks* allocationCallbacks() { return m_allocationCallbacks;}
+	VmaAllocator allocator() { return m_allocator; }
+	PFN_vkVoidFunction procAddr(const char* name) { return vk.GetDeviceProcAddr(m_handle, name); }
+	VKLPhysicalDevice* physical() { return m_physicalDevice; }
+	
 	VKLQueue& getQueue(uint32_t typeIndex, uint32_t queueIndex);
+	
 	void destroy();
+	
+	VkFence createFence(VkFenceCreateFlags flags);
+	void waitForFence(VkFence fence);
+	void resetFence(VkFence fence);
+	void destroyFence(VkFence fence);
 
 	//typedef VkResult (VKAPI_PTR *PFN_vkDeviceWaitIdle)(VkDevice device);
 
@@ -172,7 +180,8 @@ private:
 
 	VKLInstance* m_instance;
 	VKLPhysicalDevice* m_physicalDevice;
-	VkAllocationCallbacks* m_allocator;
+	VkAllocationCallbacks* m_allocationCallbacks;
+	VmaAllocator m_allocator;
 };
 
 #endif

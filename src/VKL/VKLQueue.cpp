@@ -30,7 +30,7 @@ uint32_t VKLQueue::getFamilyIndex() {
 	return m_familyIndex;
 }
 
-void VKLQueue::submit(VKLCommandBuffer* cmdBuffer) {
+void VKLQueue::submit(VKLCommandBuffer* cmdBuffer, VkFence fence) {
 	VkCommandBuffer cmdBuffHandle = cmdBuffer->handle();
 	
 	VkSubmitInfo submitInfo;
@@ -45,7 +45,7 @@ void VKLQueue::submit(VKLCommandBuffer* cmdBuffer) {
 	submitInfo.signalSemaphoreCount = 0;
 	submitInfo.pSignalSemaphores = NULL;
 	
-	VK_CALL(m_device->vk.QueueSubmit(m_handle, 1, &submitInfo, VK_NULL_HANDLE));
+	VK_CALL(m_device->vk.QueueSubmit(m_handle, 1, &submitInfo, fence));
 }
 
 void VKLQueue::waitIdle() {

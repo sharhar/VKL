@@ -3,7 +3,7 @@
 VKLDevice::VKLDevice(VKLDeviceCreateInfo* createInfo) {
 	m_instance = createInfo->instance;
 	m_physicalDevice = createInfo->physicalDevice;
-	m_allocator = m_instance->allocator();
+	m_allocationCallbacks = m_instance->allocationCallbacks();
 
 	vk.CreateDevice = (PFN_vkCreateDevice)m_instance->procAddr("vkCreateDevice");
 	vk.GetDeviceProcAddr = (PFN_vkGetDeviceProcAddr)m_instance->procAddr("vkGetDeviceProcAddr");
@@ -22,7 +22,7 @@ VKLDevice::VKLDevice(VKLDeviceCreateInfo* createInfo) {
 	deviceCreateInfo.ppEnabledExtensionNames = createInfo->extensions.data();
 	deviceCreateInfo.pEnabledFeatures = &features;
 
-	VK_CALL(vk.CreateDevice(m_physicalDevice->handle(), &deviceCreateInfo, m_instance->allocator(), &m_handle));
+	VK_CALL(vk.CreateDevice(m_physicalDevice->handle(), &deviceCreateInfo, m_instance->allocationCallbacks(), &m_handle));
 
 	vk.DestroyDevice = (PFN_vkDestroyDevice)procAddr("vkDestroyDevice");
 	vk.GetDeviceQueue = (PFN_vkGetDeviceQueue)procAddr("vkGetDeviceQueue");
@@ -188,26 +188,42 @@ VKLDevice::VKLDevice(VKLDeviceCreateInfo* createInfo) {
 			m_queues[i][j].init(this, queue, familyIndex);
 		}
 	}
-}
+	
+	VmaAllocatorCreateInfo vmaAllocatorCreateInfo;
+	memset(&vmaAllocatorCreateInfo, 0, sizeof(VmaAllocatorCreateInfo));
+	vmaAllocatorCreateInfo.instance = m_instance->handle();
+	vmaAllocatorCreateInfo.physicalDevice = m_physicalDevice->handle();
+	vmaAllocatorCreateInfo.device = m_handle;
+	vmaAllocatorCreateInfo.pVulkanFunctions = &vmaFuncs;
 
-VkDevice VKLDevice::handle() {
-	return m_handle;
-}
-
-VkAllocationCallbacks* VKLDevice::allocator() {
-	return m_allocator;
-}
-
-PFN_vkVoidFunction VKLDevice::procAddr(const char* name) {
-	return vk.GetDeviceProcAddr(m_handle, name);
-}
-
-VKLPhysicalDevice& VKLDevice::physical() {
-	return *m_physicalDevice;
+	vmaCreateAllocator(&vmaAllocatorCreateInfo, &m_allocator);
 }
 
 VKLQueue& VKLDevice::getQueue(uint32_t typeIndex, uint32_t queueIndex) {
 	return m_queues[typeIndex][queueIndex];
+}
+
+VkFence VKLDevice::createFence(VkFenceCreateFlags flags) {
+	VkFenceCreateInfo fenceCreateInfo;
+	fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+	fenceCreateInfo.pNext = NULL;
+	fenceCreateInfo.flags = flags;
+	
+	VkFence result;
+	VK_CALL(vk.CreateFence(m_handle, &fenceCreateInfo, m_allocationCallbacks, &result));
+	return result;
+}
+
+void VKLDevice::waitForFence(VkFence fence) {
+	VK_CALL(vk.WaitForFences(m_handle, 1, &fence, VK_TRUE, UINT64_MAX));
+}
+
+void VKLDevice::resetFence(VkFence fence) {
+	VK_CALL(vk.ResetFences(m_handle, 1, &fence));
+}
+
+void VKLDevice::destroyFence(VkFence fence) {
+	VK_CALL(vk.DestroyFence(m_handle, fence, m_allocationCallbacks));
 }
 
 void VKLDevice::destroy() {
@@ -221,8 +237,10 @@ void VKLDevice::destroy() {
 
 	free(m_queueTypeCount);
 	free(m_queues);
+	
+	vmaDestroyAllocator(m_allocator);
 
-	vk.DestroyDevice(m_handle, allocator());
+	vk.DestroyDevice(m_handle, allocationCallbacks());
 }
 
 VKLDeviceCreateInfo::VKLDeviceCreateInfo(VKLInstance* instance, VKLPhysicalDevice* physicalDevice, VKLQueueCreateInfo* queueCreateInfo) {

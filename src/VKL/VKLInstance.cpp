@@ -2,30 +2,14 @@
 #include <VKL/VKLPhysicalDevice.h>
 
 VKLInstance::VKLInstance() {
-	m_instance = VK_NULL_HANDLE;
-	m_allocator = NULL;
+	m_handle = VK_NULL_HANDLE;
+	m_allocationCallbacks = NULL;
 	m_debugCallback = NULL;
 	m_debug = VK_FALSE;
 	memset(&vk, 0, sizeof(VKLInstancePFNS));
 }
 
-VKLInstance::VKLInstance(PFN_vkGetInstanceProcAddr vkFunct, VKLInstanceOptions* options) {
-	m_instance = VK_NULL_HANDLE;
-	m_allocator = NULL;
-	m_debugCallback = NULL;
-	m_debug = VK_FALSE;
-	memset(&vk, 0, sizeof(VKLInstancePFNS));
-	create(vkFunct, options);
-}
-
-void VKLInstance::create(PFN_vkGetInstanceProcAddr vkFunct, VKLInstanceOptions* options) {
-	if (options != NULL) {
-		m_debug = options->m_debug;
-		m_allocator = options->m_allocator;
-	}
-
-	vk.GetInstanceProcAddr = vkFunct;
-
+void VKLInstance::_build() {
 	vk.CreateInstance = (PFN_vkCreateInstance)procAddr("vkCreateInstance");
 	vk.EnumerateInstanceLayerProperties = (PFN_vkEnumerateInstanceLayerProperties)procAddr("vkEnumerateInstanceLayerProperties");
 	vk.EnumerateInstanceExtensionProperties = (PFN_vkEnumerateInstanceExtensionProperties)procAddr("vkEnumerateInstanceExtensionProperties");
@@ -35,11 +19,11 @@ void VKLInstance::create(PFN_vkGetInstanceProcAddr vkFunct, VKLInstanceOptions* 
 	uint32_t extensionCountEXT = 0;
 	VkExtensionProperties* extensionsAvailable = NULL;
 	
-	if (options != NULL) {
-		for (int i = 0; i < options->m_extensions.size(); i++) {
-			m_extensions.push_back(options->m_extensions[i]);
-		}
+	//TODO: check that all prefered extensions actually exist
+	for (int i = 0; i < m_configExtensions.size(); i++) {
+		m_extensions.push_back(m_configExtensions[i]);
 	}
+	
 
 	if (m_debug) {
 		VK_CALL(vk.EnumerateInstanceLayerProperties(&layerCount, NULL));
@@ -116,6 +100,22 @@ void VKLInstance::create(PFN_vkGetInstanceProcAddr vkFunct, VKLInstanceOptions* 
 			}
 			printf("\n");
 		}
+		
+		/*
+		printf("\n");
+		for(int i = 0; i < instance.getPhysicalDevices().size(); i++) {
+			VKLPhysicalDevice* physicalDevice = instance.getPhysicalDevices()[i];
+			printf("Device %d (%s):\n", i, physicalDevice->getProperties().deviceName);
+			
+			printf("\tExtensions:\n");
+			for (int j = 0; j < physicalDevice->getExtensions().size(); j++) {
+				VkExtensionProperties extensionProps = physicalDevice->getExtensions()[j];
+				
+				printf("\t\t%d: %s\n", j, extensionProps.extensionName);
+			}
+			printf("\n");
+		}
+		*/
 	}
 
 	VkApplicationInfo applicationInfo;
@@ -137,7 +137,7 @@ void VKLInstance::create(PFN_vkGetInstanceProcAddr vkFunct, VKLInstanceOptions* 
 	instanceInfo.enabledExtensionCount = m_extensions.size();
 	instanceInfo.ppEnabledExtensionNames = m_extensions.data();
 
-	VK_CALL(vk.CreateInstance(&instanceInfo, m_allocator, &m_instance));
+	VK_CALL(vk.CreateInstance(&instanceInfo, m_allocationCallbacks, &m_handle));
 
 	vk.DestroyInstance = (PFN_vkDestroyInstance)procAddr("vkDestroyInstance");
 	vk.EnumeratePhysicalDevices = (PFN_vkEnumeratePhysicalDevices)procAddr("vkEnumeratePhysicalDevices");
@@ -168,9 +168,9 @@ void VKLInstance::create(PFN_vkGetInstanceProcAddr vkFunct, VKLInstanceOptions* 
 	VkPhysicalDevice* physicalDevices = NULL;
 	uint32_t physicalDeviceCount = 0;
 
-	VK_CALL(vk.EnumeratePhysicalDevices(m_instance, &physicalDeviceCount, NULL));
+	VK_CALL(vk.EnumeratePhysicalDevices(m_handle, &physicalDeviceCount, NULL));
 	physicalDevices = (VkPhysicalDevice*)malloc(sizeof(VkPhysicalDevice*) * physicalDeviceCount);
-	VK_CALL(vk.EnumeratePhysicalDevices(m_instance, &physicalDeviceCount, physicalDevices));
+	VK_CALL(vk.EnumeratePhysicalDevices(m_handle, &physicalDeviceCount, physicalDevices));
 
 	for (int i = 0; i < physicalDeviceCount; i++) {
 		m_physicalDevices.push_back(new VKLPhysicalDevice(physicalDevices[i], this));
@@ -179,12 +179,12 @@ void VKLInstance::create(PFN_vkGetInstanceProcAddr vkFunct, VKLInstanceOptions* 
 	free(physicalDevices);
 }
 
-VkAllocationCallbacks* VKLInstance::allocator() {
-	return m_allocator;
+VkAllocationCallbacks* VKLInstance::allocationCallbacks() {
+	return m_allocationCallbacks;
 }
 
 PFN_vkVoidFunction VKLInstance::procAddr(const char* name) {
-	return vk.GetInstanceProcAddr(m_instance, name);
+	return vk.GetInstanceProcAddr(m_handle, name);
 }
 
 const std::vector<char*>& VKLInstance::getLayers() {
@@ -199,43 +199,51 @@ const std::vector<VKLPhysicalDevice*>& VKLInstance::getPhysicalDevices() {
 	return m_physicalDevices;
 }
 
-VkInstance VKLInstance::handle() {
-	return m_instance;
-}
-
 void VKLInstance::destroy() {
 	for (int i = 0; i < m_physicalDevices.size(); i++) {
 		//delete m_physicalDevices[i];
 	}
 
-	vk.DestroyInstance(m_instance, m_allocator);
+	vk.DestroyInstance(m_handle, m_allocationCallbacks);
 }
 
-VKLInstanceOptions::VKLInstanceOptions() {
-	m_allocator = NULL;
-	m_debug = VK_FALSE;
+
+VKLInstance& VKLInstance::ciSetProcAddr(PFN_vkGetInstanceProcAddr vkFunc) {
+	vk.GetInstanceProcAddr = vkFunc;
+	
+	return *this;
 }
 
-void VKLInstanceOptions::setAllocator(VkAllocationCallbacks* allocator) {
-	m_allocator = allocator;
+VKLInstance& VKLInstance::ciSetAllocationCallbacks(VkAllocationCallbacks* allocator) {
+	m_allocationCallbacks = allocator;
+	
+	return *this;
 }
 
-void VKLInstanceOptions::addExtension(char* extension) {
-	m_extensions.push_back(extension);
+VKLInstance& VKLInstance::ciAddExtension(char* extension) {
+	m_configExtensions.push_back(extension);
+	
+	return *this;
 }
 
-void VKLInstanceOptions::addExtensions(char** extensions, uint32_t extensionCount) {
+VKLInstance& VKLInstance::ciAddExtensions(char** extensions, uint32_t extensionCount) {
 	for (int i = 0; i < extensionCount; i++) {
-		m_extensions.push_back(extensions[i]);
+		m_configExtensions.push_back(extensions[i]);
 	}
+	
+	return *this;
 }
 
-void VKLInstanceOptions::addExtensions(std::vector<char*> extensions) {
+VKLInstance& VKLInstance::ciAddExtensions(std::vector<char*> extensions) {
 	for (int i = 0; i < extensions.size(); i++) {
-		m_extensions.push_back(extensions[i]);
+		m_configExtensions.push_back(extensions[i]);
 	}
+	
+	return *this;
 }
 
-void VKLInstanceOptions::setDebug(VkBool32 debug) {
+VKLInstance& VKLInstance::ciSetDebug(VkBool32 debug) {
 	m_debug = debug;
+	
+	return *this;
 }

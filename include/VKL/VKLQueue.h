@@ -30,7 +30,7 @@ public:
 	VKLDevice* getDevice();
 	VKLCommandBuffer* getCmdBuffer();
 	
-	void submit(VKLCommandBuffer* cmdBuffer);
+	void submit(VKLCommandBuffer* cmdBuffer, VkFence fence);
 	void waitIdle();
 
 	//typedef VkResult (VKAPI_PTR *PFN_vkQueueSubmit)(VkQueue queue, uint32_t submitCount, const VkSubmitInfo* pSubmits, VkFence fence);

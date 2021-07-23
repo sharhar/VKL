@@ -2,33 +2,43 @@
 #include <VKL/VKLPhysicalDevice.h>
 #include <VKL/VKLInstance.h>
 
-VKLSurface::VKLSurface(VkSurfaceKHR surface, VKLInstance* instance) {
+VKLSurface::VKLSurface() {
 	m_handle = VK_NULL_HANDLE;
+	m_instance = NULL;
+	m_size.width = 0;
+	m_size.height = 0;
+	m_handle = VK_NULL_HANDLE;
+}
+
+VKLSurface& VKLSurface::setInstance(VKLInstance* instance) {
 	m_instance = instance;
-	m_width = -1;
-	m_height = -1;
+	
+	return *this;
+}
+
+VKLSurface& VKLSurface::setHandle(VkSurfaceKHR surface) {
 	m_handle = surface;
+	
+	return *this;
 }
 
-VkSurfaceKHR VKLSurface::handle() {
-	return m_handle;
+VKLSurface& VKLSurface::setSize(int width, int height) {
+	m_size.width = width;
+	m_size.height = height;
+	
+	return *this;
 }
-
-void VKLSurface::setSize(int width, int height) {
-	m_width = width;
-	m_height = height;
-}
-
 
 VkExtent2D VKLSurface::getSize() {
-	VkExtent2D result;
-	result.width = m_width;
-	result.height = m_height;
-	return result;
+	return m_size;
 }
 
 void VKLSurface::destroy() {
-	m_instance->vk.DestroySurfaceKHR(m_instance->handle(), m_handle, m_instance->allocator());
+	m_instance->vk.DestroySurfaceKHR(m_instance->handle(), m_handle, m_instance->allocationCallbacks());
+}
+
+void VKLSurface::_build() {
+	
 }
 
 VkBool32 VKLSurface::getPhysicalDeviceSupport(VKLPhysicalDevice* physicalDevice, uint32_t queueFamilyIndex) {
