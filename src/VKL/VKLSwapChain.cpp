@@ -1,9 +1,14 @@
 #include <VKL/VKL.h>
 
-VKLSwapChain::VKLSwapChain(VKLDevice* device, VKLSurface* surface, VKLQueue* queue) {
-	m_device = device;
-	m_queue = queue;
-	std::vector<VkSurfaceFormatKHR> surfaceFormats = surface->getFormats(device->physical());
+VKLSwapChain::VKLSwapChain() : VKLBuilder<VKLSwapChainCreateInfo>("VKLSwapChain") {
+	
+}
+
+void VKLSwapChain::_build() {
+	m_device = ci.device;
+	m_queue = ci.queue;
+	
+	std::vector<VkSurfaceFormatKHR> surfaceFormats = m_device->physical()->getSurfaceFormats(ci.surface);
 
 	VkFormat colorFormat;
 	if (surfaceFormats[0].format == VK_FORMAT_UNDEFINED) {
@@ -16,7 +21,7 @@ VKLSwapChain::VKLSwapChain(VKLDevice* device, VKLSurface* surface, VKLQueue* que
 	VkColorSpaceKHR colorSpace;
 	colorSpace = surfaceFormats[0].colorSpace;
 
-	VkSurfaceCapabilitiesKHR surfaceCapabilities = surface->getCapabilities(device->physical());
+	VkSurfaceCapabilitiesKHR surfaceCapabilities = m_device->physical()->getSurfaceCapabilities(ci.surface);
 
 	uint32_t desiredImageCount = 2;
 	if (desiredImageCount < surfaceCapabilities.minImageCount) {
@@ -27,9 +32,13 @@ VKLSwapChain::VKLSwapChain(VKLDevice* device, VKLSurface* surface, VKLQueue* que
 		desiredImageCount = surfaceCapabilities.maxImageCount;
 	}
 
-	m_size = surface->getSize();
+	m_size.width = 800;
+	m_size.height = 600;
 
 	VkExtent2D surfaceResolution = surfaceCapabilities.currentExtent;
+	
+	printf("res: %d %d\n", surfaceResolution.width, surfaceResolution.height);
+	
 	if (surfaceResolution.width == -1) {
 		surfaceResolution = m_size;
 	}
@@ -42,9 +51,9 @@ VKLSwapChain::VKLSwapChain(VKLDevice* device, VKLSurface* surface, VKLQueue* que
 		preTransform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
 	}
 
-	std::vector<VkPresentModeKHR> presentModes = surface->getPresentModes(device->physical());
+	std::vector<VkPresentModeKHR> presentModes = m_device->physical()->getSurfacePresentModes(ci.surface);
 
-	VkPresentModeKHR presentationMode = VK_PRESENT_MODE_FIFO_KHR;
+	VkPresentModeKHR presentationMode = VK_PRESENT_MODE_IMMEDIATE_KHR;//VK_PRESENT_MODE_FIFO_KHR;
 
 	/*
 	if (!vSync) {
@@ -60,7 +69,7 @@ VKLSwapChain::VKLSwapChain(VKLDevice* device, VKLSurface* surface, VKLQueue* que
 	VkSwapchainCreateInfoKHR swapChainCreateInfo;
 	memset(&swapChainCreateInfo, 0, sizeof(VkSwapchainCreateInfoKHR));
 	swapChainCreateInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-	swapChainCreateInfo.surface = surface->handle();
+	swapChainCreateInfo.surface = ci.surface;
 	swapChainCreateInfo.minImageCount = desiredImageCount;
 	swapChainCreateInfo.imageFormat = colorFormat;
 	swapChainCreateInfo.imageColorSpace = colorSpace;
@@ -74,13 +83,13 @@ VKLSwapChain::VKLSwapChain(VKLDevice* device, VKLSurface* surface, VKLQueue* que
 	swapChainCreateInfo.clipped = VK_TRUE;
 	swapChainCreateInfo.oldSwapchain = VK_NULL_HANDLE;
 
-	VK_CALL(device->vk.CreateSwapchainKHR(device->handle(), &swapChainCreateInfo, device->allocationCallbacks(), &m_handle));
+	VK_CALL(m_device->vk.CreateSwapchainKHR(m_device->handle(), &swapChainCreateInfo, m_device->allocationCallbacks(), &m_handle));
 
 	VkImage* presentImages = NULL;
 
-	device->vk.GetSwapchainImagesKHR(device->handle(), m_handle, &m_swapChainImageCount, NULL);
+	m_device->vk.GetSwapchainImagesKHR(m_device->handle(), m_handle, &m_swapChainImageCount, NULL);
 	presentImages = (VkImage*)malloc(sizeof(VkImage) * m_swapChainImageCount);
-	device->vk.GetSwapchainImagesKHR(device->handle(), m_handle, &m_swapChainImageCount, presentImages);
+	m_device->vk.GetSwapchainImagesKHR(m_device->handle(), m_handle, &m_swapChainImageCount, presentImages);
 
 	m_swapChainImages = new VKLImage[m_swapChainImageCount];
 
@@ -89,7 +98,7 @@ VKLSwapChain::VKLSwapChain(VKLDevice* device, VKLSurface* surface, VKLQueue* que
 
 	for(int i = 0; i < m_swapChainImageCount; i++) {
 		imageCreateInfo.imgHandle = presentImages[i];
-		m_swapChainImages[i].create(&imageCreateInfo, device);
+		m_swapChainImages[i].create(&imageCreateInfo, m_device);
 	}
 
 	free(presentImages);
@@ -190,10 +199,6 @@ VKLSwapChain::VKLSwapChain(VKLDevice* device, VKLSurface* surface, VKLQueue* que
 	VK_CALL(m_device->vk.AcquireNextImageKHR(m_device->handle(), m_handle, UINT64_MAX, m_presentSemaphore, VK_NULL_HANDLE, &m_currentImgIndex));
 }
 
-VkSwapchainKHR VKLSwapChain::handle() {
-	return m_handle;
-}
-
 void VKLSwapChain::present() {
 	VkPresentInfoKHR presentInfo;
 	presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
@@ -207,7 +212,7 @@ void VKLSwapChain::present() {
 	
 	VK_CALL(m_device->vk.QueuePresentKHR(m_queue->handle(), &presentInfo));
 	
-	m_queue->waitIdle();
+	//m_queue->waitIdle();
 	
 	m_device->vk.DestroySemaphore(m_device->handle(), m_presentSemaphore, m_device->allocationCallbacks());
 	
@@ -221,7 +226,7 @@ void VKLSwapChain::present() {
 }
 
 void VKLSwapChain::destroy() {
-	destroyRenderTarget(m_device);
+	destroyRenderTarget();
 	
 	m_device->vk.DestroySemaphore(m_device->handle(), m_presentSemaphore, m_device->allocationCallbacks());
 	

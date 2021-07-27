@@ -16,8 +16,8 @@ VKLDevice::VKLDevice(VKLDeviceCreateInfo* createInfo) {
 	deviceCreateInfo.flags = 0;
 	deviceCreateInfo.queueCreateInfoCount = createInfo->queueCreateInfo->typeCount;
 	deviceCreateInfo.pQueueCreateInfos = createInfo->queueCreateInfo->createInfos;
-	deviceCreateInfo.enabledLayerCount = m_instance->getLayers().size();
-	deviceCreateInfo.ppEnabledLayerNames = (const char**)m_instance->getLayers().data();
+	deviceCreateInfo.enabledLayerCount = m_instance->ci.layers.size();
+	deviceCreateInfo.ppEnabledLayerNames = (const char**)m_instance->ci.layers.data();
 	deviceCreateInfo.enabledExtensionCount = createInfo->extensions.size();
 	deviceCreateInfo.ppEnabledExtensionNames = createInfo->extensions.data();
 	deviceCreateInfo.pEnabledFeatures = &features;

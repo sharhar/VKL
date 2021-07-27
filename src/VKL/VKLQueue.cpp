@@ -14,10 +14,6 @@ void VKLQueue::init(VKLDevice* device, VkQueue queue, uint32_t familyIndex) {
 	m_cmdBuffer = new VKLCommandBuffer(this);
 }
 
-VkQueue VKLQueue::handle() {
-	return m_handle;
-}
-
 VKLDevice* VKLQueue::getDevice() {
 	return m_device;
 }
@@ -77,10 +73,10 @@ int32_t VKLQueueCreateInfo::getQueueFamilyIndex(VkQueueFlags supportFlags, VkQue
 	return -1;
 }
 
-int32_t VKLQueueCreateInfo::getQueueFamilyIndexWithSurfaceSupport(VkQueueFlags supportFlags, VkQueueFlags excludeFlags, VKLSurface& surface) {
+int32_t VKLQueueCreateInfo::getQueueFamilyIndexWithSurfaceSupport(VkQueueFlags supportFlags, VkQueueFlags excludeFlags, VkSurfaceKHR surface) {
 	for (int i = 0; i < physicalDevice->getQueueFamilyProperties().size(); i++) {
 		VkQueueFlags queueFlags = physicalDevice->getQueueFamilyProperties()[i].queueFlags;
-		if ((queueFlags & supportFlags) && !(queueFlags & excludeFlags) && surface.getPhysicalDeviceSupport(physicalDevice, i)) {
+		if ((queueFlags & supportFlags) && !(queueFlags & excludeFlags) && physicalDevice->getSurfaceSupport(surface, i)) {
 			return i;
 		}
 	}

@@ -5,19 +5,22 @@
 
 #include "VKLRenderTarget.h"
 
-class VKLSwapChain : public VKLRenderTarget {
+typedef struct VKLSwapChainCreateInfo {
+	VKLDevice* device;
+	VKLQueue* queue;
+	VkSurfaceKHR surface;
+} VKLSwapChainCreateInfo;
+
+class VKLSwapChain : public VKLRenderTarget, public VKLHandle<VkSwapchainKHR>, public VKLBuilder<VKLSwapChainCreateInfo> {
 public:
-	VKLSwapChain(VKLDevice* device, VKLSurface* surface, VKLQueue* queue);
-	VkSwapchainKHR handle();
+	VKLSwapChain();
 	void present();
+	
+	bool buildable() { return true; }
+	
 	void destroy();
-
-	VkFramebuffer getCurrentFramebuffer();
-	void preRenderCallback(VKLCommandBuffer* cmdBuffer);
-	void postRenderCallback(VKLCommandBuffer* cmdBuffer);
+	
 private:
-	VkSwapchainKHR m_handle;
-
 	VkExtent2D m_size;
 
 	VKLImage* m_swapChainImages;
@@ -30,6 +33,12 @@ private:
 
 	VKLDevice* m_device;
 	VKLQueue* m_queue;
+	
+	VkFramebuffer getCurrentFramebuffer();
+	void preRenderCallback(VKLCommandBuffer* cmdBuffer);
+	void postRenderCallback(VKLCommandBuffer* cmdBuffer);
+	
+	void _build();
 };
 
 #endif

@@ -5,11 +5,9 @@
 
 #include <vector>
 
-class VKLPhysicalDevice {
+class VKLPhysicalDevice : public VKLHandle<VkPhysicalDevice> {
 public:
 	VKLPhysicalDevice(VkPhysicalDevice physicalDevice, VKLInstance* instance);
-
-	VkPhysicalDevice handle();
 
 	VkPhysicalDeviceFeatures getFeatures();
 	VkFormatProperties getFormatProperties(VkFormat format);
@@ -19,8 +17,12 @@ public:
 	VkPhysicalDeviceMemoryProperties getMemoryProperties();
 	std::vector<VkSparseImageFormatProperties> getSparseImageProperties(VkFormat format, VkImageType type, VkSampleCountFlagBits samples, VkImageUsageFlags usage, VkImageTiling tiling);
 	std::vector<VkExtensionProperties>& getExtensions();
+	
+	VkBool32 getSurfaceSupport(VkSurfaceKHR surface, uint32_t queueFamilyIndex);
+	VkSurfaceCapabilitiesKHR getSurfaceCapabilities(VkSurfaceKHR surface);
+	std::vector<VkSurfaceFormatKHR> getSurfaceFormats(VkSurfaceKHR surface);
+	std::vector<VkPresentModeKHR> getSurfacePresentModes(VkSurfaceKHR surface);
 private:
-	VkPhysicalDevice m_handle;
 	VKLInstance* m_instance;
 
 	VkPhysicalDeviceFeatures m_features;

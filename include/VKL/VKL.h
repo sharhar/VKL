@@ -5,7 +5,6 @@
 
 #include "VKLInstance.h"
 #include "VKLPhysicalDevice.h"
-#include "VKLSurface.h"
 #include "VKLQueue.h"
 #include "VKLDevice.h"
 #include "VKLSwapChain.h"

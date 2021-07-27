@@ -26,9 +26,6 @@ VkCommandPool VKLCommandBuffer::pool() {
 	return m_pool;
 }
 
-VkCommandBuffer VKLCommandBuffer::handle() {
-	return m_handle;
-}
 
 void VKLCommandBuffer::begin() {
 	VkCommandBufferBeginInfo beginInfo;
@@ -52,28 +49,31 @@ void VKLCommandBuffer::imageBarrier(VKLImage* image, VkPipelineStageFlags srcSta
 	m_device->vk.CmdPipelineBarrier(m_handle, srcStageMask, dstStageMask, 0, 0, NULL, 0, NULL, 1, image->getMemoryBarrier());
 }
 
+void VKLCommandBuffer::bufferBarrier(VKLBuffer* buffer, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask) {
+	m_device->vk.CmdPipelineBarrier(m_handle, srcStageMask, dstStageMask, 0, 0, NULL, 1, buffer->getMemoryBarrier(), 0, NULL);
+}
+
+void VKLCommandBuffer::copyBuffer(VKLBuffer* dst, VKLBuffer* src, VkBufferCopy bufferCopy) {
+	//src->setNewAccessMask(VK_ACCESS_TRANSFER_READ_BIT);
+	//bufferBarrier(src, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
+	//src->resetBarrier();
+	
+	//dst->setNewAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT);
+	//bufferBarrier(dst, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
+	//dst->resetBarrier();
+	
+	m_device->vk.CmdCopyBuffer(m_handle, src->handle(), dst->handle(), 1, &bufferCopy);
+	
+	//src->setNewAccessMask(VK_ACCESS_TRANSFER_READ_BIT);
+	//bufferBarrier(src, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
+	//src->resetBarrier();
+	
+	//dst->setNewAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT);
+	//bufferBarrier(dst, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
+	//dst->resetBarrier();
+}
+
 void VKLCommandBuffer::destroy() {
 	m_device->vk.FreeCommandBuffers(m_device->handle(), m_pool, 1, &m_handle);
 	m_device->vk.DestroyCommandPool(m_device->handle(), m_pool, m_device->allocationCallbacks());
-}
-
-void VKLCommandBuffer::beginRender(VKLRenderTarget* renderTarget) {
-	renderTarget->preRenderCallback(this);
-	
-	VkRenderPassBeginInfo renderPassBeginInfo;
-	memset(&renderPassBeginInfo, 0, sizeof(VkRenderPassBeginInfo));
-	renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-	renderPassBeginInfo.renderPass = renderTarget->getRenderPass();
-	renderPassBeginInfo.framebuffer = renderTarget->getCurrentFramebuffer();
-	renderPassBeginInfo.renderArea = renderTarget->getRenderArea();
-	renderPassBeginInfo.clearValueCount = renderTarget->getClearValueCount();
-	renderPassBeginInfo.pClearValues = renderTarget->getClearValues();
-	
-	m_device->vk.CmdBeginRenderPass(m_handle, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-}
-
-void VKLCommandBuffer::endRender(VKLRenderTarget* renderTarget) {
-	m_device->vk.CmdEndRenderPass(m_handle);
-	
-	renderTarget->postRenderCallback(this);
 }

@@ -30,10 +30,6 @@ VKLPhysicalDevice::VKLPhysicalDevice(VkPhysicalDevice physicalDevice, VKLInstanc
 	
 }
 
-VkPhysicalDevice VKLPhysicalDevice::handle() {
-	return m_handle;
-}
-
 VkPhysicalDeviceFeatures VKLPhysicalDevice::getFeatures() {
 	return m_features;
 }
@@ -84,4 +80,34 @@ std::vector<VkSparseImageFormatProperties> VKLPhysicalDevice::getSparseImageProp
 
 std::vector<VkExtensionProperties>& VKLPhysicalDevice::getExtensions() {
 	return m_extensions;
+}
+
+VkBool32 VKLPhysicalDevice::getSurfaceSupport(VkSurfaceKHR surface, uint32_t queueFamilyIndex) {
+	VkBool32 result = VK_FALSE;
+	VK_CALL(m_instance->vk.GetPhysicalDeviceSurfaceSupportKHR(m_handle, queueFamilyIndex, surface, &result));
+	return result;
+}
+
+VkSurfaceCapabilitiesKHR VKLPhysicalDevice::getSurfaceCapabilities(VkSurfaceKHR surface) {
+	VkSurfaceCapabilitiesKHR result;
+	m_instance->vk.GetPhysicalDeviceSurfaceCapabilitiesKHR(m_handle, surface, &result);
+	return result;
+}
+
+std::vector<VkSurfaceFormatKHR> VKLPhysicalDevice::getSurfaceFormats(VkSurfaceKHR surface) {
+	std::vector<VkSurfaceFormatKHR> result;
+	uint32_t count;
+	m_instance->vk.GetPhysicalDeviceSurfaceFormatsKHR(m_handle, surface, &count, NULL);
+	result.resize(count);
+	m_instance->vk.GetPhysicalDeviceSurfaceFormatsKHR(m_handle, surface, &count, result.data());
+	return result;
+}
+
+std::vector<VkPresentModeKHR> VKLPhysicalDevice::getSurfacePresentModes(VkSurfaceKHR surface) {
+	std::vector<VkPresentModeKHR> result;
+	uint32_t count;
+	m_instance->vk.GetPhysicalDeviceSurfacePresentModesKHR(m_handle, surface, &count, NULL);
+	result.reserve(count);
+	m_instance->vk.GetPhysicalDeviceSurfacePresentModesKHR(m_handle, surface, &count, result.data());
+	return result;
 }

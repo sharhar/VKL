@@ -10,7 +10,7 @@
 
 #include "VKL_base.h"
 
-class VKLBuffer : public VKLObject<VkBuffer> {
+class VKLBuffer : public VKLHandle<VkBuffer>, public VKLBuilder<VkBufferCreateInfo> {
 public:
 	VKLBuffer();
 	
@@ -22,12 +22,21 @@ public:
 	
 	void setData(void* data, size_t size, size_t offset);
 	
+	void setNewAccessMask(VkAccessFlags accessMask);
+	VkBufferMemoryBarrier* getMemoryBarrier();
+	void resetBarrier();
+	
+	
+	bool buildable() { return true; }
+	
 	void destroy();
 	
 private:
 	VKLDevice* m_device;
 	
 	VmaAllocation m_allocation;
+	
+	VkBufferMemoryBarrier m_memoryBarrier;
 	
 	VkBufferCreateInfo m_bufferCreateInfo;
 	VmaAllocationCreateInfo m_allocationCreateInfo;
