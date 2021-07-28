@@ -1,7 +1,6 @@
-#include <VKL/VKLPhysicalDevice.h>
-#include <VKL/VKLInstance.h>
+#include <VKL/VKL.h>
 
-VKLPhysicalDevice::VKLPhysicalDevice(VkPhysicalDevice physicalDevice, VKLInstance* instance) {
+VKLPhysicalDevice::VKLPhysicalDevice(VkPhysicalDevice physicalDevice, const VKLInstance* instance) {
 	m_handle = physicalDevice;
 	m_instance = instance;
 
@@ -26,75 +25,57 @@ VKLPhysicalDevice::VKLPhysicalDevice(VkPhysicalDevice physicalDevice, VKLInstanc
 	instance->vk.EnumerateDeviceExtensionProperties(m_handle, NULL, &extensionCount, NULL);
 	m_extensions.resize(extensionCount);
 	instance->vk.EnumerateDeviceExtensionProperties(m_handle, NULL, &extensionCount, m_extensions.data());
-	
-	
 }
 
-VkPhysicalDeviceFeatures VKLPhysicalDevice::getFeatures() {
+const VKLInstance* VKLPhysicalDevice::getInstance() const {
+	return m_instance;
+}
+
+VkPhysicalDeviceFeatures VKLPhysicalDevice::getFeatures() const {
 	return m_features;
 }
 
-VkFormatProperties VKLPhysicalDevice::getFormatProperties(VkFormat format) {
+VkFormatProperties VKLPhysicalDevice::getFormatProperties(VkFormat format) const {
 	VkFormatProperties result;
 	m_instance->vk.GetPhysicalDeviceFormatProperties(m_handle, format, &result);
 	return result;
 }
 
-VkImageFormatProperties VKLPhysicalDevice::getImageFormatProperties(VkFormat format, VkImageType type, VkImageTiling tiling, VkImageUsageFlags usage, VkImageCreateFlags flags) {
+VkImageFormatProperties VKLPhysicalDevice::getImageFormatProperties(VkFormat format, VkImageType type, VkImageTiling tiling, VkImageUsageFlags usage, VkImageCreateFlags flags) const {
 	VkImageFormatProperties result;
 	VK_CALL(m_instance->vk.GetPhysicalDeviceImageFormatProperties(m_handle, format, type, tiling, usage, flags, &result));
 	return result;
 }
 
-VkPhysicalDeviceProperties VKLPhysicalDevice::getProperties() {
+VkPhysicalDeviceProperties VKLPhysicalDevice::getProperties() const {
 	return m_properties;
 }
 
-const std::vector<VkQueueFamilyProperties>& VKLPhysicalDevice::getQueueFamilyProperties() {
+const std::vector<VkQueueFamilyProperties>& VKLPhysicalDevice::getQueueFamilyProperties() const {
 	return m_queueFamilyProperties;
 }
 
-VkPhysicalDeviceMemoryProperties VKLPhysicalDevice::getMemoryProperties() {
+VkPhysicalDeviceMemoryProperties VKLPhysicalDevice::getMemoryProperties() const {
 	return m_memoryProperties;
 }
 
-std::vector<VkSparseImageFormatProperties> VKLPhysicalDevice::getSparseImageProperties(VkFormat format, VkImageType type, VkSampleCountFlagBits samples, VkImageUsageFlags usage, VkImageTiling tiling) {
-	std::vector<VkSparseImageFormatProperties> result;
-
-	VkSparseImageFormatProperties* sparseImageFormatProperties = NULL;
-	uint32_t sparseImageFormatPropertyCount = 0;
-
-	m_instance->vk.GetPhysicalDeviceSparseImageFormatProperties(m_handle, format, type, samples, usage, tiling, &sparseImageFormatPropertyCount, NULL);
-	sparseImageFormatProperties = (VkSparseImageFormatProperties*)malloc(sizeof(VkSparseImageFormatProperties) * sparseImageFormatPropertyCount);
-	m_instance->vk.GetPhysicalDeviceSparseImageFormatProperties(m_handle, format, type, samples, usage, tiling, &sparseImageFormatPropertyCount, sparseImageFormatProperties);
-
-	for (int i = 0; i < sparseImageFormatPropertyCount; i++) {
-		result.push_back(sparseImageFormatProperties[i]);
-	}
-
-	free(sparseImageFormatProperties);
-
-	return result;
-}
-
-
-std::vector<VkExtensionProperties>& VKLPhysicalDevice::getExtensions() {
+const std::vector<VkExtensionProperties>& VKLPhysicalDevice::getExtensions() const {
 	return m_extensions;
 }
 
-VkBool32 VKLPhysicalDevice::getSurfaceSupport(VkSurfaceKHR surface, uint32_t queueFamilyIndex) {
+VkBool32 VKLPhysicalDevice::getSurfaceSupport(VkSurfaceKHR surface, uint32_t queueFamilyIndex) const {
 	VkBool32 result = VK_FALSE;
 	VK_CALL(m_instance->vk.GetPhysicalDeviceSurfaceSupportKHR(m_handle, queueFamilyIndex, surface, &result));
 	return result;
 }
 
-VkSurfaceCapabilitiesKHR VKLPhysicalDevice::getSurfaceCapabilities(VkSurfaceKHR surface) {
+VkSurfaceCapabilitiesKHR VKLPhysicalDevice::getSurfaceCapabilities(VkSurfaceKHR surface) const {
 	VkSurfaceCapabilitiesKHR result;
 	m_instance->vk.GetPhysicalDeviceSurfaceCapabilitiesKHR(m_handle, surface, &result);
 	return result;
 }
 
-std::vector<VkSurfaceFormatKHR> VKLPhysicalDevice::getSurfaceFormats(VkSurfaceKHR surface) {
+std::vector<VkSurfaceFormatKHR> VKLPhysicalDevice::getSurfaceFormats(VkSurfaceKHR surface) const {
 	std::vector<VkSurfaceFormatKHR> result;
 	uint32_t count;
 	m_instance->vk.GetPhysicalDeviceSurfaceFormatsKHR(m_handle, surface, &count, NULL);
@@ -103,11 +84,11 @@ std::vector<VkSurfaceFormatKHR> VKLPhysicalDevice::getSurfaceFormats(VkSurfaceKH
 	return result;
 }
 
-std::vector<VkPresentModeKHR> VKLPhysicalDevice::getSurfacePresentModes(VkSurfaceKHR surface) {
+std::vector<VkPresentModeKHR> VKLPhysicalDevice::getSurfacePresentModes(VkSurfaceKHR surface) const {
 	std::vector<VkPresentModeKHR> result;
 	uint32_t count;
 	m_instance->vk.GetPhysicalDeviceSurfacePresentModesKHR(m_handle, surface, &count, NULL);
-	result.reserve(count);
+	result.resize(count);
 	m_instance->vk.GetPhysicalDeviceSurfacePresentModesKHR(m_handle, surface, &count, result.data());
 	return result;
 }

@@ -48,6 +48,7 @@ void VKLQueue::waitIdle() {
 	m_device->vk.QueueWaitIdle(m_handle);
 }
 
+/*
 VKLQueueCreateInfo::VKLQueueCreateInfo(uint32_t typeCount, VKLPhysicalDevice* physicalDevice) {
 	priorities = (float**)malloc(sizeof(float*) * typeCount);
 	this->typeCount = typeCount;
@@ -113,3 +114,4 @@ VKLQueueCreateInfo::~VKLQueueCreateInfo() {
 	free(priorities);
 	free(createInfos);
 }
+*/

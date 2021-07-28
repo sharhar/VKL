@@ -137,28 +137,39 @@ typedef struct VKLDevicePFNS {
 	PFN_vkQueuePresentKHR QueuePresentKHR;
 } VKLDevicePFNS;
 
-typedef struct VKLDeviceCreateInfo {
-	VKLDeviceCreateInfo(VKLInstance* instance, VKLPhysicalDevice* physicalDevice, VKLQueueCreateInfo* queueCreateInfo);
+typedef enum VKLQueueType {
+	VKL_QUEUE_TYPE_GRAPHICS = 1,
+	VKL_QUEUE_TYPE_COMPUTE = 2,
+	VKL_QUEUE_TYPE_TRANSFER = 3
+} VKLQueueType;
 
-	void addExtension(char* extension);
-
-	VKLInstance* instance;
-	VKLPhysicalDevice* physicalDevice;
-	VKLQueueCreateInfo* queueCreateInfo;
-	std::vector<char*> extensions;
-} VKLDeviceCreateInfo;
-
-class VKLDevice {
+class VKLDeviceCreateInfo : public VKLCreateInfo {
 public:
-	VKLDevice(VKLDeviceCreateInfo* createInfo);
-
-	VkDevice handle() { return m_handle; }
-	VkAllocationCallbacks* allocationCallbacks() { return m_allocationCallbacks;}
-	VmaAllocator allocator() { return m_allocator; }
-	PFN_vkVoidFunction procAddr(const char* name) { return vk.GetDeviceProcAddr(m_handle, name); }
-	VKLPhysicalDevice* physical() { return m_physicalDevice; }
+	VKLDeviceCreateInfo();
 	
-	VKLQueue& getQueue(uint32_t typeIndex, uint32_t queueIndex);
+	VKLDeviceCreateInfo& seyPhysicalDevice(const VKLPhysicalDevice& physicalDevice);
+	VKLDeviceCreateInfo& setTypeCount(VKLQueueType type, uint32_t count);
+	VKLDeviceCreateInfo& addExtension(char* extension);
+
+	bool isValid() const;
+	
+	const VKLInstance* instance;
+	const VKLPhysicalDevice* physicalDevice;
+	std::vector<char*> extensions;
+	
+	uint32_t queueTypeCounts[3];
+};
+
+class VKLDevice : public VKLHandle<VkDevice>, public VKLBuilder<VKLDeviceCreateInfo> {
+public:
+	VKLDevice();
+
+	const VkAllocationCallbacks* allocationCallbacks() { return m_allocationCallbacks;}
+	const VmaAllocator allocator() { return m_allocator; }
+	PFN_vkVoidFunction procAddr(const char* name) { return vk.GetDeviceProcAddr(m_handle, name); }
+	const VKLPhysicalDevice* physical() { return m_physicalDevice; }
+	
+	VKLQueue getQueue(uint32_t typeIndex, uint32_t queueIndex);
 	
 	void destroy();
 	
@@ -167,21 +178,19 @@ public:
 	void resetFence(VkFence fence);
 	void destroyFence(VkFence fence);
 
-	//typedef VkResult (VKAPI_PTR *PFN_vkDeviceWaitIdle)(VkDevice device);
-
 	VKLDevicePFNS vk;
 	VmaVulkanFunctions vmaFuncs;
 private:
-	VkDevice m_handle;
-
 	VKLQueue** m_queues;
 	uint32_t* m_queueTypeCount;
 	uint32_t m_queuesCount;
 
-	VKLInstance* m_instance;
-	VKLPhysicalDevice* m_physicalDevice;
-	VkAllocationCallbacks* m_allocationCallbacks;
+	const VKLInstance* m_instance;
+	const VKLPhysicalDevice* m_physicalDevice;
+	const VkAllocationCallbacks* m_allocationCallbacks;
 	VmaAllocator m_allocator;
+	
+	void _build(const VKLDeviceCreateInfo& createInfo);
 };
 
 #endif

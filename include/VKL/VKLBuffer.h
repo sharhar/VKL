@@ -26,8 +26,8 @@ public:
 	VkBufferMemoryBarrier* getMemoryBarrier();
 	void resetBarrier();
 	
-	
-	bool buildable() { return true; }
+	void copyFrom(VKLBuffer* src, VKLQueue* transferQueue, VkBufferCopy bufferCopy);
+	void uploadData(VKLQueue* transferQueue, void* data, size_t size, size_t offset);
 	
 	void destroy();
 	
@@ -41,7 +41,7 @@ private:
 	VkBufferCreateInfo m_bufferCreateInfo;
 	VmaAllocationCreateInfo m_allocationCreateInfo;
 	
-	void _build();
+	void _build(const VkBufferCreateInfo& createInfo);
 };
 
 #endif /* VKLBuffer_h */

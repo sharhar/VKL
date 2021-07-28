@@ -7,23 +7,24 @@
 
 class VKLPhysicalDevice : public VKLHandle<VkPhysicalDevice> {
 public:
-	VKLPhysicalDevice(VkPhysicalDevice physicalDevice, VKLInstance* instance);
-
-	VkPhysicalDeviceFeatures getFeatures();
-	VkFormatProperties getFormatProperties(VkFormat format);
-	VkImageFormatProperties getImageFormatProperties(VkFormat format, VkImageType type, VkImageTiling tiling, VkImageUsageFlags usage, VkImageCreateFlags flags);
-	VkPhysicalDeviceProperties getProperties();
-	const std::vector<VkQueueFamilyProperties>& getQueueFamilyProperties();
-	VkPhysicalDeviceMemoryProperties getMemoryProperties();
-	std::vector<VkSparseImageFormatProperties> getSparseImageProperties(VkFormat format, VkImageType type, VkSampleCountFlagBits samples, VkImageUsageFlags usage, VkImageTiling tiling);
-	std::vector<VkExtensionProperties>& getExtensions();
+	VKLPhysicalDevice(VkPhysicalDevice physicalDevice, const VKLInstance* instance);
 	
-	VkBool32 getSurfaceSupport(VkSurfaceKHR surface, uint32_t queueFamilyIndex);
-	VkSurfaceCapabilitiesKHR getSurfaceCapabilities(VkSurfaceKHR surface);
-	std::vector<VkSurfaceFormatKHR> getSurfaceFormats(VkSurfaceKHR surface);
-	std::vector<VkPresentModeKHR> getSurfacePresentModes(VkSurfaceKHR surface);
+	const VKLInstance* getInstance() const;
+
+	VkPhysicalDeviceFeatures getFeatures() const;
+	VkFormatProperties getFormatProperties(VkFormat format) const;
+	VkImageFormatProperties getImageFormatProperties(VkFormat format, VkImageType type, VkImageTiling tiling, VkImageUsageFlags usage, VkImageCreateFlags flags) const;
+	VkPhysicalDeviceProperties getProperties() const;
+	const std::vector<VkQueueFamilyProperties>& getQueueFamilyProperties() const;
+	VkPhysicalDeviceMemoryProperties getMemoryProperties() const;
+	const std::vector<VkExtensionProperties>& getExtensions() const;
+	
+	VkBool32 getSurfaceSupport(VkSurfaceKHR surface, uint32_t queueFamilyIndex) const;
+	VkSurfaceCapabilitiesKHR getSurfaceCapabilities(VkSurfaceKHR surface) const;
+	std::vector<VkSurfaceFormatKHR> getSurfaceFormats(VkSurfaceKHR surface) const;
+	std::vector<VkPresentModeKHR> getSurfacePresentModes(VkSurfaceKHR surface) const;
 private:
-	VKLInstance* m_instance;
+	const VKLInstance* m_instance;
 
 	VkPhysicalDeviceFeatures m_features;
 	VkPhysicalDeviceProperties m_properties;

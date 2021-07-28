@@ -14,9 +14,8 @@ typedef struct VKLSwapChainCreateInfo {
 class VKLSwapChain : public VKLRenderTarget, public VKLHandle<VkSwapchainKHR>, public VKLBuilder<VKLSwapChainCreateInfo> {
 public:
 	VKLSwapChain();
-	void present();
 	
-	bool buildable() { return true; }
+	void present();
 	
 	void destroy();
 	
@@ -38,7 +37,7 @@ private:
 	void preRenderCallback(VKLCommandBuffer* cmdBuffer);
 	void postRenderCallback(VKLCommandBuffer* cmdBuffer);
 	
-	void _build();
+	void _build(VKLSwapChainCreateInfo* createInfo);
 };
 
 #endif

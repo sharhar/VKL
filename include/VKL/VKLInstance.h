@@ -3,6 +3,8 @@
 
 #include "VKL_base.h"
 
+#include <VKL/VKLPhysicalDevice.h>
+
 #include <vector>
 
 typedef struct VKLInstancePFNS {
@@ -37,21 +39,27 @@ typedef struct VKLInstancePFNS {
 	PFN_vkGetPhysicalDeviceSurfacePresentModesKHR GetPhysicalDeviceSurfacePresentModesKHR;
 } __VKLInstancePFNS;
 
-typedef struct VKLInstanceCreateInfo {
+class VKLInstanceCreateInfo : public VKLCreateInfo{
+public:
 	VKLInstanceCreateInfo();
 	
 	VKLInstanceCreateInfo& setAllocationCallbacks(VkAllocationCallbacks* allocationCallbacks);
-	VKLInstanceCreateInfo& addLayer(char* layer);
-	VKLInstanceCreateInfo& addExtension(char* extension);
-	VKLInstanceCreateInfo& addExtensions(char** extensions, uint32_t extensionCount);
+	VKLInstanceCreateInfo& addLayer(const char* layer);
+	VKLInstanceCreateInfo& addExtension(const char* extension);
+	VKLInstanceCreateInfo& addExtensions(const char** extensions, uint32_t extensionCount);
 	VKLInstanceCreateInfo& setDebug(VkBool32 debug);
 	VKLInstanceCreateInfo& setProcAddr(PFN_vkGetInstanceProcAddr vkFunc);
 	
-	std::vector<char*> layers;
-	std::vector<char*> extensions;
+	bool supportsExtension(const char* extension) const;
+	bool supportsLayer(const char* layer) const;
 	
 	std::vector<VkExtensionProperties> supportedExtensions;
 	std::vector<VkLayerProperties> supportedLayers;
+	
+	std::vector<const char*> layers;
+	std::vector<const char*> extensions;
+	
+	bool isValid() const;
 	
 	PFN_vkGetInstanceProcAddr procAddr;
 	VkBool32 debug;
@@ -62,34 +70,34 @@ typedef struct VKLInstanceCreateInfo {
 private:
 	PFN_vkEnumerateInstanceExtensionProperties m_vkEnumerateInstanceExtensionProperties;
 	PFN_vkEnumerateInstanceLayerProperties m_vkEnumerateInstanceLayerProperties;
-	
-	bool supportsExtension(char* extension);
-	bool supportsLayer(char* layer);
-} VKLInstanceCreateInfo;
+};
 
 class VKLInstance : public VKLHandle<VkInstance>, public VKLBuilder<VKLInstanceCreateInfo> {
 public:
 	VKLInstance();
+	VKLInstance(const VKLInstanceCreateInfo& createInfo);
 	
-	VkAllocationCallbacks* allocationCallbacks();
-	PFN_vkVoidFunction procAddr(const char* name);
-	const std::vector<VKLPhysicalDevice*>& getPhysicalDevices();
-	
-	bool buildable();
-	
-	void destroySurface(VkSurfaceKHR surface);
+	const VkAllocationCallbacks* allocationCallbacks() const;
+	PFN_vkVoidFunction procAddr(const char* name) const;
+	const std::vector<VKLPhysicalDevice>& getPhysicalDevices() const;
+	const std::vector<const char*>& getLayers() const;
+	const std::vector<const char*>& getExtensions() const;
+	void destroySurface(VkSurfaceKHR surface) const;
 	
 	void destroy();
 
 	VKLInstancePFNS vk;
 private:
-	VkAllocationCallbacks* m_allocationCallbacks;
+	const VkAllocationCallbacks* m_allocationCallbacks;
 
 	VkDebugReportCallbackEXT m_debugCallback;
 
-	std::vector<VKLPhysicalDevice*> m_physicalDevices;
+	std::vector<VKLPhysicalDevice> m_physicalDevices;
+	
+	std::vector<const char*> m_layers;
+	std::vector<const char*> m_extensions;
 
-	void _build();
+	void _build(const VKLInstanceCreateInfo& createInfo);
 };
 
 #endif

@@ -1,8 +1,8 @@
 #include <VKL/VKL.h>
 
-VKLDevice::VKLDevice(VKLDeviceCreateInfo* createInfo) {
-	m_instance = createInfo->instance;
-	m_physicalDevice = createInfo->physicalDevice;
+void VKLDevice::_build(const VKLDeviceCreateInfo& createInfo) {
+	m_instance = createInfo.instance;
+	m_physicalDevice = createInfo.physicalDevice;
 	m_allocationCallbacks = m_instance->allocationCallbacks();
 
 	vk.CreateDevice = (PFN_vkCreateDevice)m_instance->procAddr("vkCreateDevice");
@@ -14,12 +14,12 @@ VKLDevice::VKLDevice(VKLDeviceCreateInfo* createInfo) {
 	deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
 	deviceCreateInfo.pNext = NULL;
 	deviceCreateInfo.flags = 0;
-	deviceCreateInfo.queueCreateInfoCount = createInfo->queueCreateInfo->typeCount;
-	deviceCreateInfo.pQueueCreateInfos = createInfo->queueCreateInfo->createInfos;
-	deviceCreateInfo.enabledLayerCount = m_instance->ci.layers.size();
-	deviceCreateInfo.ppEnabledLayerNames = (const char**)m_instance->ci.layers.data();
-	deviceCreateInfo.enabledExtensionCount = createInfo->extensions.size();
-	deviceCreateInfo.ppEnabledExtensionNames = createInfo->extensions.data();
+	//deviceCreateInfo.queueCreateInfoCount = createInfo->queueCreateInfo->typeCount;
+	//deviceCreateInfo.pQueueCreateInfos = createInfo->queueCreateInfo->createInfos;
+	//deviceCreateInfo.enabledLayerCount = m_instance->ci.layers.size();
+	//deviceCreateInfo.ppEnabledLayerNames = (const char**)m_instance->ci.layers.data();
+	deviceCreateInfo.enabledExtensionCount = createInfo.extensions.size();
+	deviceCreateInfo.ppEnabledExtensionNames = createInfo.extensions.data();
 	deviceCreateInfo.pEnabledFeatures = &features;
 
 	VK_CALL(vk.CreateDevice(m_physicalDevice->handle(), &deviceCreateInfo, m_instance->allocationCallbacks(), &m_handle));
@@ -171,6 +171,8 @@ VKLDevice::VKLDevice(VKLDeviceCreateInfo* createInfo) {
 	vmaFuncs.vkDestroyImage = vk.DestroyImage;
 	vmaFuncs.vkCmdCopyBuffer = vk.CmdCopyBuffer;
 
+	/*
+	
 	m_queuesCount = createInfo->queueCreateInfo->typeCount;
 	m_queues = (VKLQueue**)malloc(sizeof(VKLQueue*) * m_queuesCount);
 	m_queueTypeCount = (uint32_t*)malloc(sizeof(uint32_t) * m_queuesCount);
@@ -188,6 +190,7 @@ VKLDevice::VKLDevice(VKLDeviceCreateInfo* createInfo) {
 			m_queues[i][j].init(this, queue, familyIndex);
 		}
 	}
+	 */
 	
 	VmaAllocatorCreateInfo vmaAllocatorCreateInfo;
 	memset(&vmaAllocatorCreateInfo, 0, sizeof(VmaAllocatorCreateInfo));
@@ -199,7 +202,7 @@ VKLDevice::VKLDevice(VKLDeviceCreateInfo* createInfo) {
 	vmaCreateAllocator(&vmaAllocatorCreateInfo, &m_allocator);
 }
 
-VKLQueue& VKLDevice::getQueue(uint32_t typeIndex, uint32_t queueIndex) {
+VKLQueue VKLDevice::getQueue(uint32_t typeIndex, uint32_t queueIndex) {
 	return m_queues[typeIndex][queueIndex];
 }
 
@@ -243,6 +246,33 @@ void VKLDevice::destroy() {
 	vk.DestroyDevice(m_handle, allocationCallbacks());
 }
 
+VKLDeviceCreateInfo::VKLDeviceCreateInfo() {
+	this->physicalDevice = NULL;
+	
+	queueTypeCounts[0] = 0;
+	queueTypeCounts[1] = 0;
+	queueTypeCounts[2] = 0;
+}
+
+VKLDeviceCreateInfo& VKLDeviceCreateInfo::seyPhysicalDevice(const VKLPhysicalDevice& physicalDevice) {
+	this->physicalDevice = &physicalDevice;
+	
+	return *this;
+}
+
+VKLDeviceCreateInfo& VKLDeviceCreateInfo::setTypeCount(VKLQueueType type, uint32_t count) {
+	queueTypeCounts[type] = count;
+}
+
+VKLDeviceCreateInfo& VKLDeviceCreateInfo::addExtension(char* extension) {
+	
+}
+
+bool VKLDeviceCreateInfo::isValid() const {
+	
+}
+
+/*
 VKLDeviceCreateInfo::VKLDeviceCreateInfo(VKLInstance* instance, VKLPhysicalDevice* physicalDevice, VKLQueueCreateInfo* queueCreateInfo) {
 	this->instance = instance;
 	this->physicalDevice = physicalDevice;
@@ -252,3 +282,4 @@ VKLDeviceCreateInfo::VKLDeviceCreateInfo(VKLInstance* instance, VKLPhysicalDevic
 void VKLDeviceCreateInfo::addExtension(char* extension) {
 	extensions.push_back(extension);
 }
+*/

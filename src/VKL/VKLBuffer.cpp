@@ -53,6 +53,40 @@ void VKLBuffer::resetBarrier() {
 	m_memoryBarrier.srcAccessMask = m_memoryBarrier.dstAccessMask;
 }
 
+void VKLBuffer::copyFrom(VKLBuffer* src, VKLQueue* transferQueue, VkBufferCopy bufferCopy) {
+	transferQueue->getCmdBuffer()->begin();
+	transferQueue->getCmdBuffer()->copyBuffer(this, src, bufferCopy);
+	transferQueue->getCmdBuffer()->end();
+	
+	VkFence fence = m_device->createFence(0);
+	transferQueue->submit(transferQueue->getCmdBuffer(), fence);
+	m_device->waitForFence(fence);
+	m_device->destroyFence(fence);
+	
+	transferQueue->getCmdBuffer()->reset();
+}
+
+void VKLBuffer::uploadData(VKLQueue* transferQueue, void* data, size_t size, size_t offset) {
+	VkBufferCreateInfo ci;
+	
+	VKLBuffer tempStageBuffer;
+	tempStageBuffer.setDevice(m_device)
+					.ciSetSize(size)
+					.ciSetMemoryUsage(VMA_MEMORY_USAGE_CPU_TO_GPU)
+					.ciAddUsage(VK_BUFFER_USAGE_TRANSFER_SRC_BIT).build(ci);
+	
+	tempStageBuffer.setData(data, size, 0);
+	
+	VkBufferCopy bufferCopy;
+	bufferCopy.size = size;
+	bufferCopy.dstOffset = offset;
+	bufferCopy.srcOffset = 0;
+	
+	copyFrom(&tempStageBuffer, transferQueue, bufferCopy);
+	
+	tempStageBuffer.destroy();
+}
+
 VKLBuffer& VKLBuffer::setDevice(VKLDevice* device) {
 	m_device = device;
 	
@@ -83,7 +117,7 @@ VKLBuffer& VKLBuffer::ciSetMemoryUsage(VmaMemoryUsage memoryUsage) {
 	return *this;
 }
 
-void VKLBuffer::_build() {
+void VKLBuffer::_build(const VkBufferCreateInfo& createInfo) {
 	VK_CALL(vmaCreateBuffer(m_device->allocator(), &m_bufferCreateInfo, &m_allocationCreateInfo, &m_handle, &m_allocation, NULL));
 	m_memoryBarrier.buffer = m_handle;
 	m_memoryBarrier.size = m_bufferCreateInfo.size;

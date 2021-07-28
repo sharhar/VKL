@@ -1,5 +1,4 @@
-#include <VKL/VKLImage.h>
-#include <VKL/VKLDevice.h>
+#include <VKL/VKL.h>
 
 VKLImage::VKLImage() {
 	m_device = NULL;

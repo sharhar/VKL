@@ -18,10 +18,6 @@
 #include <string.h>
 #include <stdlib.h>
 
-typedef struct VKLQueueCreateInfo VKLQueueCreateInfo;
-typedef struct VKLDeviceCreateInfo VKLDeviceCreateInfo;
-typedef struct VKLImageCreateInfo VKLImageCreateInfo;
-
 class VKLInstance;
 class VKLPhysicalDevice;
 class VKLDevice;
@@ -36,35 +32,36 @@ template<typename T>
 class VKLHandle {
 public:
 	VKLHandle() { m_handle = VK_NULL_HANDLE;}
-	T handle() { return m_handle; }
+	T handle() const { return m_handle; }
 protected:
 	T m_handle;
+};
+
+class VKLCreateInfo {
+public:
+	virtual bool isValid() const = 0;
 };
 
 template<typename T>
 class VKLBuilder {
 public:
-	VKLBuilder(char* name) { m_built = VK_FALSE; m_name = name; }
-	VkBool32 built() { return m_built; }
-	void build() {
-		if(buildable()) {
-			_build();
+	VKLBuilder(const char* name) : m_name(name) { m_built = VK_FALSE; }
+	VkBool32 built() const { return m_built; }
+	void build(const T& ci) {
+		if(((VKLCreateInfo*)(&ci))->isValid()) {
+			_build(ci);
 			m_built = VK_TRUE;
-			
 		} else {
 			printf("%s could not be built because the createInfo was not filled in.\n", m_name);
 		}
-		
 	}
-	virtual bool buildable() = 0;
-	virtual void destroy() = 0;
 	
-	T ci;
+	virtual void destroy() = 0;
 protected:
 	VkBool32 m_built;
-	char* m_name;
+	const char* m_name;
 	
-	virtual void _build() = 0;
+	virtual void _build(const T& ci) = 0;
 };
 
 #endif
