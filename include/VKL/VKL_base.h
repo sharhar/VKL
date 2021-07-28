@@ -39,7 +39,7 @@ protected:
 
 class VKLCreateInfo {
 public:
-	virtual bool isValid() const = 0;
+	virtual bool validate() = 0;
 };
 
 template<typename T>
@@ -48,7 +48,7 @@ public:
 	VKLBuilder(const char* name) : m_name(name) { m_built = VK_FALSE; }
 	VkBool32 built() const { return m_built; }
 	void build(const T& ci) {
-		if(((VKLCreateInfo*)(&ci))->isValid()) {
+		if(((VKLCreateInfo*)(&ci))->validate()) {
 			_build(ci);
 			m_built = VK_TRUE;
 		} else {

@@ -1,6 +1,6 @@
 #include <VKL/VKL.h>
 
-VKLBuffer::VKLBuffer() : VKLBuilder<VkBufferCreateInfo>("VKLBuffer") {
+VKLBuffer::VKLBuffer() : VKLBuilder<VKLBufferCreateInfo>("VKLBuffer") {
 	m_device = NULL;
 	
 	memset(&m_bufferCreateInfo, 0, sizeof(VkBufferCreateInfo));
@@ -67,7 +67,7 @@ void VKLBuffer::copyFrom(VKLBuffer* src, VKLQueue* transferQueue, VkBufferCopy b
 }
 
 void VKLBuffer::uploadData(VKLQueue* transferQueue, void* data, size_t size, size_t offset) {
-	VkBufferCreateInfo ci;
+	VKLBufferCreateInfo ci;
 	
 	VKLBuffer tempStageBuffer;
 	tempStageBuffer.setDevice(m_device)
@@ -117,7 +117,7 @@ VKLBuffer& VKLBuffer::ciSetMemoryUsage(VmaMemoryUsage memoryUsage) {
 	return *this;
 }
 
-void VKLBuffer::_build(const VkBufferCreateInfo& createInfo) {
+void VKLBuffer::_build(const VKLBufferCreateInfo& createInfo) {
 	VK_CALL(vmaCreateBuffer(m_device->allocator(), &m_bufferCreateInfo, &m_allocationCreateInfo, &m_handle, &m_allocation, NULL));
 	m_memoryBarrier.buffer = m_handle;
 	m_memoryBarrier.size = m_bufferCreateInfo.size;
@@ -127,3 +127,6 @@ void VKLBuffer::destroy() {
 	vmaDestroyBuffer(m_device->allocator(), m_handle, m_allocation);
 }
 
+bool VKLBufferCreateInfo::validate() {
+	return true;
+}

@@ -5,7 +5,7 @@
 
 class VKLCommandBuffer : public VKLHandle<VkCommandBuffer> {
 public:
-	VKLCommandBuffer(VKLQueue* queue);
+	VKLCommandBuffer(const VKLQueue* queue);
 
 	VkCommandPool pool();
 	
@@ -22,8 +22,8 @@ public:
 private:
 	VkCommandPool m_pool;
 	
-	VKLQueue* m_queue;
-	VKLDevice* m_device;
+	const VKLQueue* m_queue;
+	const VKLDevice* m_device;
 };
 
 #endif /* VKLCommandBuffer_h */

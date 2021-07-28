@@ -9,7 +9,7 @@ class VKLPhysicalDevice : public VKLHandle<VkPhysicalDevice> {
 public:
 	VKLPhysicalDevice(VkPhysicalDevice physicalDevice, const VKLInstance* instance);
 	
-	const VKLInstance* getInstance() const;
+	const VKLInstance* instance() const;
 
 	VkPhysicalDeviceFeatures getFeatures() const;
 	VkFormatProperties getFormatProperties(VkFormat format) const;

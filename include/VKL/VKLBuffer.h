@@ -10,7 +10,12 @@
 
 #include "VKL_base.h"
 
-class VKLBuffer : public VKLHandle<VkBuffer>, public VKLBuilder<VkBufferCreateInfo> {
+class VKLBufferCreateInfo : public VKLCreateInfo {
+public:
+	bool validate();
+};
+
+class VKLBuffer : public VKLHandle<VkBuffer>, public VKLBuilder<VKLBufferCreateInfo> {
 public:
 	VKLBuffer();
 	
@@ -41,7 +46,7 @@ private:
 	VkBufferCreateInfo m_bufferCreateInfo;
 	VmaAllocationCreateInfo m_allocationCreateInfo;
 	
-	void _build(const VkBufferCreateInfo& createInfo);
+	void _build(const VKLBufferCreateInfo& createInfo);
 };
 
 #endif /* VKLBuffer_h */

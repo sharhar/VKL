@@ -3,6 +3,8 @@
 
 #include "VKL_base.h"
 
+#include "VKLQueue.h"
+
 #include <vector>
 
 typedef struct VKLDevicePFNS {
@@ -138,9 +140,9 @@ typedef struct VKLDevicePFNS {
 } VKLDevicePFNS;
 
 typedef enum VKLQueueType {
-	VKL_QUEUE_TYPE_GRAPHICS = 1,
-	VKL_QUEUE_TYPE_COMPUTE = 2,
-	VKL_QUEUE_TYPE_TRANSFER = 3
+	VKL_QUEUE_TYPE_GRAPHICS = 0,
+	VKL_QUEUE_TYPE_COMPUTE = 1,
+	VKL_QUEUE_TYPE_TRANSFER = 2
 } VKLQueueType;
 
 class VKLDeviceCreateInfo : public VKLCreateInfo {
@@ -148,42 +150,47 @@ public:
 	VKLDeviceCreateInfo();
 	
 	VKLDeviceCreateInfo& seyPhysicalDevice(const VKLPhysicalDevice& physicalDevice);
-	VKLDeviceCreateInfo& setTypeCount(VKLQueueType type, uint32_t count);
-	VKLDeviceCreateInfo& addExtension(char* extension);
+	VKLDeviceCreateInfo& setQueueTypeCount(VKLQueueType type, uint32_t count);
+	VKLDeviceCreateInfo& addExtension(const char* extension);
 
-	bool isValid() const;
+	bool validate();
 	
 	const VKLInstance* instance;
 	const VKLPhysicalDevice* physicalDevice;
-	std::vector<char*> extensions;
+	std::vector<const char*> extensions;
 	
 	uint32_t queueTypeCounts[3];
+	
+	std::vector<int32_t> queueTypeIndicies[3];
+	
+	std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
+	VkDeviceCreateInfo createInfo;
+	VkPhysicalDeviceFeatures features;
 };
 
 class VKLDevice : public VKLHandle<VkDevice>, public VKLBuilder<VKLDeviceCreateInfo> {
 public:
 	VKLDevice();
+	VKLDevice(const VKLDeviceCreateInfo& createInfo);
 
-	const VkAllocationCallbacks* allocationCallbacks() { return m_allocationCallbacks;}
-	const VmaAllocator allocator() { return m_allocator; }
-	PFN_vkVoidFunction procAddr(const char* name) { return vk.GetDeviceProcAddr(m_handle, name); }
-	const VKLPhysicalDevice* physical() { return m_physicalDevice; }
+	const VkAllocationCallbacks* allocationCallbacks() const;
+	const VmaAllocator allocator() const;
+	PFN_vkVoidFunction procAddr(const char* name) const;
+	const VKLPhysicalDevice* physical() const;
 	
-	VKLQueue getQueue(uint32_t typeIndex, uint32_t queueIndex);
+	VKLQueue getQueue(VKLQueueType type, uint32_t queueIndex) const;
 	
 	void destroy();
 	
-	VkFence createFence(VkFenceCreateFlags flags);
-	void waitForFence(VkFence fence);
-	void resetFence(VkFence fence);
-	void destroyFence(VkFence fence);
+	VkFence createFence(VkFenceCreateFlags flags) const;
+	void waitForFence(VkFence fence) const;
+	void resetFence(VkFence fence) const;
+	void destroyFence(VkFence fence) const;
 
 	VKLDevicePFNS vk;
 	VmaVulkanFunctions vmaFuncs;
 private:
-	VKLQueue** m_queues;
-	uint32_t* m_queueTypeCount;
-	uint32_t m_queuesCount;
+	std::vector<VKLQueue> m_queues[3];
 
 	const VKLInstance* m_instance;
 	const VKLPhysicalDevice* m_physicalDevice;

@@ -6,19 +6,19 @@
 class VKLQueue : public VKLHandle<VkQueue> {
 public:
 	VKLQueue();
-	void init(VKLDevice* device, VkQueue queue, uint32_t familyIndex);
+	void init(const VKLDevice* device, VkQueue queue, uint32_t familyIndex);
 
-	uint32_t getFamilyIndex();
-	VKLDevice* getDevice();
-	VKLCommandBuffer* getCmdBuffer();
+	uint32_t getFamilyIndex() const;
+	const VKLDevice* device() const;
+	VKLCommandBuffer* getCmdBuffer() const;
 	
-	void submit(VKLCommandBuffer* cmdBuffer, VkFence fence);
-	void waitIdle();
+	void submit(const VKLCommandBuffer* cmdBuffer, VkFence fence) const;
+	void waitIdle() const;
 private:
 	uint32_t m_familyIndex;
 	VKLCommandBuffer* m_cmdBuffer;
 
-	VKLDevice* m_device;
+	const VKLDevice* m_device;
 };
 
 #endif 

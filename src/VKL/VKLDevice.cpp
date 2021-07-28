@@ -1,5 +1,19 @@
 #include <VKL/VKL.h>
 
+VKLDevice::VKLDevice() : VKLBuilder<VKLDeviceCreateInfo>("VKLDevice") {
+	m_instance = NULL;
+	m_physicalDevice = NULL;
+	m_allocationCallbacks = NULL;
+}
+
+
+VKLDevice::VKLDevice(const VKLDeviceCreateInfo& createInfo) : VKLBuilder<VKLDeviceCreateInfo>("VKLDevice")  {
+	m_instance = NULL;
+	m_physicalDevice = NULL;
+	m_allocationCallbacks = NULL;
+	build(createInfo);
+}
+
 void VKLDevice::_build(const VKLDeviceCreateInfo& createInfo) {
 	m_instance = createInfo.instance;
 	m_physicalDevice = createInfo.physicalDevice;
@@ -8,21 +22,7 @@ void VKLDevice::_build(const VKLDeviceCreateInfo& createInfo) {
 	vk.CreateDevice = (PFN_vkCreateDevice)m_instance->procAddr("vkCreateDevice");
 	vk.GetDeviceProcAddr = (PFN_vkGetDeviceProcAddr)m_instance->procAddr("vkGetDeviceProcAddr");
 
-	VkPhysicalDeviceFeatures features = m_physicalDevice->getFeatures();
-
-	VkDeviceCreateInfo deviceCreateInfo;
-	deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-	deviceCreateInfo.pNext = NULL;
-	deviceCreateInfo.flags = 0;
-	//deviceCreateInfo.queueCreateInfoCount = createInfo->queueCreateInfo->typeCount;
-	//deviceCreateInfo.pQueueCreateInfos = createInfo->queueCreateInfo->createInfos;
-	//deviceCreateInfo.enabledLayerCount = m_instance->ci.layers.size();
-	//deviceCreateInfo.ppEnabledLayerNames = (const char**)m_instance->ci.layers.data();
-	deviceCreateInfo.enabledExtensionCount = createInfo.extensions.size();
-	deviceCreateInfo.ppEnabledExtensionNames = createInfo.extensions.data();
-	deviceCreateInfo.pEnabledFeatures = &features;
-
-	VK_CALL(vk.CreateDevice(m_physicalDevice->handle(), &deviceCreateInfo, m_instance->allocationCallbacks(), &m_handle));
+	VK_CALL(vk.CreateDevice(m_physicalDevice->handle(), &createInfo.createInfo, m_instance->allocationCallbacks(), &m_handle));
 
 	vk.DestroyDevice = (PFN_vkDestroyDevice)procAddr("vkDestroyDevice");
 	vk.GetDeviceQueue = (PFN_vkGetDeviceQueue)procAddr("vkGetDeviceQueue");
@@ -171,26 +171,22 @@ void VKLDevice::_build(const VKLDeviceCreateInfo& createInfo) {
 	vmaFuncs.vkDestroyImage = vk.DestroyImage;
 	vmaFuncs.vkCmdCopyBuffer = vk.CmdCopyBuffer;
 
-	/*
+	uint32_t* queueFamilyCurrentIndicies = (uint32_t*)malloc(sizeof(uint32_t) * physical()->getQueueFamilyProperties().size());
+	memset(queueFamilyCurrentIndicies, 0, sizeof(uint32_t) * physical()->getQueueFamilyProperties().size());
 	
-	m_queuesCount = createInfo->queueCreateInfo->typeCount;
-	m_queues = (VKLQueue**)malloc(sizeof(VKLQueue*) * m_queuesCount);
-	m_queueTypeCount = (uint32_t*)malloc(sizeof(uint32_t) * m_queuesCount);
-	
-	for (int i = 0; i < m_queuesCount; i++) {
-		uint32_t thisTypeCount = createInfo->queueCreateInfo->createInfos[i].queueCount;
-		uint32_t familyIndex = createInfo->queueCreateInfo->createInfos[i].queueFamilyIndex;
-
-		m_queueTypeCount[i] = thisTypeCount;
-		m_queues[i] = new VKLQueue[thisTypeCount];
-
-		for (int j = 0; j < thisTypeCount; j++) {
+	for(int i = 0; i < 3; i++) {
+		for(int j = 0; j < createInfo.queueTypeIndicies[i].size(); j++) {
+			uint32_t familyIndex = createInfo.queueTypeIndicies[i][j];
+			
 			VkQueue queue;
 			vk.GetDeviceQueue(m_handle, familyIndex, j, &queue);
-			m_queues[i][j].init(this, queue, familyIndex);
+			
+			m_queues[i].push_back(VKLQueue());
+			m_queues[i].back().init(this, queue, familyIndex);
 		}
 	}
-	 */
+	
+	free(queueFamilyCurrentIndicies);
 	
 	VmaAllocatorCreateInfo vmaAllocatorCreateInfo;
 	memset(&vmaAllocatorCreateInfo, 0, sizeof(VmaAllocatorCreateInfo));
@@ -202,11 +198,27 @@ void VKLDevice::_build(const VKLDeviceCreateInfo& createInfo) {
 	vmaCreateAllocator(&vmaAllocatorCreateInfo, &m_allocator);
 }
 
-VKLQueue VKLDevice::getQueue(uint32_t typeIndex, uint32_t queueIndex) {
-	return m_queues[typeIndex][queueIndex];
+const VkAllocationCallbacks* VKLDevice::allocationCallbacks() const {
+	return m_allocationCallbacks;
 }
 
-VkFence VKLDevice::createFence(VkFenceCreateFlags flags) {
+const VmaAllocator VKLDevice::allocator() const {
+	return m_allocator;
+}
+
+PFN_vkVoidFunction VKLDevice::procAddr(const char* name) const {
+	return vk.GetDeviceProcAddr(m_handle, name);
+}
+
+const VKLPhysicalDevice* VKLDevice::physical() const {
+	return m_physicalDevice;
+}
+
+VKLQueue VKLDevice::getQueue(VKLQueueType type, uint32_t queueIndex) const {
+	return m_queues[type][queueIndex];
+}
+
+VkFence VKLDevice::createFence(VkFenceCreateFlags flags) const {
 	VkFenceCreateInfo fenceCreateInfo;
 	fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
 	fenceCreateInfo.pNext = NULL;
@@ -217,29 +229,24 @@ VkFence VKLDevice::createFence(VkFenceCreateFlags flags) {
 	return result;
 }
 
-void VKLDevice::waitForFence(VkFence fence) {
+void VKLDevice::waitForFence(VkFence fence) const {
 	VK_CALL(vk.WaitForFences(m_handle, 1, &fence, VK_TRUE, UINT64_MAX));
 }
 
-void VKLDevice::resetFence(VkFence fence) {
+void VKLDevice::resetFence(VkFence fence) const {
 	VK_CALL(vk.ResetFences(m_handle, 1, &fence));
 }
 
-void VKLDevice::destroyFence(VkFence fence) {
+void VKLDevice::destroyFence(VkFence fence) const {
 	VK_CALL(vk.DestroyFence(m_handle, fence, m_allocationCallbacks));
 }
 
 void VKLDevice::destroy() {
-	for (int i = 0; i < m_queuesCount; i++) {
-		for (int j = 0; j < m_queueTypeCount[i]; j++) {
+	for (int i = 0; i < 3; i++) {
+		for (int j = 0; j < m_queues[i].size(); j++) {
 			m_queues[i][j].getCmdBuffer()->destroy();
 		}
-		
-		delete[] m_queues[i];
 	}
-
-	free(m_queueTypeCount);
-	free(m_queues);
 	
 	vmaDestroyAllocator(m_allocator);
 
@@ -247,39 +254,168 @@ void VKLDevice::destroy() {
 }
 
 VKLDeviceCreateInfo::VKLDeviceCreateInfo() {
-	this->physicalDevice = NULL;
+	physicalDevice = NULL;
+	instance = NULL;
 	
 	queueTypeCounts[0] = 0;
 	queueTypeCounts[1] = 0;
 	queueTypeCounts[2] = 0;
+	
+	memset(&features, 0, sizeof(VkPhysicalDeviceFeatures));
+	memset(&createInfo, 0, sizeof(VkDeviceCreateInfo));
+	
+	createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+	createInfo.pNext = NULL;
+	createInfo.flags = 0;
+	createInfo.pEnabledFeatures = &features;
 }
 
 VKLDeviceCreateInfo& VKLDeviceCreateInfo::seyPhysicalDevice(const VKLPhysicalDevice& physicalDevice) {
 	this->physicalDevice = &physicalDevice;
 	
+	instance = physicalDevice.instance();
+	
+	features = physicalDevice.getFeatures();
+	
+	createInfo.enabledLayerCount = instance->getLayers().size();
+	createInfo.ppEnabledLayerNames = instance->getLayers().data();
+	
 	return *this;
 }
 
-VKLDeviceCreateInfo& VKLDeviceCreateInfo::setTypeCount(VKLQueueType type, uint32_t count) {
+VKLDeviceCreateInfo& VKLDeviceCreateInfo::setQueueTypeCount(VKLQueueType type, uint32_t count) {
 	queueTypeCounts[type] = count;
-}
-
-VKLDeviceCreateInfo& VKLDeviceCreateInfo::addExtension(char* extension) {
 	
+	return *this;
 }
 
-bool VKLDeviceCreateInfo::isValid() const {
-	
-}
-
-/*
-VKLDeviceCreateInfo::VKLDeviceCreateInfo(VKLInstance* instance, VKLPhysicalDevice* physicalDevice, VKLQueueCreateInfo* queueCreateInfo) {
-	this->instance = instance;
-	this->physicalDevice = physicalDevice;
-	this->queueCreateInfo = queueCreateInfo;
-}
-
-void VKLDeviceCreateInfo::addExtension(char* extension) {
+VKLDeviceCreateInfo& VKLDeviceCreateInfo::addExtension(const char* extension) {
 	extensions.push_back(extension);
+	
+	createInfo.enabledExtensionCount = extensions.size();
+	createInfo.ppEnabledExtensionNames = extensions.data();
+	
+	return *this;
 }
-*/
+
+static int32_t getQueueFamilyWithProperties(const VKLPhysicalDevice* physicalDevice, const std::vector<VkQueueFamilyProperties>& queueFamilyProperties,VkQueueFlags supportFlags, VkQueueFlags excludeFlags, VkSurfaceKHR surface) {
+	for (int i = 0; i < queueFamilyProperties.size(); i++) {
+		if(queueFamilyProperties[i].queueCount == 0) {
+			continue;
+		}
+		
+		VkQueueFlags queueFlags = queueFamilyProperties[i].queueFlags;
+			
+		VkBool32 surfaceSupport = VK_TRUE;
+		
+		if(surface != VK_NULL_HANDLE) {
+			surfaceSupport = physicalDevice->getSurfaceSupport(surface, i);
+		}
+		
+		if ((queueFlags & supportFlags) && !(queueFlags & excludeFlags) && surfaceSupport) {
+			return i;
+		}
+	}
+
+	return -1;
+}
+
+static bool allocateQueueType(const VKLPhysicalDevice* physicalDevice, std::vector<VkQueueFamilyProperties>& queueFamilyProperties, uint32_t* queueFamilyCounts,
+							  uint32_t typeCount, std::vector<int32_t>& typeFamilyIndicies, VkQueueFlags supportedFlags, VkQueueFlags weakExcludeFlags, VkQueueFlags strongExcludeFlags, VkSurfaceKHR surface) {
+	for(int i = 0; i < typeCount; i++) {
+		int32_t index = getQueueFamilyWithProperties(physicalDevice, queueFamilyProperties, supportedFlags, weakExcludeFlags | strongExcludeFlags, surface);
+		
+		if(index != -1) {
+			typeFamilyIndicies.push_back(index);
+			queueFamilyProperties[index].queueCount = queueFamilyProperties[index].queueCount - 1;
+			queueFamilyCounts[index] = queueFamilyCounts[index] + 1;
+		}
+	}
+	
+	for(int i = typeFamilyIndicies.size(); i < typeCount; i++) {
+		int32_t index = getQueueFamilyWithProperties(physicalDevice, queueFamilyProperties, supportedFlags, strongExcludeFlags, surface);
+		
+		if(index != -1) {
+			typeFamilyIndicies.push_back(index);
+			queueFamilyProperties[index].queueCount = queueFamilyProperties[index].queueCount - 1;
+			queueFamilyCounts[index] = queueFamilyCounts[index] + 1;
+		}
+	}
+	
+	for(int i = typeFamilyIndicies.size(); i < typeCount; i++) {
+		int32_t index = getQueueFamilyWithProperties(physicalDevice, queueFamilyProperties, supportedFlags, 0, surface);
+		
+		if(index != -1) {
+			typeFamilyIndicies.push_back(index);
+			queueFamilyProperties[index].queueCount = queueFamilyProperties[index].queueCount - 1;
+			queueFamilyCounts[index] = queueFamilyCounts[index] + 1;
+		}
+	}
+	
+	return typeFamilyIndicies.size() == typeCount;
+}
+
+bool VKLDeviceCreateInfo::validate() {
+	if(physicalDevice == NULL) {
+		return false;
+	}
+	
+	queueCreateInfos.clear();
+	queueTypeIndicies[0].clear();
+	queueTypeIndicies[1].clear();
+	queueTypeIndicies[2].clear();
+	
+	std::vector<VkQueueFamilyProperties> queueFamilyProperties = physicalDevice->getQueueFamilyProperties();
+	
+	uint32_t* queueFamilyCounts = (uint32_t*)malloc(sizeof(uint32_t) * queueFamilyProperties.size());
+	memset(queueFamilyCounts, 0, sizeof(uint32_t) * queueFamilyProperties.size());
+	
+	
+	if(!allocateQueueType(physicalDevice, queueFamilyProperties, queueFamilyCounts, queueTypeCounts[VKL_QUEUE_TYPE_GRAPHICS], queueTypeIndicies[VKL_QUEUE_TYPE_GRAPHICS],
+														VK_QUEUE_GRAPHICS_BIT, VK_QUEUE_TRANSFER_BIT, VK_QUEUE_COMPUTE_BIT, VK_NULL_HANDLE)) {
+		free(queueFamilyCounts);
+		
+		return false;
+	}
+	
+	if(!allocateQueueType(physicalDevice, queueFamilyProperties, queueFamilyCounts, queueTypeCounts[VKL_QUEUE_TYPE_COMPUTE], queueTypeIndicies[VKL_QUEUE_TYPE_COMPUTE],
+														VK_QUEUE_COMPUTE_BIT, VK_QUEUE_TRANSFER_BIT, VK_QUEUE_GRAPHICS_BIT, VK_NULL_HANDLE)) {
+		free(queueFamilyCounts);
+		
+		return false;
+	}
+	
+	if(!allocateQueueType(physicalDevice, queueFamilyProperties, queueFamilyCounts, queueTypeCounts[VKL_QUEUE_TYPE_TRANSFER], queueTypeIndicies[VKL_QUEUE_TYPE_TRANSFER],
+														VK_QUEUE_TRANSFER_BIT, VK_QUEUE_COMPUTE_BIT, VK_QUEUE_GRAPHICS_BIT, VK_NULL_HANDLE)) {
+		free(queueFamilyCounts);
+		
+		return false;
+	}
+	
+	for(int i = 0; i < queueFamilyProperties.size(); i++) {
+		if(queueFamilyCounts[i] > 0) {
+			float* priorities = (float*)malloc(sizeof(float) * queueFamilyCounts[i]); //TODO: free these allocations in a destructor
+			
+			for(int j = 0; j < queueFamilyCounts[i]; j++) {
+				priorities[j] = 1.0f;
+			}
+			
+			VkDeviceQueueCreateInfo queueCreateInfo;
+			queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+			queueCreateInfo.pNext = NULL;
+			queueCreateInfo.flags = 0;
+			queueCreateInfo.queueFamilyIndex = i;
+			queueCreateInfo.queueCount = queueFamilyCounts[i];
+			queueCreateInfo.pQueuePriorities = priorities;
+			
+			queueCreateInfos.push_back(queueCreateInfo);
+		}
+	}
+	
+	createInfo.queueCreateInfoCount = queueCreateInfos.size();
+	createInfo.pQueueCreateInfos = queueCreateInfos.data();
+	
+	free(queueFamilyCounts);
+	
+	return true;
+}

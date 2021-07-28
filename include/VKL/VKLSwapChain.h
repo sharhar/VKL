@@ -37,7 +37,7 @@ private:
 	void preRenderCallback(VKLCommandBuffer* cmdBuffer);
 	void postRenderCallback(VKLCommandBuffer* cmdBuffer);
 	
-	void _build(VKLSwapChainCreateInfo* createInfo);
+	void _build(const VKLSwapChainCreateInfo& createInfo);
 };
 
 #endif

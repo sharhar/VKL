@@ -27,7 +27,7 @@ VKLPhysicalDevice::VKLPhysicalDevice(VkPhysicalDevice physicalDevice, const VKLI
 	instance->vk.EnumerateDeviceExtensionProperties(m_handle, NULL, &extensionCount, m_extensions.data());
 }
 
-const VKLInstance* VKLPhysicalDevice::getInstance() const {
+const VKLInstance* VKLPhysicalDevice::instance() const {
 	return m_instance;
 }
 

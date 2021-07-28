@@ -47,8 +47,10 @@ public:
 	VKLInstanceCreateInfo& addLayer(const char* layer);
 	VKLInstanceCreateInfo& addExtension(const char* extension);
 	VKLInstanceCreateInfo& addExtensions(const char** extensions, uint32_t extensionCount);
-	VKLInstanceCreateInfo& setDebug(VkBool32 debug);
+	VKLInstanceCreateInfo& makeDebug();
 	VKLInstanceCreateInfo& setProcAddr(PFN_vkGetInstanceProcAddr vkFunc);
+	
+	void printSelections();
 	
 	bool supportsExtension(const char* extension) const;
 	bool supportsLayer(const char* layer) const;
@@ -59,10 +61,9 @@ public:
 	std::vector<const char*> layers;
 	std::vector<const char*> extensions;
 	
-	bool isValid() const;
+	bool validate();
 	
 	PFN_vkGetInstanceProcAddr procAddr;
-	VkBool32 debug;
 	VkAllocationCallbacks* allocationCallbacks;
 	
 	VkApplicationInfo appInfo;

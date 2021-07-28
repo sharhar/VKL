@@ -4,11 +4,11 @@ VKLSwapChain::VKLSwapChain() : VKLBuilder<VKLSwapChainCreateInfo>("VKLSwapChain"
 	
 }
 
-void VKLSwapChain::_build(VKLSwapChainCreateInfo* createInfo) {
-	m_device = createInfo->device;
-	m_queue = createInfo->queue;
+void VKLSwapChain::_build(const VKLSwapChainCreateInfo& createInfo) {
+	m_device = createInfo.device;
+	m_queue = createInfo.queue;
 	
-	std::vector<VkSurfaceFormatKHR> surfaceFormats = m_device->physical()->getSurfaceFormats(createInfo->surface);
+	std::vector<VkSurfaceFormatKHR> surfaceFormats = m_device->physical()->getSurfaceFormats(createInfo.surface);
 
 	VkFormat colorFormat;
 	if (surfaceFormats[0].format == VK_FORMAT_UNDEFINED) {
@@ -21,7 +21,7 @@ void VKLSwapChain::_build(VKLSwapChainCreateInfo* createInfo) {
 	VkColorSpaceKHR colorSpace;
 	colorSpace = surfaceFormats[0].colorSpace;
 
-	VkSurfaceCapabilitiesKHR surfaceCapabilities = m_device->physical()->getSurfaceCapabilities(createInfo->surface);
+	VkSurfaceCapabilitiesKHR surfaceCapabilities = m_device->physical()->getSurfaceCapabilities(createInfo.surface);
 
 	uint32_t desiredImageCount = 2;
 	if (desiredImageCount < surfaceCapabilities.minImageCount) {
@@ -51,7 +51,7 @@ void VKLSwapChain::_build(VKLSwapChainCreateInfo* createInfo) {
 		preTransform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
 	}
 
-	std::vector<VkPresentModeKHR> presentModes = m_device->physical()->getSurfacePresentModes(createInfo->surface);
+	std::vector<VkPresentModeKHR> presentModes = m_device->physical()->getSurfacePresentModes(createInfo.surface);
 
 	VkPresentModeKHR presentationMode = VK_PRESENT_MODE_IMMEDIATE_KHR;//VK_PRESENT_MODE_FIFO_KHR;
 
@@ -69,7 +69,7 @@ void VKLSwapChain::_build(VKLSwapChainCreateInfo* createInfo) {
 	VkSwapchainCreateInfoKHR swapChainCreateInfo;
 	memset(&swapChainCreateInfo, 0, sizeof(VkSwapchainCreateInfoKHR));
 	swapChainCreateInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-	swapChainCreateInfo.surface = createInfo->surface;
+	swapChainCreateInfo.surface = createInfo.surface;
 	swapChainCreateInfo.minImageCount = desiredImageCount;
 	swapChainCreateInfo.imageFormat = colorFormat;
 	swapChainCreateInfo.imageColorSpace = colorSpace;
@@ -106,7 +106,6 @@ void VKLSwapChain::_build(VKLSwapChainCreateInfo* createInfo) {
 	VKLCommandBuffer* cmdBuffer = m_queue->getCmdBuffer();
 	
 	cmdBuffer->begin();
-
 	
 	for (int i = 0; i < m_swapChainImageCount; i++) {
 		m_swapChainImages[i].setNewAccessMask(VK_ACCESS_MEMORY_READ_BIT);
@@ -211,8 +210,6 @@ void VKLSwapChain::present() {
 	presentInfo.pResults = NULL;
 	
 	VK_CALL(m_device->vk.QueuePresentKHR(m_queue->handle(), &presentInfo));
-	
-	//m_queue->waitIdle();
 	
 	m_device->vk.DestroySemaphore(m_device->handle(), m_presentSemaphore, m_device->allocationCallbacks());
 	

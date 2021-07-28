@@ -1,8 +1,8 @@
 #include <VKL/VKL.h>
 
-VKLCommandBuffer::VKLCommandBuffer(VKLQueue* queue) {
+VKLCommandBuffer::VKLCommandBuffer(const VKLQueue* queue) {
 	m_queue = queue;
-	m_device = queue->getDevice();
+	m_device = queue->device();
 	
 	VkCommandPoolCreateInfo commandPoolCreateInfo;
 	commandPoolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;

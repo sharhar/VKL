@@ -25,66 +25,6 @@ void VKLInstance::_build(const VKLInstanceCreateInfo& createInfo) {
 
 	m_extensions.insert(m_extensions.end(), createInfo.extensions.begin(), createInfo.extensions.end());
 	m_layers.insert(m_layers.end(), createInfo.layers.begin(), createInfo.layers.end());
-	
-	if (createInfo.debug) {
-		if(createInfo.supportsLayer("VK_LAYER_KHRONOS_validation")) {
-			m_layers.push_back("VK_LAYER_KHRONOS_validation");
-		}
-		if(createInfo.supportsExtension("VK_EXT_debug_report")) {
-			m_extensions.push_back("VK_EXT_debug_report");
-		}
-		
-		printf("Layers:\n");
-		for (uint32_t i = 0; i < createInfo.supportedLayers.size(); ++i) {
-			printf("\tLayer ");
-			if (i < 10) {
-				printf(" ");
-			}
-			printf(" %d: %s", i, createInfo.supportedLayers[i].layerName);
-			for (uint32_t j = 0; j < createInfo.layers.size(); ++j) {
-				if (strcmp(createInfo.supportedLayers[i].layerName, createInfo.layers[j]) == 0) {
-					for (int k = 0; k < 50 - strlen(createInfo.supportedLayers[i].layerName); k++) {
-						printf(" ");
-					}
-					printf(" - Selected");
-				}
-			}
-			printf("\n");
-		}
-
-		printf("Extensions:\n");
-		for (uint32_t i = 0; i < createInfo.supportedExtensions.size(); ++i) {
-			printf("\tExtension ");
-			if (i < 10) {
-				printf(" ");
-			}
-			printf(" %d: %s", i, createInfo.supportedExtensions[i].extensionName);
-			for (uint32_t j = 0; j < createInfo.extensions.size(); ++j) {
-				if (strcmp(createInfo.supportedExtensions[i].extensionName, createInfo.extensions[j]) == 0) {
-					for (int k = 0; k < 50 - strlen(createInfo.supportedExtensions[i].extensionName); k++) {
-						printf(" ");
-					}
-					printf(" - Selected");
-				}
-			}
-			printf("\n");
-		}
-		/*
-		printf("\n");
-		for(int i = 0; i < instance.getPhysicalDevices().size(); i++) {
-			VKLPhysicalDevice* physicalDevice = instance.getPhysicalDevices()[i];
-			printf("Device %d (%s):\n", i, physicalDevice->getProperties().deviceName);
-			
-			printf("\tExtensions:\n");
-			for (int j = 0; j < physicalDevice->getExtensions().size(); j++) {
-				VkExtensionProperties extensionProps = physicalDevice->getExtensions()[j];
-				
-				printf("\t\t%d: %s\n", j, extensionProps.extensionName);
-			}
-			printf("\n");
-		}
-		*/
-	}
 
 	VK_CALL(vk.CreateInstance(&createInfo.ci, m_allocationCallbacks, &m_handle));
 
@@ -175,6 +115,44 @@ VKLInstanceCreateInfo::VKLInstanceCreateInfo() {
 	procAddr = NULL;
 }
 
+void VKLInstanceCreateInfo::printSelections() {
+	printf("Layers:\n");
+	for (uint32_t i = 0; i < supportedLayers.size(); ++i) {
+		printf("\tLayer ");
+		if (i < 10) {
+			printf(" ");
+		}
+		printf(" %d: %s", i, supportedLayers[i].layerName);
+		for (uint32_t j = 0; j < layers.size(); ++j) {
+			if (strcmp(supportedLayers[i].layerName, layers[j]) == 0) {
+				for (int k = 0; k < 50 - strlen(supportedLayers[i].layerName); k++) {
+					printf(" ");
+				}
+				printf(" - Selected");
+			}
+		}
+		printf("\n");
+	}
+
+	printf("Extensions:\n");
+	for (uint32_t i = 0; i < supportedExtensions.size(); ++i) {
+		printf("\tExtension ");
+		if (i < 10) {
+			printf(" ");
+		}
+		printf(" %d: %s", i, supportedExtensions[i].extensionName);
+		for (uint32_t j = 0; j < extensions.size(); ++j) {
+			if (strcmp(supportedExtensions[i].extensionName, extensions[j]) == 0) {
+				for (int k = 0; k < 50 - strlen(supportedExtensions[i].extensionName); k++) {
+					printf(" ");
+				}
+				printf(" - Selected");
+			}
+		}
+		printf("\n");
+	}
+}
+
 VKLInstanceCreateInfo& VKLInstanceCreateInfo::setProcAddr(PFN_vkGetInstanceProcAddr vkFunc) {
 	procAddr = vkFunc;
 	
@@ -259,8 +237,10 @@ VKLInstanceCreateInfo& VKLInstanceCreateInfo::addExtensions(const char** extensi
 	return *this;
 }
 
-VKLInstanceCreateInfo& VKLInstanceCreateInfo::setDebug(VkBool32 debug) {
-	this->debug = debug;
+VKLInstanceCreateInfo& VKLInstanceCreateInfo::makeDebug() {
+	addExtension("VK_EXT_debug_report");
+	addLayer("VK_LAYER_KHRONOS_validation");
+	
 	return *this;
 }
 
@@ -284,6 +264,6 @@ bool VKLInstanceCreateInfo::supportsLayer(const char* layer) const {
 	return false;
 }
 
-bool VKLInstanceCreateInfo::isValid() const {
+bool VKLInstanceCreateInfo::validate() {
 	return procAddr != NULL;
 }
