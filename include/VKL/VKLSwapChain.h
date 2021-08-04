@@ -5,11 +5,26 @@
 
 #include "VKLRenderTarget.h"
 
-typedef struct VKLSwapChainCreateInfo {
-	VKLDevice* device;
-	VKLQueue* queue;
-	VkSurfaceKHR surface;
-} VKLSwapChainCreateInfo;
+class VKLSwapChainCreateInfo : public VKLCreateInfo {
+public:
+	VKLSwapChainCreateInfo();
+	
+	VKLSwapChainCreateInfo& setQueue(const VKLQueue* queue);
+	VKLSwapChainCreateInfo& setSurface(const VkSurfaceKHR surface);
+	VKLSwapChainCreateInfo& setSize(VkExtent2D size);
+	VKLSwapChainCreateInfo& setImageFormat(VkFormat format);
+	VKLSwapChainCreateInfo& setImageCount(uint32_t imageCount);
+	VKLSwapChainCreateInfo& setPreTransform(VkSurfaceTransformFlagBitsKHR preTransform);
+	VKLSwapChainCreateInfo& setPresentMode(VkPresentModeKHR presentMode);
+	
+	const VKLQueue* queue;
+	const VkSurfaceKHR surface;
+	VkExtent2D size;
+	
+	VkSwapchainCreateInfoKHR createInfo;
+	
+	bool validate();
+};
 
 class VKLSwapChain : public VKLRenderTarget, public VKLHandle<VkSwapchainKHR>, public VKLBuilder<VKLSwapChainCreateInfo> {
 public:
@@ -30,8 +45,8 @@ private:
 	
 	VkSemaphore m_presentSemaphore;
 
-	VKLDevice* m_device;
-	VKLQueue* m_queue;
+	const VKLDevice* m_device;
+	const VKLQueue* m_queue;
 	
 	VkFramebuffer getCurrentFramebuffer();
 	void preRenderCallback(VKLCommandBuffer* cmdBuffer);

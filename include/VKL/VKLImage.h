@@ -21,9 +21,9 @@ typedef struct VKLImageCreateInfo {
 class VKLImage {
 public:
 	VKLImage();
-	VKLImage(VKLImageCreateInfo* createInfo, VKLDevice* device);
+	VKLImage(VKLImageCreateInfo* createInfo, const VKLDevice* device);
 
-	void create(VKLImageCreateInfo* createInfo, VKLDevice* device);
+	void create(VKLImageCreateInfo* createInfo, const VKLDevice* device);
 	
 	void setNewAccessMask(VkAccessFlags accessMask);
 	void setNewLayout(VkImageLayout layout);
@@ -42,7 +42,7 @@ private:
 
 	VmaAllocation m_allocation;
 
-	VKLDevice* m_device;
+	const VKLDevice* m_device;
 };
 
 #endif

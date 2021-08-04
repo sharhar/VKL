@@ -1,6 +1,6 @@
 #include <VKL/VKL.h>
 
-void VKLRenderTarget::initRenderTarget(VKLDevice* device, VkAttachmentDescription* attachmentDescriptions, uint32_t attachmentDescriptionCount, VkSubpassDescription* subpasses, uint32_t subpassCount) {
+void VKLRenderTarget::initRenderTarget(const VKLDevice* device, VkAttachmentDescription* attachmentDescriptions, uint32_t attachmentDescriptionCount, VkSubpassDescription* subpasses, uint32_t subpassCount) {
 	m_device = device;
 	
 	VkRenderPassCreateInfo renderPassCreateInfo;

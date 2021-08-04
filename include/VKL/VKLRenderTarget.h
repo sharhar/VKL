@@ -19,7 +19,7 @@ public:
 	void endRender(VKLCommandBuffer* cmdBuffer);
 	
 protected:
-	void initRenderTarget(VKLDevice* device, VkAttachmentDescription* attachmentDescriptions, uint32_t attachmentDescriptionCount, VkSubpassDescription* subpasses, uint32_t subpassCount);
+	void initRenderTarget(const VKLDevice* device, VkAttachmentDescription* attachmentDescriptions, uint32_t attachmentDescriptionCount, VkSubpassDescription* subpasses, uint32_t subpassCount);
 	
 	virtual VkFramebuffer getCurrentFramebuffer() = 0;
 	virtual void preRenderCallback(VKLCommandBuffer* cmdBuffer) = 0;
@@ -33,7 +33,7 @@ protected:
 	uint32_t m_clearValueCount;
 	VkClearValue* m_clearValues;
 private:
-	VKLDevice* m_device;
+	const VKLDevice* m_device;
 	
 };
 

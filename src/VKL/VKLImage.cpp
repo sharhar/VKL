@@ -7,7 +7,7 @@ VKLImage::VKLImage() {
 	m_view = VK_NULL_HANDLE;
 }
 
-VKLImage::VKLImage(VKLImageCreateInfo* createInfo, VKLDevice* device) {
+VKLImage::VKLImage(VKLImageCreateInfo* createInfo, const VKLDevice* device) {
 	m_device = NULL;
 	m_allocation = VK_NULL_HANDLE;
 	m_handle = VK_NULL_HANDLE;
@@ -15,7 +15,7 @@ VKLImage::VKLImage(VKLImageCreateInfo* createInfo, VKLDevice* device) {
 	create(createInfo, device);
 }
 
-void VKLImage::create(VKLImageCreateInfo* createInfo, VKLDevice* device) {
+void VKLImage::create(VKLImageCreateInfo* createInfo, const VKLDevice* device) {
 	m_device = device;
 
 	if (createInfo->imgHandle != VK_NULL_HANDLE) {

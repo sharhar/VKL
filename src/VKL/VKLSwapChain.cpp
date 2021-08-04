@@ -5,7 +5,7 @@ VKLSwapChain::VKLSwapChain() : VKLBuilder<VKLSwapChainCreateInfo>("VKLSwapChain"
 }
 
 void VKLSwapChain::_build(const VKLSwapChainCreateInfo& createInfo) {
-	m_device = createInfo.device;
+	m_device = createInfo.queue->device();
 	m_queue = createInfo.queue;
 	
 	std::vector<VkSurfaceFormatKHR> surfaceFormats = m_device->physical()->getSurfaceFormats(createInfo.surface);
@@ -254,4 +254,8 @@ void VKLSwapChain::postRenderCallback(VKLCommandBuffer* cmdBuffer) {
 	m_swapChainImages[m_currentImgIndex].setNewLayout(VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 	cmdBuffer->imageBarrier(&m_swapChainImages[m_currentImgIndex], VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT);
 	m_swapChainImages[m_currentImgIndex].resetBarrier();
+}
+
+bool VKLSwapChainCreateInfo::validate() {
+	return true;
 }
