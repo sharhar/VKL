@@ -12,18 +12,26 @@
 
 class VKLBufferCreateInfo : public VKLCreateInfo {
 public:
+	VKLBufferCreateInfo();
+	
+	VKLBufferCreateInfo& setDevice(const VKLDevice* device);
+	VKLBufferCreateInfo& setSize(VkDeviceSize size);
+	VKLBufferCreateInfo& setUsage(VkBufferUsageFlags usage);
+	VKLBufferCreateInfo& setAllocationFlags(VmaAllocationCreateFlags flags);
+	VKLBufferCreateInfo& setMemoryUsage(VmaMemoryUsage memoryUsage);
+	
+	VkBufferCreateInfo bufferCreateInfo;
+	VmaAllocationCreateInfo allocationCreateInfo;
+	
+	const VKLDevice* device;
+	
 	bool validate();
 };
 
 class VKLBuffer : public VKLHandle<VkBuffer>, public VKLBuilder<VKLBufferCreateInfo> {
 public:
 	VKLBuffer();
-	
-	VKLBuffer& setDevice(VKLDevice* device);
-	VKLBuffer& ciSetSize(VkDeviceSize size);
-	VKLBuffer& ciAddUsage(VkBufferUsageFlags usage);
-	VKLBuffer& ciAddAllocationFlag(VmaAllocationCreateFlags flags);
-	VKLBuffer& ciSetMemoryUsage(VmaMemoryUsage memoryUsage);
+	VKLBuffer(const VKLBufferCreateInfo& createInfo);
 	
 	void setData(void* data, size_t size, size_t offset);
 	
@@ -37,14 +45,11 @@ public:
 	void destroy();
 	
 private:
-	VKLDevice* m_device;
+	const VKLDevice* m_device;
 	
 	VmaAllocation m_allocation;
 	
 	VkBufferMemoryBarrier m_memoryBarrier;
-	
-	VkBufferCreateInfo m_bufferCreateInfo;
-	VmaAllocationCreateInfo m_allocationCreateInfo;
 	
 	void _build(const VKLBufferCreateInfo& createInfo);
 };

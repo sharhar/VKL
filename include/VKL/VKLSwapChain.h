@@ -9,8 +9,8 @@ class VKLSwapChainCreateInfo : public VKLCreateInfo {
 public:
 	VKLSwapChainCreateInfo();
 	
-	VKLSwapChainCreateInfo& setQueue(const VKLQueue* queue);
-	VKLSwapChainCreateInfo& setSurface(const VkSurfaceKHR surface);
+	VKLSwapChainCreateInfo& setQueue(const VKLQueue& queue);
+	VKLSwapChainCreateInfo& setSurface(VkSurfaceKHR surface);
 	VKLSwapChainCreateInfo& setSize(VkExtent2D size);
 	VKLSwapChainCreateInfo& setImageFormat(VkFormat format);
 	VKLSwapChainCreateInfo& setImageCount(uint32_t imageCount);
@@ -18,8 +18,6 @@ public:
 	VKLSwapChainCreateInfo& setPresentMode(VkPresentModeKHR presentMode);
 	
 	const VKLQueue* queue;
-	const VkSurfaceKHR surface;
-	VkExtent2D size;
 	
 	VkSwapchainCreateInfoKHR createInfo;
 	
@@ -29,14 +27,13 @@ public:
 class VKLSwapChain : public VKLRenderTarget, public VKLHandle<VkSwapchainKHR>, public VKLBuilder<VKLSwapChainCreateInfo> {
 public:
 	VKLSwapChain();
+	VKLSwapChain(const VKLSwapChainCreateInfo& createInfo);
 	
 	void present();
 	
 	void destroy();
 	
 private:
-	VkExtent2D m_size;
-
 	VKLImage* m_swapChainImages;
 	VkFramebuffer* m_frameBuffers;
 	uint32_t m_swapChainImageCount;

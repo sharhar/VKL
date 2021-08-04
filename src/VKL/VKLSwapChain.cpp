@@ -4,86 +4,16 @@ VKLSwapChain::VKLSwapChain() : VKLBuilder<VKLSwapChainCreateInfo>("VKLSwapChain"
 	
 }
 
+
+VKLSwapChain::VKLSwapChain(const VKLSwapChainCreateInfo& createInfo) : VKLBuilder<VKLSwapChainCreateInfo>("VKLSwapChain")  {
+	this->build(createInfo);
+}
+
 void VKLSwapChain::_build(const VKLSwapChainCreateInfo& createInfo) {
 	m_device = createInfo.queue->device();
 	m_queue = createInfo.queue;
-	
-	std::vector<VkSurfaceFormatKHR> surfaceFormats = m_device->physical()->getSurfaceFormats(createInfo.surface);
 
-	VkFormat colorFormat;
-	if (surfaceFormats[0].format == VK_FORMAT_UNDEFINED) {
-		colorFormat = VK_FORMAT_B8G8R8_UNORM;
-	}
-	else {
-		colorFormat = surfaceFormats[0].format;
-	}
-
-	VkColorSpaceKHR colorSpace;
-	colorSpace = surfaceFormats[0].colorSpace;
-
-	VkSurfaceCapabilitiesKHR surfaceCapabilities = m_device->physical()->getSurfaceCapabilities(createInfo.surface);
-
-	uint32_t desiredImageCount = 2;
-	if (desiredImageCount < surfaceCapabilities.minImageCount) {
-		desiredImageCount = surfaceCapabilities.minImageCount;
-	}
-	else if (surfaceCapabilities.maxImageCount != 0 &&
-		desiredImageCount > surfaceCapabilities.maxImageCount) {
-		desiredImageCount = surfaceCapabilities.maxImageCount;
-	}
-
-	m_size.width = 800;
-	m_size.height = 600;
-
-	VkExtent2D surfaceResolution = surfaceCapabilities.currentExtent;
-	
-	printf("res: %d %d\n", surfaceResolution.width, surfaceResolution.height);
-	
-	if (surfaceResolution.width == -1) {
-		surfaceResolution = m_size;
-	}
-	else {
-		m_size = surfaceResolution;
-	}
-
-	VkSurfaceTransformFlagBitsKHR preTransform = surfaceCapabilities.currentTransform;
-	if (surfaceCapabilities.supportedTransforms & VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR) {
-		preTransform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
-	}
-
-	std::vector<VkPresentModeKHR> presentModes = m_device->physical()->getSurfacePresentModes(createInfo.surface);
-
-	VkPresentModeKHR presentationMode = VK_PRESENT_MODE_IMMEDIATE_KHR;//VK_PRESENT_MODE_FIFO_KHR;
-
-	/*
-	if (!vSync) {
-		for (uint32_t i = 0; i < presentModeCount; ++i) {
-			if (presentModes[i] == VK_PRESENT_MODE_IMMEDIATE_KHR) {
-				presentationMode = VK_PRESENT_MODE_IMMEDIATE_KHR;
-				break;
-			}
-		}
-	}
-	*/
-
-	VkSwapchainCreateInfoKHR swapChainCreateInfo;
-	memset(&swapChainCreateInfo, 0, sizeof(VkSwapchainCreateInfoKHR));
-	swapChainCreateInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-	swapChainCreateInfo.surface = createInfo.surface;
-	swapChainCreateInfo.minImageCount = desiredImageCount;
-	swapChainCreateInfo.imageFormat = colorFormat;
-	swapChainCreateInfo.imageColorSpace = colorSpace;
-	swapChainCreateInfo.imageExtent = surfaceResolution;
-	swapChainCreateInfo.imageArrayLayers = 1;
-	swapChainCreateInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-	swapChainCreateInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
-	swapChainCreateInfo.preTransform = preTransform;
-	swapChainCreateInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-	swapChainCreateInfo.presentMode = presentationMode;
-	swapChainCreateInfo.clipped = VK_TRUE;
-	swapChainCreateInfo.oldSwapchain = VK_NULL_HANDLE;
-
-	VK_CALL(m_device->vk.CreateSwapchainKHR(m_device->handle(), &swapChainCreateInfo, m_device->allocationCallbacks(), &m_handle));
+	VK_CALL(m_device->vk.CreateSwapchainKHR(m_device->handle(), &createInfo.createInfo, m_device->allocationCallbacks(), &m_handle));
 
 	VkImage* presentImages = NULL;
 
@@ -93,7 +23,11 @@ void VKLSwapChain::_build(const VKLSwapChainCreateInfo& createInfo) {
 
 	m_swapChainImages = new VKLImage[m_swapChainImageCount];
 
-	VKLImageCreateInfo imageCreateInfo(colorFormat, surfaceResolution.width, surfaceResolution.height, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
+	VKLImageCreateInfo imageCreateInfo(createInfo.createInfo.imageFormat,
+									   createInfo.createInfo.imageExtent.width,
+									   createInfo.createInfo.imageExtent.height,
+									   VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
+	
 	imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
 	for(int i = 0; i < m_swapChainImageCount; i++) {
@@ -122,7 +56,7 @@ void VKLSwapChain::_build(const VKLSwapChainCreateInfo& createInfo) {
 	
 	VkAttachmentDescription passAttachments[2];
 	memset(passAttachments, 0, sizeof(VkAttachmentDescription) * 2);
-	passAttachments[0].format = colorFormat;
+	passAttachments[0].format = createInfo.createInfo.imageFormat;
 	passAttachments[0].samples = VK_SAMPLE_COUNT_1_BIT;
 	passAttachments[0].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 	passAttachments[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -168,23 +102,22 @@ void VKLSwapChain::_build(const VKLSwapChainCreateInfo& createInfo) {
 	frameBufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
 	frameBufferCreateInfo.renderPass = m_renderPass;
 	frameBufferCreateInfo.attachmentCount = 1;
-	//frameBufferCreateInfo.pAttachments = frameBufferAttachments;
-	frameBufferCreateInfo.width = m_size.width;
-	frameBufferCreateInfo.height = m_size.height;
+	frameBufferCreateInfo.pAttachments = frameBufferAttachments;
+	frameBufferCreateInfo.width = createInfo.createInfo.imageExtent.width;
+	frameBufferCreateInfo.height = createInfo.createInfo.imageExtent.height;
 	frameBufferCreateInfo.layers = 1;
 	
 	m_frameBuffers = (VkFramebuffer*)malloc(sizeof(VkFramebuffer) * m_swapChainImageCount);
 	
 	for(int i = 0; i < m_swapChainImageCount; i++) {
-		VkImageView tempView = m_swapChainImages[i].view();
-		frameBufferCreateInfo.pAttachments = &tempView;
+		frameBufferAttachments[0] = m_swapChainImages[i].view();
 		
 		VK_CALL(m_device->vk.CreateFramebuffer(m_device->handle(), &frameBufferCreateInfo, m_device->allocationCallbacks(), &m_frameBuffers[i]));
 	}
 	
 	m_renderArea.offset.x = 0;
 	m_renderArea.offset.y = 0;
-	m_renderArea.extent = m_size;
+	m_renderArea.extent = createInfo.createInfo.imageExtent;
 	
 	m_device->waitForFence(fence);
 	m_device->destroyFence(fence);
@@ -256,6 +189,155 @@ void VKLSwapChain::postRenderCallback(VKLCommandBuffer* cmdBuffer) {
 	m_swapChainImages[m_currentImgIndex].resetBarrier();
 }
 
+VKLSwapChainCreateInfo::VKLSwapChainCreateInfo() {
+	queue = NULL;
+	
+	memset(&createInfo, 0, sizeof(VkSwapchainCreateInfoKHR));
+	createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+	createInfo.pNext = NULL;
+	createInfo.flags = 0;
+	createInfo.surface = VK_NULL_HANDLE;
+	createInfo.minImageCount = 2;
+	createInfo.imageFormat = VK_FORMAT_UNDEFINED;
+	createInfo.imageExtent.width = -1;
+	createInfo.imageExtent.height = -1;
+	createInfo.imageArrayLayers = 1;
+	createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+	createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+	createInfo.queueFamilyIndexCount = 0;
+	createInfo.pQueueFamilyIndices = NULL;
+	createInfo.preTransform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
+	createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+	createInfo.presentMode = VK_PRESENT_MODE_FIFO_KHR;
+	createInfo.clipped = VK_TRUE;
+	createInfo.oldSwapchain = VK_NULL_HANDLE;
+}
+
+VKLSwapChainCreateInfo& VKLSwapChainCreateInfo::setQueue(const VKLQueue& queue) {
+	this->queue = &queue;
+	
+	return *this;
+}
+
+VKLSwapChainCreateInfo& VKLSwapChainCreateInfo::setSurface(VkSurfaceKHR surface) {
+	createInfo.surface = surface;
+	
+	return *this;
+}
+
+VKLSwapChainCreateInfo& VKLSwapChainCreateInfo::setSize(VkExtent2D size) {
+	createInfo.imageExtent = size;
+	
+	return *this;
+}
+
+VKLSwapChainCreateInfo& VKLSwapChainCreateInfo::setImageFormat(VkFormat format) {
+	createInfo.imageFormat = format;
+	
+	return *this;
+}
+
+VKLSwapChainCreateInfo& VKLSwapChainCreateInfo::setImageCount(uint32_t imageCount) {
+	createInfo.minImageCount = imageCount;
+	
+	return *this;
+}
+
+VKLSwapChainCreateInfo& VKLSwapChainCreateInfo::setPreTransform(VkSurfaceTransformFlagBitsKHR preTransform) {
+	createInfo.preTransform = preTransform;
+	
+	return *this;
+}
+
+VKLSwapChainCreateInfo& VKLSwapChainCreateInfo::setPresentMode(VkPresentModeKHR presentMode) {
+	createInfo.presentMode = presentMode;
+	
+	return *this;
+}
+
 bool VKLSwapChainCreateInfo::validate() {
+	if(queue == NULL || createInfo.surface == VK_NULL_HANDLE) {
+		return false;
+	}
+	
+	const VKLPhysicalDevice* physicalDevice = queue->device()->physical();
+	
+	if(!physicalDevice->getSurfaceSupport(createInfo.surface, queue->getFamilyIndex())) {
+		return false;
+	}
+	
+	std::vector<VkSurfaceFormatKHR> surfaceFormats = physicalDevice->getSurfaceFormats(createInfo.surface);
+	
+	VkBool32 foundFormat = VK_FALSE;
+	
+	for(VkSurfaceFormatKHR surfaceFormat : surfaceFormats) {
+		if(surfaceFormat.format == createInfo.imageFormat) {
+			createInfo.imageColorSpace = surfaceFormat.colorSpace;
+			foundFormat = VK_TRUE;
+		}
+	}
+	
+	if(!foundFormat) {
+		createInfo.imageFormat = surfaceFormats[0].format;
+		createInfo.imageColorSpace = surfaceFormats[0].colorSpace;
+	}
+	
+	VkSurfaceCapabilitiesKHR surfaceCapabilities = physicalDevice->getSurfaceCapabilities(createInfo.surface);
+
+	if (createInfo.minImageCount < surfaceCapabilities.minImageCount) {
+		createInfo.minImageCount = surfaceCapabilities.minImageCount;
+	}
+	else if (surfaceCapabilities.maxImageCount != 0 && createInfo.minImageCount > surfaceCapabilities.maxImageCount) {
+		createInfo.minImageCount = surfaceCapabilities.maxImageCount;
+	}
+	
+	if(surfaceCapabilities.currentExtent.width == -1) {
+		if(createInfo.imageExtent.width == -1) {
+			createInfo.imageExtent.width = 800;
+		}
+		
+		if(createInfo.imageExtent.width < surfaceCapabilities.minImageExtent.width) {
+			createInfo.imageExtent.width = surfaceCapabilities.minImageExtent.width;
+		}
+		
+		if(createInfo.imageExtent.width > surfaceCapabilities.maxImageExtent.width) {
+			createInfo.imageExtent.width = surfaceCapabilities.maxImageExtent.width;
+		}
+	} else {
+		createInfo.imageExtent.width = surfaceCapabilities.currentExtent.width;
+	}
+	
+	if(surfaceCapabilities.currentExtent.height == -1) {
+		if(createInfo.imageExtent.height == -1) {
+			createInfo.imageExtent.height = 600;
+		}
+		
+		if(createInfo.imageExtent.height < surfaceCapabilities.minImageExtent.height) {
+			createInfo.imageExtent.height = surfaceCapabilities.minImageExtent.height;
+		}
+		
+		if(createInfo.imageExtent.height > surfaceCapabilities.maxImageExtent.height) {
+			createInfo.imageExtent.height = surfaceCapabilities.maxImageExtent.height;
+		}
+	} else {
+		createInfo.imageExtent.height = surfaceCapabilities.currentExtent.height;
+	}
+	
+	//TODO: finish checking for support of parameters specified by surfaceCapabilities
+	
+	std::vector<VkPresentModeKHR> presentModes = physicalDevice->getSurfacePresentModes(createInfo.surface);
+	
+	VkBool32 foundPresentMode = VK_FALSE;
+	
+	for(VkPresentModeKHR presentMode : presentModes) {
+		if(presentMode == createInfo.presentMode) {
+			foundPresentMode = VK_TRUE;
+		}
+	}
+	
+	if(!foundPresentMode) {
+		createInfo.presentMode = VK_PRESENT_MODE_FIFO_KHR;
+	}
+	
 	return true;
 }
