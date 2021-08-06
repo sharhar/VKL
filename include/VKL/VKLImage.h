@@ -3,27 +3,41 @@
 
 #include "VKL_base.h"
 
-typedef struct VKLImageCreateInfo {
-	VKLImageCreateInfo(VkFormat format, uint32_t width, uint32_t height, VkImageUsageFlags usage);
+class VKLImageCreateInfo : public VKLCreateInfo  {
+public:
+	VKLImageCreateInfo();
+	
+	VKLImageCreateInfo& setDevice(const VKLDevice* device);
+	
+	VKLImageCreateInfo& setHandle(VkImage image);
+	
+	VKLImageCreateInfo& setImageType(VkImageType type);
+	VKLImageCreateInfo& setFormat(VkFormat format);
+	VKLImageCreateInfo& setExtent(uint32_t width, uint32_t height, uint32_t depth);
+	VKLImageCreateInfo& setTiling(VkImageTiling tiling);
+	VKLImageCreateInfo& setUsage(VkImageUsageFlags usage);
+	VKLImageCreateInfo& setInitialLayout(VkImageLayout layout);
+	
+	VKLImageCreateInfo& setViewType(VkImageViewType type);
+	VKLImageCreateInfo& setViewFormat(VkFormat format);
+	
+	VKLImageCreateInfo& setAllocationFlags(VmaAllocationCreateFlags flags);
+	VKLImageCreateInfo& setMemoryUsage(VmaMemoryUsage memoryUsage);
+	
+	bool validate();
+	
+	VkImageCreateInfo imageCreateInfo;
+	VkImageViewCreateInfo viewCreateInfo;
+	VmaAllocationCreateInfo allocationCreateInfo;
+	VkImage handle;
+	
+	const VKLDevice* device;
+};
 
-	VkFormat format;
-	uint32_t width, height, depth;
-	VkImageType imageType;
-	uint32_t mipLevels, arrayLayers;
-	VkSampleCountFlags sampleCount;
-	VkImageTiling tiling;
-	VkImageUsageFlags usage;
-	VkImageLayout initialLayout;
-
-	VkImage imgHandle;
-} VKLImageCreateInfo;
-
-class VKLImage {
+class VKLImage : public VKLHandle<VkImage>, public VKLBuilder<VKLImageCreateInfo> {
 public:
 	VKLImage();
-	VKLImage(VKLImageCreateInfo* createInfo, const VKLDevice* device);
-
-	void create(VKLImageCreateInfo* createInfo, const VKLDevice* device);
+	VKLImage(const VKLImageCreateInfo& createInfo);
 	
 	void setNewAccessMask(VkAccessFlags accessMask);
 	void setNewLayout(VkImageLayout layout);
@@ -31,18 +45,17 @@ public:
 	VkImageMemoryBarrier* getMemoryBarrier();
 	void resetBarrier();
 
-	VkImage handle();
 	VkImageView view();
+	
 	void destroy();
 private:
-	VkImage m_handle;
 	VkImageView m_view;
-	
 	VkImageMemoryBarrier m_memoryBarrier;
-
 	VmaAllocation m_allocation;
 
 	const VKLDevice* m_device;
+	
+	void _build(const VKLImageCreateInfo& createInfo);
 };
 
 #endif

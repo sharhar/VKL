@@ -22,17 +22,13 @@ void VKLSwapChain::_build(const VKLSwapChainCreateInfo& createInfo) {
 	m_device->vk.GetSwapchainImagesKHR(m_device->handle(), m_handle, &m_swapChainImageCount, presentImages);
 
 	m_swapChainImages = new VKLImage[m_swapChainImageCount];
-
-	VKLImageCreateInfo imageCreateInfo(createInfo.createInfo.imageFormat,
-									   createInfo.createInfo.imageExtent.width,
-									   createInfo.createInfo.imageExtent.height,
-									   VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
 	
-	imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	VKLImageCreateInfo imageCreateInfo;
+	imageCreateInfo.setDevice(m_device).setViewFormat(createInfo.createInfo.imageFormat);
 
 	for(int i = 0; i < m_swapChainImageCount; i++) {
-		imageCreateInfo.imgHandle = presentImages[i];
-		m_swapChainImages[i].create(&imageCreateInfo, m_device);
+		imageCreateInfo.setHandle(presentImages[i]);
+		m_swapChainImages[i].build(imageCreateInfo);
 	}
 
 	free(presentImages);
