@@ -11,26 +11,6 @@ void VKLPipeline::destroy() {
 void VKLPipeline::_build(const VKLPipelineCreateInfo& createInfo) {
 	m_device = createInfo.shader->device();
 	
-	VkVertexInputBindingDescription vertexInputBindingDesc;
-	vertexInputBindingDesc.binding = 0;
-	vertexInputBindingDesc.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-	vertexInputBindingDesc.stride = sizeof(float) * 2;
-	
-	VkVertexInputAttributeDescription vertexAttribDesc;
-	vertexAttribDesc.binding = 0;
-	vertexAttribDesc.location = 0;
-	vertexAttribDesc.format = VK_FORMAT_R32G32_SFLOAT;
-	vertexAttribDesc.offset = 0;
-	
-	VkPipelineVertexInputStateCreateInfo vertexInputState;
-	vertexInputState.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-	vertexInputState.pNext = NULL;
-	vertexInputState.flags = 0;
-	vertexInputState.pVertexAttributeDescriptions = &vertexAttribDesc;
-	vertexInputState.vertexAttributeDescriptionCount = 1;
-	vertexInputState.pVertexBindingDescriptions = &vertexInputBindingDesc;
-	vertexInputState.vertexBindingDescriptionCount = 1;
-	
 	VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateCreateInfo;
 	memset(&inputAssemblyStateCreateInfo, 0, sizeof(VkPipelineInputAssemblyStateCreateInfo));
 	inputAssemblyStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
@@ -143,7 +123,7 @@ void VKLPipeline::_build(const VKLPipelineCreateInfo& createInfo) {
 	pipelineCreateInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
 	pipelineCreateInfo.stageCount = createInfo.shader->getShaderStageCreateInfos().size();
 	pipelineCreateInfo.pStages = createInfo.shader->getShaderStageCreateInfos().data();
-	pipelineCreateInfo.pVertexInputState = &vertexInputState;
+	pipelineCreateInfo.pVertexInputState = createInfo.shader->getVertexInputState();
 	pipelineCreateInfo.pInputAssemblyState = &inputAssemblyStateCreateInfo;
 	pipelineCreateInfo.pTessellationState = NULL;
 	pipelineCreateInfo.pViewportState = &viewportState;
