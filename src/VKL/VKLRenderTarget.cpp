@@ -30,6 +30,14 @@ void VKLRenderTarget::setClearValue(VkClearValue clearValue, uint32_t clearValue
 	m_clearValues[clearValueIndex] = clearValue;
 }
 
+VkRenderPass VKLRenderTarget::getRenderPass() const {
+	return m_renderPass;
+}
+
+VkRect2D VKLRenderTarget::getRenderArea() const {
+	return m_renderArea;
+}
+
 void VKLRenderTarget::beingRender(VKLCommandBuffer* cmdBuffer) {
 	preRenderCallback(cmdBuffer);
 	

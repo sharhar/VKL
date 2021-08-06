@@ -27,6 +27,8 @@ class VKLSwapChain;
 class VKLCommandBuffer;
 class VKLRenderTarget;
 class VKLBuffer;
+class VKLShader;
+class VKLPipeline;
 
 template<typename T>
 class VKLHandle {
@@ -47,9 +49,9 @@ class VKLBuilder {
 public:
 	VKLBuilder(const char* name) : m_name(name) { m_built = VK_FALSE; }
 	VkBool32 built() const { return m_built; }
-	void build(const T& ci) {
-		if(((VKLCreateInfo*)(&ci))->validate()) {
-			_build(ci);
+	void build(const T& createInfo) {
+		if(((VKLCreateInfo*)(&createInfo))->validate()) {
+			_build(createInfo);
 			m_built = VK_TRUE;
 		} else {
 			printf("%s could not be built because the createInfo was not filled in.\n", m_name);

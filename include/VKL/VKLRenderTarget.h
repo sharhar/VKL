@@ -18,6 +18,9 @@ public:
 	void beingRender(VKLCommandBuffer* cmdBuffer);
 	void endRender(VKLCommandBuffer* cmdBuffer);
 	
+	VkRenderPass getRenderPass() const;
+	VkRect2D getRenderArea() const;
+	
 protected:
 	void initRenderTarget(const VKLDevice* device, VkAttachmentDescription* attachmentDescriptions, uint32_t attachmentDescriptionCount, VkSubpassDescription* subpasses, uint32_t subpassCount);
 	

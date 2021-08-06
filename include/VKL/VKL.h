@@ -12,5 +12,7 @@
 #include "VKLCommandBuffer.h"
 #include "VKLRenderTarget.h"
 #include "VKLBuffer.h"
+#include "VKLShader.h"
+#include <VKL/VKLPipeline.h>
 
 #endif
