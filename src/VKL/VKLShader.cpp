@@ -25,12 +25,25 @@ const VkPipelineVertexInputStateCreateInfo* VKLShader::getVertexInputState() con
 	return &m_vertexInputState;
 }
 
+const VkDescriptorSetLayout* VKLShader::getDescriptorSetLayouts() const {
+	return m_descriptorSetLayouts;
+}
+
 void VKLShader::destroy() {
 	for(int i = 0; i < m_shaderStageCreateInfos.size(); i++) {
 		m_device->vk.DestroyShaderModule(m_device->handle(), m_shaderStageCreateInfos[i].module, m_device->allocationCallbacks());
 	}
 	
+	for(int i = 0; i < m_descSetCount; i++) {
+		m_device->vk.DestroyDescriptorSetLayout(m_device->handle(), m_descriptorSetLayouts[i], m_device->allocationCallbacks());
+	}
+	
 	m_device->vk.DestroyPipelineLayout(m_device->handle(), m_layout, m_device->allocationCallbacks());
+	
+	free(m_pushConstantRanges);
+	free(m_vertexAttribDescs);
+	free(m_vertexInputBindingDescs);
+	free(m_descriptorSetLayouts);
 }
 
 void VKLShader::_build(const VKLShaderCreateInfo& createInfo) {
@@ -50,13 +63,34 @@ void VKLShader::_build(const VKLShaderCreateInfo& createInfo) {
 												m_device->allocationCallbacks(), &m_shaderStageCreateInfos[i].module));
 	}
 	
+	m_descriptorSetLayouts = (VkDescriptorSetLayout*)malloc(sizeof(VkDescriptorSetLayout)
+															* createInfo.descriptorSetLayouts.size());
+	
+	m_descSetCount = createInfo.descriptorSetLayouts.size();
+	
+	VkDescriptorSetLayoutCreateInfo descSetLayoutInfo;
+	descSetLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+	descSetLayoutInfo.pNext = NULL;
+	descSetLayoutInfo.flags = 0;
+	for(int i = 0; i < createInfo.descriptorSetLayouts.size(); i++) {
+		descSetLayoutInfo.bindingCount = createInfo.descriptorSetLayouts[i].bindings.size();
+		descSetLayoutInfo.pBindings = createInfo.descriptorSetLayouts[i].bindings.data();
+		
+		VK_CALL(m_device->vk.CreateDescriptorSetLayout(m_device->handle(), &descSetLayoutInfo,
+													   m_device->allocationCallbacks(), &m_descriptorSetLayouts[i]));
+	}
+	
+	m_pushConstantRanges = (VkPushConstantRange*)malloc(sizeof(VkPushConstantRange) * createInfo.pushConstantRanges.size());
+	memcpy(m_pushConstantRanges, createInfo.pushConstantRanges.data(),
+		   sizeof(VkPushConstantRange) * createInfo.pushConstantRanges.size());
+	
 	VkPipelineLayoutCreateInfo layoutCreateInfo;
 	memset(&layoutCreateInfo, 0, sizeof(VkPipelineLayoutCreateInfo));
 	layoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-	layoutCreateInfo.setLayoutCount = 0;
-	layoutCreateInfo.pSetLayouts = NULL;
-	layoutCreateInfo.pushConstantRangeCount = 0;
-	layoutCreateInfo.pPushConstantRanges = NULL;
+	layoutCreateInfo.setLayoutCount = createInfo.descriptorSetLayouts.size();
+	layoutCreateInfo.pSetLayouts = m_descriptorSetLayouts;
+	layoutCreateInfo.pushConstantRangeCount = createInfo.pushConstantRanges.size();
+	layoutCreateInfo.pPushConstantRanges = m_pushConstantRanges;
 	
 	VK_CALL(m_device->vk.CreatePipelineLayout(m_device->handle(), &layoutCreateInfo, m_device->allocationCallbacks(), &m_layout));
 	
@@ -126,6 +160,24 @@ void VKLShaderCreateInfo::addVertexAttrib(uint32_t location, uint32_t binding, V
 	vertexAttribs.push_back(attribDesc);
 }
 
+
+VKLDescriptorSetLayoutCreateInfo& VKLShaderCreateInfo::addDescriptorSet() {
+	descriptorSetLayouts.push_back(VKLDescriptorSetLayoutCreateInfo(*this));
+	
+	return descriptorSetLayouts.back();
+}
+
+VKLShaderCreateInfo& VKLShaderCreateInfo::addPushConstant(VkShaderStageFlags stage, uint32_t offset, uint32_t size) {
+	VkPushConstantRange result;
+	result.stageFlags = stage;
+	result.offset = offset;
+	result.size = size;
+	
+	pushConstantRanges.push_back(result);
+	
+	return *this;
+}
+
 bool VKLShaderCreateInfo::validate() {
 	if(device == NULL || shaderModuleCreateInfos.size() == 0) {
 		return false;
@@ -160,5 +212,27 @@ VKLVertexInputBinding& VKLVertexInputBinding::addAttrib(uint32_t location, VkFor
 }
 
 VKLShaderCreateInfo& VKLVertexInputBinding::end() {
+	return parent;
+}
+
+VKLDescriptorSetLayoutCreateInfo::VKLDescriptorSetLayoutCreateInfo(VKLShaderCreateInfo& parent) : parent(parent){
+	
+}
+
+VKLDescriptorSetLayoutCreateInfo& VKLDescriptorSetLayoutCreateInfo::addBinding(uint32_t binding, VkDescriptorType type,
+																			   uint32_t count, VkShaderStageFlags stage) {
+	VkDescriptorSetLayoutBinding result;
+	result.binding = binding;
+	result.descriptorType = type;
+	result.descriptorCount = count;
+	result.stageFlags = stage;
+	result.pImmutableSamplers = NULL;
+	
+	bindings.push_back(result);
+	
+	return *this;
+}
+
+VKLShaderCreateInfo& VKLDescriptorSetLayoutCreateInfo::end() {
 	return parent;
 }

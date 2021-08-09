@@ -8,7 +8,7 @@
 #ifndef VKLPipeline_h
 #define VKLPipeline_h
 
-#include <VKL/VKL_Base.h>
+#include "VKL_base.h"
 
 class VKLPipelineCreateInfo : public VKLCreateInfo {
 public:

@@ -33,19 +33,46 @@ public:
 	VKLShaderCreateInfo& parent;
 };
 
+/*
+ 
+ bindings[0].binding = 0;
+ bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+ bindings[0].descriptorCount = 1;
+ bindings[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+ bindings[0].pImmutableSamplers = NULL;
+ */
+
+class VKLDescriptorSetLayoutCreateInfo {
+public:
+	VKLDescriptorSetLayoutCreateInfo(VKLShaderCreateInfo& parent);
+	
+	VKLDescriptorSetLayoutCreateInfo& addBinding(uint32_t binding, VkDescriptorType type,
+												uint32_t count, VkShaderStageFlags stage);
+	VKLShaderCreateInfo& end();
+	
+	std::vector<VkDescriptorSetLayoutBinding> bindings;
+	VKLShaderCreateInfo& parent;
+};
+
 class VKLShaderCreateInfo : public VKLCreateInfo{
 public:
 	VKLShaderCreateInfo();
 	
 	VKLShaderCreateInfo& setDevice(const VKLDevice* device);
-	VKLShaderCreateInfo& addShaderModule(const uint32_t* pCode, size_t codeSize, VkShaderStageFlagBits stage, const char* entryPoint);
 	VKLVertexInputBinding& addVertexInputBinding(uint32_t binding);
+	VKLDescriptorSetLayoutCreateInfo& addDescriptorSet();
+	VKLShaderCreateInfo& addPushConstant(VkShaderStageFlags stage, uint32_t offset, uint32_t size);
+	VKLShaderCreateInfo& addShaderModule(const uint32_t* pCode, size_t codeSize,
+										 VkShaderStageFlagBits stage, const char* entryPoint);
+	
 	
 	bool validate();
 	
 	std::vector<VKLShaderModuleCreateInfo> shaderModuleCreateInfos;
 	std::vector<VKLVertexInputBinding> vertexInputBindings;
 	std::vector<VkVertexInputAttributeDescription> vertexAttribs;
+	std::vector<VkPushConstantRange> pushConstantRanges;
+	std::vector<VKLDescriptorSetLayoutCreateInfo> descriptorSetLayouts;
 	const VKLDevice* device;
 	
 private:
@@ -63,6 +90,7 @@ public:
 	VkPipelineLayout getPipelineLayout() const;
 	const VKLDevice* device() const;
 	const VkPipelineVertexInputStateCreateInfo* getVertexInputState() const;
+	const VkDescriptorSetLayout* getDescriptorSetLayouts() const;
 	
 	void destroy();
 private:
@@ -70,9 +98,13 @@ private:
 	
 	std::vector<VkPipelineShaderStageCreateInfo> m_shaderStageCreateInfos;
 	
+	uint32_t m_descSetCount;
+	
 	VkPipelineLayout m_layout;
 	VkVertexInputBindingDescription* m_vertexInputBindingDescs;
 	VkVertexInputAttributeDescription* m_vertexAttribDescs;
+	VkPushConstantRange* m_pushConstantRanges;
+	VkDescriptorSetLayout* m_descriptorSetLayouts;
 	VkPipelineVertexInputStateCreateInfo m_vertexInputState;
 	
 	void _build(const VKLShaderCreateInfo& createInfo);
