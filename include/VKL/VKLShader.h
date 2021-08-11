@@ -54,7 +54,7 @@ public:
 	VKLShaderCreateInfo& parent;
 };
 
-class VKLShaderCreateInfo : public VKLCreateInfo{
+class VKLShaderCreateInfo : public VKLCreateInfo<VKLShaderCreateInfo>{
 public:
 	VKLShaderCreateInfo();
 	
@@ -64,9 +64,6 @@ public:
 	VKLShaderCreateInfo& addPushConstant(VkShaderStageFlags stage, uint32_t offset, uint32_t size);
 	VKLShaderCreateInfo& addShaderModule(const uint32_t* pCode, size_t codeSize,
 										 VkShaderStageFlagBits stage, const char* entryPoint);
-	
-	
-	bool validate();
 	
 	std::vector<VKLShaderModuleCreateInfo> shaderModuleCreateInfos;
 	std::vector<VKLVertexInputBinding> vertexInputBindings;
@@ -79,9 +76,11 @@ private:
 	friend VKLVertexInputBinding& VKLVertexInputBinding::addAttrib(uint32_t location, VkFormat format, uint32_t offset);
 	
 	void addVertexAttrib(uint32_t location, uint32_t binding, VkFormat format, uint32_t offset);
+
+	bool _validate();
 };
 
-class VKLShader : public VKLBuilder<VKLShaderCreateInfo>{
+class VKLShader : public VKLCreator<VKLShaderCreateInfo>{
 public:
 	VKLShader();
 	VKLShader(const VKLShaderCreateInfo& createInfo);
@@ -91,8 +90,6 @@ public:
 	const VKLDevice* device() const;
 	const VkPipelineVertexInputStateCreateInfo* getVertexInputState() const;
 	const VkDescriptorSetLayout* getDescriptorSetLayouts() const;
-	
-	void destroy();
 private:
 	const VKLDevice* m_device;
 	
@@ -107,7 +104,8 @@ private:
 	VkDescriptorSetLayout* m_descriptorSetLayouts;
 	VkPipelineVertexInputStateCreateInfo m_vertexInputState;
 	
-	void _build(const VKLShaderCreateInfo& createInfo);
+	void _destroy();
+	void _create(const VKLShaderCreateInfo& createInfo);
 };
 
 #endif /* VKLShader_h */

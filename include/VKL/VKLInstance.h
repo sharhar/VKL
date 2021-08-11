@@ -1,8 +1,7 @@
 #ifndef VKLInstance_h
 #define VKLInstance_h
 
-#include "VKL_base.h"
-
+#include <VKL/VKL_base.h>
 #include <VKL/VKLPhysicalDevice.h>
 
 #include <vector>
@@ -39,41 +38,50 @@ typedef struct VKLInstancePFNS {
 	PFN_vkGetPhysicalDeviceSurfacePresentModesKHR GetPhysicalDeviceSurfacePresentModesKHR;
 } __VKLInstancePFNS;
 
-class VKLInstanceCreateInfo : public VKLCreateInfo{
+class VKLInstanceCreateInfo : public VKLCreateInfo<VKLInstanceCreateInfo>{
 public:
 	VKLInstanceCreateInfo();
 	
-	VKLInstanceCreateInfo& setAllocationCallbacks(VkAllocationCallbacks* allocationCallbacks);
+	VKLInstanceCreateInfo& allocationCallbacks(VkAllocationCallbacks* allocationCallbacks);
 	VKLInstanceCreateInfo& addLayer(const char* layer);
 	VKLInstanceCreateInfo& addExtension(const char* extension);
 	VKLInstanceCreateInfo& addExtensions(const char** extensions, uint32_t extensionCount);
-	VKLInstanceCreateInfo& makeDebug();
-	VKLInstanceCreateInfo& setProcAddr(PFN_vkGetInstanceProcAddr vkFunc);
+	VKLInstanceCreateInfo& debug(VkBool32 debug);
+	VKLInstanceCreateInfo& procAddr(PFN_vkGetInstanceProcAddr vkFunc);
 	
 	void printSelections();
 	
-	bool supportsExtension(const char* extension) const;
-	bool supportsLayer(const char* layer) const;
+	bool supportsExtension(const char* extension);
+	bool supportsLayer(const char* layer);
 	
 	std::vector<VkExtensionProperties> supportedExtensions;
 	std::vector<VkLayerProperties> supportedLayers;
-	
-	std::vector<const char*> layers;
-	std::vector<const char*> extensions;
-	
-	bool validate();
-	
-	PFN_vkGetInstanceProcAddr procAddr;
-	VkAllocationCallbacks* allocationCallbacks;
-	
-	VkApplicationInfo appInfo;
-	VkInstanceCreateInfo ci;
 private:
 	PFN_vkEnumerateInstanceExtensionProperties m_vkEnumerateInstanceExtensionProperties;
 	PFN_vkEnumerateInstanceLayerProperties m_vkEnumerateInstanceLayerProperties;
+
+	VkApplicationInfo m_appInfo;
+	VkInstanceCreateInfo m_createInfo;
+
+	PFN_vkGetInstanceProcAddr m_procAddr;
+	VkAllocationCallbacks* m_allocationCallbacks;
+
+	void _printSelections();
+
+	bool _supportsExtension(const char* extension);
+	bool _supportsLayer(const char* layer);
+
+	std::vector<const char*> m_layers;
+	std::vector<const char*> m_extensions;
+
+	VkBool32 m_debug;
+
+	bool _validate();
+
+	friend class VKLInstance;
 };
 
-class VKLInstance : public VKLHandle<VkInstance>, public VKLBuilder<VKLInstanceCreateInfo> {
+class VKLInstance : public VKLHandle<VkInstance>, public VKLCreator<VKLInstanceCreateInfo> {
 public:
 	VKLInstance();
 	VKLInstance(const VKLInstanceCreateInfo& createInfo);
@@ -85,8 +93,6 @@ public:
 	const std::vector<const char*>& getExtensions() const;
 	void destroySurface(VkSurfaceKHR surface) const;
 	
-	void destroy();
-
 	VKLInstancePFNS vk;
 private:
 	const VkAllocationCallbacks* m_allocationCallbacks;
@@ -98,7 +104,8 @@ private:
 	std::vector<const char*> m_layers;
 	std::vector<const char*> m_extensions;
 
-	void _build(const VKLInstanceCreateInfo& createInfo);
+	void _create(const VKLInstanceCreateInfo& createInfo);
+	void _destroy();
 };
 
 #endif

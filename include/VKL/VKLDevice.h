@@ -145,30 +145,50 @@ typedef enum VKLQueueType {
 	VKL_QUEUE_TYPE_TRANSFER = 2
 } VKLQueueType;
 
-class VKLDeviceCreateInfo : public VKLCreateInfo {
+typedef struct {
+	uint32_t familyIndex;
+	uint32_t localIndex;
+} VKLQueueLocation;
+
+class VKLDeviceCreateInfo : public VKLCreateInfo<VKLDeviceCreateInfo> {
 public:
 	VKLDeviceCreateInfo();
 	
-	VKLDeviceCreateInfo& seyPhysicalDevice(const VKLPhysicalDevice& physicalDevice);
-	VKLDeviceCreateInfo& setQueueTypeCount(VKLQueueType type, uint32_t count);
+	VKLDeviceCreateInfo& physicalDevice(const VKLPhysicalDevice& physicalDevice);
+	VKLDeviceCreateInfo& queueTypeCount(VKLQueueType type, uint32_t count);
 	VKLDeviceCreateInfo& addExtension(const char* extension);
 
-	bool validate();
-	
-	const VKLInstance* instance;
-	const VKLPhysicalDevice* physicalDevice;
-	std::vector<const char*> extensions;
-	
-	uint32_t queueTypeCounts[3];
-	
-	std::vector<int32_t> queueTypeIndicies[3];
-	
-	std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-	VkDeviceCreateInfo createInfo;
-	VkPhysicalDeviceFeatures features;
+	void printSelections();
+
+	bool supportsExtension(const char* extension);
+	bool supportsLayer(const char* layer);
+
+	std::vector<VkExtensionProperties> supportedExtensions;
+	std::vector<VkLayerProperties> supportedLayers;
+private:
+	const VKLInstance* m_instance;
+	const VKLPhysicalDevice* m_physicalDevice;
+	std::vector<const char*> m_extensions;
+
+	uint32_t m_queueTypeCounts[3];
+
+	std::vector<VKLQueueLocation> m_queueTypeIndicies[3];
+
+	void _printSelections();
+
+	bool _supportsExtension(const char* extension);
+	bool _supportsLayer(const char* layer);
+
+	std::vector<VkDeviceQueueCreateInfo> m_queueCreateInfos;
+	VkDeviceCreateInfo m_createInfo;
+	VkPhysicalDeviceFeatures m_features;
+
+	bool _validate();
+
+	friend class VKLDevice;
 };
 
-class VKLDevice : public VKLHandle<VkDevice>, public VKLBuilder<VKLDeviceCreateInfo> {
+class VKLDevice : public VKLHandle<VkDevice>, public VKLCreator<VKLDeviceCreateInfo> {
 public:
 	VKLDevice();
 	VKLDevice(const VKLDeviceCreateInfo& createInfo);
@@ -179,8 +199,6 @@ public:
 	const VKLPhysicalDevice* physical() const;
 	
 	VKLQueue getQueue(VKLQueueType type, uint32_t queueIndex) const;
-	
-	void destroy();
 	
 	VkFence createFence(VkFenceCreateFlags flags) const;
 	void waitForFence(VkFence fence) const;
@@ -197,7 +215,8 @@ private:
 	const VkAllocationCallbacks* m_allocationCallbacks;
 	VmaAllocator m_allocator;
 	
-	void _build(const VKLDeviceCreateInfo& createInfo);
+	void _destroy();
+	void _create(const VKLDeviceCreateInfo& createInfo);
 };
 
 #endif

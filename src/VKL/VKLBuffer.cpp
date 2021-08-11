@@ -1,6 +1,6 @@
 #include <VKL/VKL.h>
 
-VKLBuffer::VKLBuffer() : VKLBuilder<VKLBufferCreateInfo>("VKLBuffer") {
+VKLBuffer::VKLBuffer() : VKLCreator<VKLBufferCreateInfo>("VKLBuffer") {
 	m_device = NULL;
 	
 	memset(&m_memoryBarrier, 0, sizeof(VkBufferMemoryBarrier));
@@ -14,7 +14,7 @@ VKLBuffer::VKLBuffer() : VKLBuilder<VKLBufferCreateInfo>("VKLBuffer") {
 }
 
 
-VKLBuffer::VKLBuffer(const VKLBufferCreateInfo& createInfo) : VKLBuilder<VKLBufferCreateInfo>("VKLBuffer")  {
+VKLBuffer::VKLBuffer(const VKLBufferCreateInfo& createInfo) : VKLCreator<VKLBufferCreateInfo>("VKLBuffer")  {
 	memset(&m_memoryBarrier, 0, sizeof(VkBufferMemoryBarrier));
 	m_memoryBarrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
 	m_memoryBarrier.pNext = NULL;
@@ -24,7 +24,7 @@ VKLBuffer::VKLBuffer(const VKLBufferCreateInfo& createInfo) : VKLBuilder<VKLBuff
 	m_memoryBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 	m_memoryBarrier.offset = 0;
 	
-	this->build(createInfo);
+	this->create(createInfo);
 }
 
 void VKLBuffer::setData(void* data, size_t size, size_t offset) {
@@ -48,7 +48,7 @@ void VKLBuffer::resetBarrier() {
 	m_memoryBarrier.srcAccessMask = m_memoryBarrier.dstAccessMask;
 }
 
-void VKLBuffer::copyFrom(VKLBuffer* src, VKLQueue* transferQueue, VkBufferCopy bufferCopy) {
+void VKLBuffer::copyFrom(VKLBuffer* src, const VKLQueue* transferQueue, VkBufferCopy bufferCopy) {
 	transferQueue->getCmdBuffer()->begin();
 	transferQueue->getCmdBuffer()->copyBuffer(this, src, bufferCopy);
 	transferQueue->getCmdBuffer()->end();
@@ -61,7 +61,7 @@ void VKLBuffer::copyFrom(VKLBuffer* src, VKLQueue* transferQueue, VkBufferCopy b
 	transferQueue->getCmdBuffer()->reset();
 }
 
-void VKLBuffer::uploadData(VKLQueue* transferQueue, void* data, size_t size, size_t offset) {
+void VKLBuffer::uploadData(const VKLQueue* transferQueue, void* data, size_t size, size_t offset) {
 	VKLBufferCreateInfo tempBufferCreateInfo;
 	tempBufferCreateInfo.setDevice(m_device).setSize(size)
 						.setMemoryUsage(VMA_MEMORY_USAGE_CPU_TO_GPU)
@@ -81,7 +81,7 @@ void VKLBuffer::uploadData(VKLQueue* transferQueue, void* data, size_t size, siz
 	tempStageBuffer.destroy();
 }
 
-void VKLBuffer::_build(const VKLBufferCreateInfo& createInfo) {
+void VKLBuffer::_create(const VKLBufferCreateInfo& createInfo) {
 	m_device = createInfo.device;
 	
 	VK_CALL(vmaCreateBuffer(m_device->allocator(), &createInfo.bufferCreateInfo,
@@ -90,7 +90,7 @@ void VKLBuffer::_build(const VKLBufferCreateInfo& createInfo) {
 	m_memoryBarrier.size = createInfo.bufferCreateInfo.size;
 }
 
-void VKLBuffer::destroy() {
+void VKLBuffer::_destroy() {
 	vmaDestroyBuffer(m_device->allocator(), m_handle, m_allocation);
 }
 
@@ -147,7 +147,7 @@ VKLBufferCreateInfo& VKLBufferCreateInfo::setMemoryUsage(VmaMemoryUsage memoryUs
 	return *this;
 }
 
-bool VKLBufferCreateInfo::validate() {
+bool VKLBufferCreateInfo::_validate() {
 	if(device == NULL || bufferCreateInfo.size == 0) {
 		return false;
 	}

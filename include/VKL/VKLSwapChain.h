@@ -5,34 +5,34 @@
 
 #include "VKLRenderTarget.h"
 
-class VKLSwapChainCreateInfo : public VKLCreateInfo {
+class VKLSwapChainCreateInfo : public VKLCreateInfo<VKLSwapChainCreateInfo> {
 public:
 	VKLSwapChainCreateInfo();
 	
-	VKLSwapChainCreateInfo& setQueue(const VKLQueue& queue);
-	VKLSwapChainCreateInfo& setSurface(VkSurfaceKHR surface);
-	VKLSwapChainCreateInfo& setSize(VkExtent2D size);
-	VKLSwapChainCreateInfo& setImageFormat(VkFormat format);
-	VKLSwapChainCreateInfo& setImageCount(uint32_t imageCount);
-	VKLSwapChainCreateInfo& setPreTransform(VkSurfaceTransformFlagBitsKHR preTransform);
-	VKLSwapChainCreateInfo& setPresentMode(VkPresentModeKHR presentMode);
-	
-	const VKLQueue* queue;
-	
-	VkSwapchainCreateInfoKHR createInfo;
-	
-	bool validate();
+	VKLSwapChainCreateInfo& queue(const VKLQueue& queue);
+	VKLSwapChainCreateInfo& surface(VkSurfaceKHR surface);
+	VKLSwapChainCreateInfo& size(VkExtent2D size);
+	VKLSwapChainCreateInfo& imageFormat(VkFormat format);
+	VKLSwapChainCreateInfo& imageCount(uint32_t imageCount);
+	VKLSwapChainCreateInfo& preTransform(VkSurfaceTransformFlagBitsKHR preTransform);
+	VKLSwapChainCreateInfo& presentMode(VkPresentModeKHR presentMode);
+
+private:
+	const VKLQueue* m_queue;
+
+	VkSwapchainCreateInfoKHR m_createInfo;
+
+	bool _validate();
+
+	friend class VKLSwapChain;
 };
 
-class VKLSwapChain : public VKLRenderTarget, public VKLHandle<VkSwapchainKHR>, public VKLBuilder<VKLSwapChainCreateInfo> {
+class VKLSwapChain : public VKLRenderTarget, public VKLHandle<VkSwapchainKHR>, public VKLCreator<VKLSwapChainCreateInfo> {
 public:
 	VKLSwapChain();
 	VKLSwapChain(const VKLSwapChainCreateInfo& createInfo);
 	
 	void present();
-	
-	void destroy();
-	
 private:
 	VKLImage* m_swapChainImages;
 	VkFramebuffer* m_frameBuffers;
@@ -49,7 +49,8 @@ private:
 	void preRenderCallback(VKLCommandBuffer* cmdBuffer);
 	void postRenderCallback(VKLCommandBuffer* cmdBuffer);
 	
-	void _build(const VKLSwapChainCreateInfo& createInfo);
+	void _destroy();
+	void _create(const VKLSwapChainCreateInfo& createInfo);
 };
 
 #endif

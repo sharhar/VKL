@@ -10,28 +10,28 @@
 
 #include "VKL_base.h"
 
-class VKLPipelineCreateInfo : public VKLCreateInfo {
+class VKLPipelineCreateInfo : public VKLCreateInfo<VKLPipelineCreateInfo> {
 public:
 	VKLPipelineCreateInfo();
 	
 	VKLPipelineCreateInfo& setShader(const VKLShader* shader);
 	VKLPipelineCreateInfo& setRenderTarget(const VKLRenderTarget* renderTarget);
 	
-	bool validate();
-	
 	const VKLShader* shader;
 	const VKLRenderTarget* renderTarget;
+
+private:
+	bool _validate();
 };
 
-class VKLPipeline : public VKLHandle<VkPipeline>, public VKLBuilder<VKLPipelineCreateInfo> {
+class VKLPipeline : public VKLHandle<VkPipeline>, public VKLCreator<VKLPipelineCreateInfo> {
 public:
 	VKLPipeline();
-	
-	void destroy();
 private:
 	const VKLDevice* m_device;
 	
-	void _build(const VKLPipelineCreateInfo& createInfo);
+	void _destroy();
+	void _create(const VKLPipelineCreateInfo& createInfo);
 };
 
 #endif /* VKLPipeline_h */

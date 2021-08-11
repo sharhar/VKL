@@ -19,7 +19,7 @@ void VKLRenderTarget::initRenderTarget(const VKLDevice* device, VkAttachmentDesc
 }
 
 void VKLRenderTarget::destroyRenderTarget() {
-	VK_CALL(m_device->vk.DestroyRenderPass(m_device->handle(), m_renderPass, m_device->allocationCallbacks()));
+	m_device->vk.DestroyRenderPass(m_device->handle(), m_renderPass, m_device->allocationCallbacks());
 }
 
 void VKLRenderTarget::setRenderArea(VkRect2D area) {

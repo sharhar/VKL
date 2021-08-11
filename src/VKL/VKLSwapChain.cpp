@@ -1,19 +1,19 @@
 #include <VKL/VKL.h>
 
-VKLSwapChain::VKLSwapChain() : VKLBuilder<VKLSwapChainCreateInfo>("VKLSwapChain") {
+VKLSwapChain::VKLSwapChain() : VKLCreator<VKLSwapChainCreateInfo>("VKLSwapChain") {
 	
 }
 
 
-VKLSwapChain::VKLSwapChain(const VKLSwapChainCreateInfo& createInfo) : VKLBuilder<VKLSwapChainCreateInfo>("VKLSwapChain")  {
-	this->build(createInfo);
+VKLSwapChain::VKLSwapChain(const VKLSwapChainCreateInfo& createInfo) : VKLCreator<VKLSwapChainCreateInfo>("VKLSwapChain")  {
+	this->create(createInfo);
 }
 
-void VKLSwapChain::_build(const VKLSwapChainCreateInfo& createInfo) {
-	m_device = createInfo.queue->device();
-	m_queue = createInfo.queue;
+void VKLSwapChain::_create(const VKLSwapChainCreateInfo& createInfo) {
+	m_device = createInfo.m_queue->device();
+	m_queue = createInfo.m_queue;
 
-	VK_CALL(m_device->vk.CreateSwapchainKHR(m_device->handle(), &createInfo.createInfo, m_device->allocationCallbacks(), &m_handle));
+	VK_CALL(m_device->vk.CreateSwapchainKHR(m_device->handle(), &createInfo.m_createInfo, m_device->allocationCallbacks(), &m_handle));
 
 	VkImage* presentImages = NULL;
 
@@ -24,11 +24,11 @@ void VKLSwapChain::_build(const VKLSwapChainCreateInfo& createInfo) {
 	m_swapChainImages = new VKLImage[m_swapChainImageCount];
 	
 	VKLImageCreateInfo imageCreateInfo;
-	imageCreateInfo.setDevice(m_device).setViewFormat(createInfo.createInfo.imageFormat);
+	imageCreateInfo.setDevice(m_device).setViewFormat(createInfo.m_createInfo.imageFormat);
 
 	for(int i = 0; i < m_swapChainImageCount; i++) {
 		imageCreateInfo.setHandle(presentImages[i]);
-		m_swapChainImages[i].build(imageCreateInfo);
+		m_swapChainImages[i].create(imageCreateInfo);
 	}
 
 	free(presentImages);
@@ -52,7 +52,7 @@ void VKLSwapChain::_build(const VKLSwapChainCreateInfo& createInfo) {
 	
 	VkAttachmentDescription passAttachments[2];
 	memset(passAttachments, 0, sizeof(VkAttachmentDescription) * 2);
-	passAttachments[0].format = createInfo.createInfo.imageFormat;
+	passAttachments[0].format = createInfo.m_createInfo.imageFormat;
 	passAttachments[0].samples = VK_SAMPLE_COUNT_1_BIT;
 	passAttachments[0].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 	passAttachments[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -99,8 +99,8 @@ void VKLSwapChain::_build(const VKLSwapChainCreateInfo& createInfo) {
 	frameBufferCreateInfo.renderPass = m_renderPass;
 	frameBufferCreateInfo.attachmentCount = 1;
 	frameBufferCreateInfo.pAttachments = frameBufferAttachments;
-	frameBufferCreateInfo.width = createInfo.createInfo.imageExtent.width;
-	frameBufferCreateInfo.height = createInfo.createInfo.imageExtent.height;
+	frameBufferCreateInfo.width = createInfo.m_createInfo.imageExtent.width;
+	frameBufferCreateInfo.height = createInfo.m_createInfo.imageExtent.height;
 	frameBufferCreateInfo.layers = 1;
 	
 	m_frameBuffers = (VkFramebuffer*)malloc(sizeof(VkFramebuffer) * m_swapChainImageCount);
@@ -113,7 +113,7 @@ void VKLSwapChain::_build(const VKLSwapChainCreateInfo& createInfo) {
 	
 	m_renderArea.offset.x = 0;
 	m_renderArea.offset.y = 0;
-	m_renderArea.extent = createInfo.createInfo.imageExtent;
+	m_renderArea.extent = createInfo.m_createInfo.imageExtent;
 	
 	m_device->waitForFence(fence);
 	m_device->destroyFence(fence);
@@ -151,14 +151,14 @@ void VKLSwapChain::present() {
 	VK_CALL(m_device->vk.AcquireNextImageKHR(m_device->handle(), m_handle, UINT64_MAX, m_presentSemaphore, VK_NULL_HANDLE, &m_currentImgIndex));
 }
 
-void VKLSwapChain::destroy() {
+void VKLSwapChain::_destroy() {
 	destroyRenderTarget();
 	
 	m_device->vk.DestroySemaphore(m_device->handle(), m_presentSemaphore, m_device->allocationCallbacks());
 	
 	for (int i = 0; i < m_swapChainImageCount; i++) {
 		m_swapChainImages[i].destroy();
-		VK_CALL(m_device->vk.DestroyFramebuffer(m_device->handle(), m_frameBuffers[i], m_device->allocationCallbacks()));
+		m_device->vk.DestroyFramebuffer(m_device->handle(), m_frameBuffers[i], m_device->allocationCallbacks());
 	}
 
 	delete[] m_swapChainImages;
@@ -186,153 +186,153 @@ void VKLSwapChain::postRenderCallback(VKLCommandBuffer* cmdBuffer) {
 }
 
 VKLSwapChainCreateInfo::VKLSwapChainCreateInfo() {
-	queue = NULL;
+	m_queue = NULL;
 	
-	memset(&createInfo, 0, sizeof(VkSwapchainCreateInfoKHR));
-	createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-	createInfo.pNext = NULL;
-	createInfo.flags = 0;
-	createInfo.surface = VK_NULL_HANDLE;
-	createInfo.minImageCount = 2;
-	createInfo.imageFormat = VK_FORMAT_UNDEFINED;
-	createInfo.imageExtent.width = -1;
-	createInfo.imageExtent.height = -1;
-	createInfo.imageArrayLayers = 1;
-	createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-	createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
-	createInfo.queueFamilyIndexCount = 0;
-	createInfo.pQueueFamilyIndices = NULL;
-	createInfo.preTransform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
-	createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-	createInfo.presentMode = VK_PRESENT_MODE_FIFO_KHR;
-	createInfo.clipped = VK_TRUE;
-	createInfo.oldSwapchain = VK_NULL_HANDLE;
+	memset(&m_createInfo, 0, sizeof(VkSwapchainCreateInfoKHR));
+	m_createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+	m_createInfo.pNext = NULL;
+	m_createInfo.flags = 0;
+	m_createInfo.surface = VK_NULL_HANDLE;
+	m_createInfo.minImageCount = 2;
+	m_createInfo.imageFormat = VK_FORMAT_UNDEFINED;
+	m_createInfo.imageExtent.width = -1;
+	m_createInfo.imageExtent.height = -1;
+	m_createInfo.imageArrayLayers = 1;
+	m_createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+	m_createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+	m_createInfo.queueFamilyIndexCount = 0;
+	m_createInfo.pQueueFamilyIndices = NULL;
+	m_createInfo.preTransform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
+	m_createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+	m_createInfo.presentMode = VK_PRESENT_MODE_FIFO_KHR;
+	m_createInfo.clipped = VK_TRUE;
+	m_createInfo.oldSwapchain = VK_NULL_HANDLE;
 }
 
-VKLSwapChainCreateInfo& VKLSwapChainCreateInfo::setQueue(const VKLQueue& queue) {
-	this->queue = &queue;
+VKLSwapChainCreateInfo& VKLSwapChainCreateInfo::queue(const VKLQueue& queue) {
+	m_queue = &queue;
 	
-	return *this;
+	return invalidate();
 }
 
-VKLSwapChainCreateInfo& VKLSwapChainCreateInfo::setSurface(VkSurfaceKHR surface) {
-	createInfo.surface = surface;
+VKLSwapChainCreateInfo& VKLSwapChainCreateInfo::surface(VkSurfaceKHR surface) {
+	m_createInfo.surface = surface;
 	
-	return *this;
+	return invalidate();
 }
 
-VKLSwapChainCreateInfo& VKLSwapChainCreateInfo::setSize(VkExtent2D size) {
-	createInfo.imageExtent = size;
+VKLSwapChainCreateInfo& VKLSwapChainCreateInfo::size(VkExtent2D size) {
+	m_createInfo.imageExtent = size;
 	
-	return *this;
+	return invalidate();
 }
 
-VKLSwapChainCreateInfo& VKLSwapChainCreateInfo::setImageFormat(VkFormat format) {
-	createInfo.imageFormat = format;
+VKLSwapChainCreateInfo& VKLSwapChainCreateInfo::imageFormat(VkFormat format) {
+	m_createInfo.imageFormat = format;
 	
-	return *this;
+	return invalidate();
 }
 
-VKLSwapChainCreateInfo& VKLSwapChainCreateInfo::setImageCount(uint32_t imageCount) {
-	createInfo.minImageCount = imageCount;
+VKLSwapChainCreateInfo& VKLSwapChainCreateInfo::imageCount(uint32_t imageCount) {
+	m_createInfo.minImageCount = imageCount;
 	
-	return *this;
+	return invalidate();
 }
 
-VKLSwapChainCreateInfo& VKLSwapChainCreateInfo::setPreTransform(VkSurfaceTransformFlagBitsKHR preTransform) {
-	createInfo.preTransform = preTransform;
+VKLSwapChainCreateInfo& VKLSwapChainCreateInfo::preTransform(VkSurfaceTransformFlagBitsKHR preTransform) {
+	m_createInfo.preTransform = preTransform;
 	
-	return *this;
+	return invalidate();
 }
 
-VKLSwapChainCreateInfo& VKLSwapChainCreateInfo::setPresentMode(VkPresentModeKHR presentMode) {
-	createInfo.presentMode = presentMode;
+VKLSwapChainCreateInfo& VKLSwapChainCreateInfo::presentMode(VkPresentModeKHR presentMode) {
+	m_createInfo.presentMode = presentMode;
 	
-	return *this;
+	return invalidate();
 }
 
-bool VKLSwapChainCreateInfo::validate() {
-	if(queue == NULL || createInfo.surface == VK_NULL_HANDLE) {
+bool VKLSwapChainCreateInfo::_validate() {
+	if(m_queue == NULL || m_createInfo.surface == VK_NULL_HANDLE) {
 		return false;
 	}
 	
-	const VKLPhysicalDevice* physicalDevice = queue->device()->physical();
+	const VKLPhysicalDevice* physicalDevice = m_queue->device()->physical();
 	
-	if(!physicalDevice->getSurfaceSupport(createInfo.surface, queue->getFamilyIndex())) {
+	if(!physicalDevice->getSurfaceSupport(m_createInfo.surface, m_queue->getFamilyIndex())) {
 		return false;
 	}
 	
-	std::vector<VkSurfaceFormatKHR> surfaceFormats = physicalDevice->getSurfaceFormats(createInfo.surface);
+	std::vector<VkSurfaceFormatKHR> surfaceFormats = physicalDevice->getSurfaceFormats(m_createInfo.surface);
 	
 	VkBool32 foundFormat = VK_FALSE;
 	
 	for(VkSurfaceFormatKHR surfaceFormat : surfaceFormats) {
-		if(surfaceFormat.format == createInfo.imageFormat) {
-			createInfo.imageColorSpace = surfaceFormat.colorSpace;
+		if(surfaceFormat.format == m_createInfo.imageFormat) {
+			m_createInfo.imageColorSpace = surfaceFormat.colorSpace;
 			foundFormat = VK_TRUE;
 		}
 	}
 	
 	if(!foundFormat) {
-		createInfo.imageFormat = surfaceFormats[0].format;
-		createInfo.imageColorSpace = surfaceFormats[0].colorSpace;
+		m_createInfo.imageFormat = surfaceFormats[0].format;
+		m_createInfo.imageColorSpace = surfaceFormats[0].colorSpace;
 	}
 	
-	VkSurfaceCapabilitiesKHR surfaceCapabilities = physicalDevice->getSurfaceCapabilities(createInfo.surface);
+	VkSurfaceCapabilitiesKHR surfaceCapabilities = physicalDevice->getSurfaceCapabilities(m_createInfo.surface);
 
-	if (createInfo.minImageCount < surfaceCapabilities.minImageCount) {
-		createInfo.minImageCount = surfaceCapabilities.minImageCount;
+	if (m_createInfo.minImageCount < surfaceCapabilities.minImageCount) {
+		m_createInfo.minImageCount = surfaceCapabilities.minImageCount;
 	}
-	else if (surfaceCapabilities.maxImageCount != 0 && createInfo.minImageCount > surfaceCapabilities.maxImageCount) {
-		createInfo.minImageCount = surfaceCapabilities.maxImageCount;
+	else if (surfaceCapabilities.maxImageCount != 0 && m_createInfo.minImageCount > surfaceCapabilities.maxImageCount) {
+		m_createInfo.minImageCount = surfaceCapabilities.maxImageCount;
 	}
 	
 	if(surfaceCapabilities.currentExtent.width == -1) {
-		if(createInfo.imageExtent.width == -1) {
-			createInfo.imageExtent.width = 800;
+		if(m_createInfo.imageExtent.width == -1) {
+			m_createInfo.imageExtent.width = 800;
 		}
 		
-		if(createInfo.imageExtent.width < surfaceCapabilities.minImageExtent.width) {
-			createInfo.imageExtent.width = surfaceCapabilities.minImageExtent.width;
+		if(m_createInfo.imageExtent.width < surfaceCapabilities.minImageExtent.width) {
+			m_createInfo.imageExtent.width = surfaceCapabilities.minImageExtent.width;
 		}
 		
-		if(createInfo.imageExtent.width > surfaceCapabilities.maxImageExtent.width) {
-			createInfo.imageExtent.width = surfaceCapabilities.maxImageExtent.width;
+		if(m_createInfo.imageExtent.width > surfaceCapabilities.maxImageExtent.width) {
+			m_createInfo.imageExtent.width = surfaceCapabilities.maxImageExtent.width;
 		}
 	} else {
-		createInfo.imageExtent.width = surfaceCapabilities.currentExtent.width;
+		m_createInfo.imageExtent.width = surfaceCapabilities.currentExtent.width;
 	}
 	
 	if(surfaceCapabilities.currentExtent.height == -1) {
-		if(createInfo.imageExtent.height == -1) {
-			createInfo.imageExtent.height = 600;
+		if(m_createInfo.imageExtent.height == -1) {
+			m_createInfo.imageExtent.height = 600;
 		}
 		
-		if(createInfo.imageExtent.height < surfaceCapabilities.minImageExtent.height) {
-			createInfo.imageExtent.height = surfaceCapabilities.minImageExtent.height;
+		if(m_createInfo.imageExtent.height < surfaceCapabilities.minImageExtent.height) {
+			m_createInfo.imageExtent.height = surfaceCapabilities.minImageExtent.height;
 		}
 		
-		if(createInfo.imageExtent.height > surfaceCapabilities.maxImageExtent.height) {
-			createInfo.imageExtent.height = surfaceCapabilities.maxImageExtent.height;
+		if(m_createInfo.imageExtent.height > surfaceCapabilities.maxImageExtent.height) {
+			m_createInfo.imageExtent.height = surfaceCapabilities.maxImageExtent.height;
 		}
 	} else {
-		createInfo.imageExtent.height = surfaceCapabilities.currentExtent.height;
+		m_createInfo.imageExtent.height = surfaceCapabilities.currentExtent.height;
 	}
 	
 	//TODO: finish checking for support of parameters specified by surfaceCapabilities
 	
-	std::vector<VkPresentModeKHR> presentModes = physicalDevice->getSurfacePresentModes(createInfo.surface);
+	std::vector<VkPresentModeKHR> presentModes = physicalDevice->getSurfacePresentModes(m_createInfo.surface);
 	
 	VkBool32 foundPresentMode = VK_FALSE;
 	
 	for(VkPresentModeKHR presentMode : presentModes) {
-		if(presentMode == createInfo.presentMode) {
+		if(presentMode == m_createInfo.presentMode) {
 			foundPresentMode = VK_TRUE;
 		}
 	}
 	
 	if(!foundPresentMode) {
-		createInfo.presentMode = VK_PRESENT_MODE_FIFO_KHR;
+		m_createInfo.presentMode = VK_PRESENT_MODE_FIFO_KHR;
 	}
 	
 	return true;

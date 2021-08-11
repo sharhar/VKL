@@ -10,7 +10,7 @@
 
 #include "VKL_base.h"
 
-class VKLBufferCreateInfo : public VKLCreateInfo {
+class VKLBufferCreateInfo : public VKLCreateInfo<VKLBufferCreateInfo> {
 public:
 	VKLBufferCreateInfo();
 	
@@ -25,10 +25,11 @@ public:
 	
 	const VKLDevice* device;
 	
-	bool validate();
+private:
+	bool _validate();
 };
 
-class VKLBuffer : public VKLHandle<VkBuffer>, public VKLBuilder<VKLBufferCreateInfo> {
+class VKLBuffer : public VKLHandle<VkBuffer>, public VKLCreator<VKLBufferCreateInfo> {
 public:
 	VKLBuffer();
 	VKLBuffer(const VKLBufferCreateInfo& createInfo);
@@ -39,11 +40,8 @@ public:
 	VkBufferMemoryBarrier* getMemoryBarrier();
 	void resetBarrier();
 	
-	void copyFrom(VKLBuffer* src, VKLQueue* transferQueue, VkBufferCopy bufferCopy);
-	void uploadData(VKLQueue* transferQueue, void* data, size_t size, size_t offset);
-	
-	void destroy();
-	
+	void copyFrom(VKLBuffer* src, const VKLQueue* transferQueue, VkBufferCopy bufferCopy);
+	void uploadData(const VKLQueue* transferQueue, void* data, size_t size, size_t offset);
 private:
 	const VKLDevice* m_device;
 	
@@ -51,7 +49,8 @@ private:
 	
 	VkBufferMemoryBarrier m_memoryBarrier;
 	
-	void _build(const VKLBufferCreateInfo& createInfo);
+	void _destroy();
+	void _create(const VKLBufferCreateInfo& createInfo);
 };
 
 #endif /* VKLBuffer_h */

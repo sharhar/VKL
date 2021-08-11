@@ -3,7 +3,7 @@
 
 #include "VKL_base.h"
 
-class VKLImageCreateInfo : public VKLCreateInfo  {
+class VKLImageCreateInfo : public VKLCreateInfo<VKLImageCreateInfo>  {
 public:
 	VKLImageCreateInfo();
 	
@@ -24,17 +24,18 @@ public:
 	VKLImageCreateInfo& setAllocationFlags(VmaAllocationCreateFlags flags);
 	VKLImageCreateInfo& setMemoryUsage(VmaMemoryUsage memoryUsage);
 	
-	bool validate();
-	
 	VkImageCreateInfo imageCreateInfo;
 	VkImageViewCreateInfo viewCreateInfo;
 	VmaAllocationCreateInfo allocationCreateInfo;
 	VkImage handle;
 	
 	const VKLDevice* device;
+
+private:
+	bool _validate();
 };
 
-class VKLImage : public VKLHandle<VkImage>, public VKLBuilder<VKLImageCreateInfo> {
+class VKLImage : public VKLHandle<VkImage>, public VKLCreator<VKLImageCreateInfo> {
 public:
 	VKLImage();
 	VKLImage(const VKLImageCreateInfo& createInfo);
@@ -46,8 +47,6 @@ public:
 	void resetBarrier();
 
 	VkImageView view();
-	
-	void destroy();
 private:
 	VkImageView m_view;
 	VkImageMemoryBarrier m_memoryBarrier;
@@ -55,7 +54,8 @@ private:
 
 	const VKLDevice* m_device;
 	
-	void _build(const VKLImageCreateInfo& createInfo);
+	void _destroy();
+	void _create(const VKLImageCreateInfo& createInfo);
 };
 
 #endif

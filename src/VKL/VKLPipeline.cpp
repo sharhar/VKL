@@ -1,14 +1,14 @@
 #include <VKL/VKL.h>
 
-VKLPipeline::VKLPipeline() : VKLBuilder<VKLPipelineCreateInfo>("VKLPipeline") {
+VKLPipeline::VKLPipeline() : VKLCreator<VKLPipelineCreateInfo>("VKLPipeline") {
 	
 }
 
-void VKLPipeline::destroy() {
+void VKLPipeline::_destroy() {
 	m_device->vk.DestroyPipeline(m_device->handle(), m_handle, m_device->allocationCallbacks());
 }
 
-void VKLPipeline::_build(const VKLPipelineCreateInfo& createInfo) {
+void VKLPipeline::_create(const VKLPipelineCreateInfo& createInfo) {
 	m_device = createInfo.shader->device();
 	
 	VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateCreateInfo;
@@ -159,7 +159,7 @@ VKLPipelineCreateInfo& VKLPipelineCreateInfo::setRenderTarget(const VKLRenderTar
 	return *this;
 }
 
-bool VKLPipelineCreateInfo::validate() {
+bool VKLPipelineCreateInfo::_validate() {
 	if(shader == NULL || renderTarget == NULL) {
 		return false;
 	}

@@ -1,12 +1,11 @@
 #include <VKL/VKL.h>
 
-VKLShader::VKLShader() : VKLBuilder<VKLShaderCreateInfo>("VKLShader") {
+VKLShader::VKLShader() : VKLCreator<VKLShaderCreateInfo>("VKLShader") {
 	
 }
 
-VKLShader::VKLShader(const VKLShaderCreateInfo& createInfo) : VKLBuilder<VKLShaderCreateInfo>("VKLShader") {
-	
-	this->build(createInfo);
+VKLShader::VKLShader(const VKLShaderCreateInfo& createInfo) : VKLCreator<VKLShaderCreateInfo>("VKLShader") {
+	this->create(createInfo);
 }
 
 const std::vector<VkPipelineShaderStageCreateInfo>& VKLShader::getShaderStageCreateInfos() const {
@@ -29,7 +28,7 @@ const VkDescriptorSetLayout* VKLShader::getDescriptorSetLayouts() const {
 	return m_descriptorSetLayouts;
 }
 
-void VKLShader::destroy() {
+void VKLShader::_destroy() {
 	for(int i = 0; i < m_shaderStageCreateInfos.size(); i++) {
 		m_device->vk.DestroyShaderModule(m_device->handle(), m_shaderStageCreateInfos[i].module, m_device->allocationCallbacks());
 	}
@@ -46,7 +45,7 @@ void VKLShader::destroy() {
 	free(m_descriptorSetLayouts);
 }
 
-void VKLShader::_build(const VKLShaderCreateInfo& createInfo) {
+void VKLShader::_create(const VKLShaderCreateInfo& createInfo) {
 	m_device = createInfo.device;
 	
 	m_shaderStageCreateInfos.resize(createInfo.shaderModuleCreateInfos.size());
@@ -178,7 +177,7 @@ VKLShaderCreateInfo& VKLShaderCreateInfo::addPushConstant(VkShaderStageFlags sta
 	return *this;
 }
 
-bool VKLShaderCreateInfo::validate() {
+bool VKLShaderCreateInfo::_validate() {
 	if(device == NULL || shaderModuleCreateInfos.size() == 0) {
 		return false;
 	}

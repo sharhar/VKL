@@ -1,32 +1,31 @@
 #include <VKL/VKL.h>
 
-VKLInstance::VKLInstance() : VKLBuilder<VKLInstanceCreateInfo>("VKLInstance") {
+VKLInstance::VKLInstance() : VKLCreator<VKLInstanceCreateInfo>("VKLInstance") {
 	m_handle = VK_NULL_HANDLE;
 	m_allocationCallbacks = NULL;
 	m_debugCallback = NULL;
 	memset(&vk, 0, sizeof(VKLInstancePFNS));
 }
 
-
-VKLInstance::VKLInstance(const VKLInstanceCreateInfo& createInfo) : VKLBuilder<VKLInstanceCreateInfo>("VKLInstance") {
+VKLInstance::VKLInstance(const VKLInstanceCreateInfo& createInfo) : VKLCreator<VKLInstanceCreateInfo>("VKLInstance") {
 	m_handle = VK_NULL_HANDLE;
 	m_allocationCallbacks = NULL;
 	m_debugCallback = NULL;
 	memset(&vk, 0, sizeof(VKLInstancePFNS));
-	this->build(createInfo);
+	this->create(createInfo);
 }
 
-void VKLInstance::_build(const VKLInstanceCreateInfo& createInfo) {
-	vk.GetInstanceProcAddr = createInfo.procAddr;
+void VKLInstance::_create(const VKLInstanceCreateInfo& createInfo) {
+	vk.GetInstanceProcAddr = createInfo.m_procAddr;
 	
 	vk.CreateInstance = (PFN_vkCreateInstance)procAddr("vkCreateInstance");
 	vk.EnumerateInstanceLayerProperties = (PFN_vkEnumerateInstanceLayerProperties)procAddr("vkEnumerateInstanceLayerProperties");
 	vk.EnumerateInstanceExtensionProperties = (PFN_vkEnumerateInstanceExtensionProperties)procAddr("vkEnumerateInstanceExtensionProperties");
 
-	m_extensions.insert(m_extensions.end(), createInfo.extensions.begin(), createInfo.extensions.end());
-	m_layers.insert(m_layers.end(), createInfo.layers.begin(), createInfo.layers.end());
+	m_extensions.insert(m_extensions.end(), createInfo.m_extensions.begin(), createInfo.m_extensions.end());
+	m_layers.insert(m_layers.end(), createInfo.m_layers.begin(), createInfo.m_layers.end());
 
-	VK_CALL(vk.CreateInstance(&createInfo.ci, m_allocationCallbacks, &m_handle));
+	VK_CALL(vk.CreateInstance(&createInfo.m_createInfo, m_allocationCallbacks, &m_handle));
 
 	vk.DestroyInstance = (PFN_vkDestroyInstance)procAddr("vkDestroyInstance");
 	vk.EnumeratePhysicalDevices = (PFN_vkEnumeratePhysicalDevices)procAddr("vkEnumeratePhysicalDevices");
@@ -91,31 +90,41 @@ void VKLInstance::destroySurface(VkSurfaceKHR surface) const {
 	vk.DestroySurfaceKHR(m_handle, surface, m_allocationCallbacks);
 }
 
-void VKLInstance::destroy() {
+void VKLInstance::_destroy() {
 	vk.DestroyInstance(m_handle, m_allocationCallbacks);
 }
 
 VKLInstanceCreateInfo::VKLInstanceCreateInfo() {
-	memset(&appInfo, 0, sizeof(VkApplicationInfo));
-	memset(&ci, 0, sizeof(VkInstanceCreateInfo));
+	memset(&m_appInfo, 0, sizeof(VkApplicationInfo));
+	memset(&m_createInfo, 0, sizeof(VkInstanceCreateInfo));
 	
-	appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-	appInfo.pNext = NULL;
-	appInfo.pApplicationName = NULL;
-	appInfo.applicationVersion = 1;
-	appInfo.pEngineName = NULL;
-	appInfo.engineVersion = 1;
-	appInfo.apiVersion = VK_MAKE_VERSION(1, 0, 0);
+	m_appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
+	m_appInfo.pNext = NULL;
+	m_appInfo.pApplicationName = NULL;
+	m_appInfo.applicationVersion = 1;
+	m_appInfo.pEngineName = NULL;
+	m_appInfo.engineVersion = 1;
+	m_appInfo.apiVersion = VK_MAKE_VERSION(1, 0, 0);
 	
-	ci.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-	ci.pNext = NULL;
-	ci.flags = 0;
-	ci.pApplicationInfo = &appInfo;
+	m_createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+	m_createInfo.pNext = NULL;
+	m_createInfo.flags = 0;
+	m_createInfo.pApplicationInfo = &m_appInfo;
 	
-	procAddr = NULL;
+	m_procAddr = NULL;
+	m_debug = VK_FALSE;
 }
 
 void VKLInstanceCreateInfo::printSelections() {
+	if (!validate()) {
+		printf("VKLInstanceCreateInfo not valid\n");
+		return;
+	}
+
+	_printSelections();
+}
+
+void VKLInstanceCreateInfo::_printSelections() {
 	printf("Layers:\n");
 	for (uint32_t i = 0; i < supportedLayers.size(); ++i) {
 		printf("\tLayer ");
@@ -123,8 +132,8 @@ void VKLInstanceCreateInfo::printSelections() {
 			printf(" ");
 		}
 		printf(" %d: %s", i, supportedLayers[i].layerName);
-		for (uint32_t j = 0; j < layers.size(); ++j) {
-			if (strcmp(supportedLayers[i].layerName, layers[j]) == 0) {
+		for (uint32_t j = 0; j < m_layers.size(); ++j) {
+			if (strcmp(supportedLayers[i].layerName, m_layers[j]) == 0) {
 				for (int k = 0; k < 50 - strlen(supportedLayers[i].layerName); k++) {
 					printf(" ");
 				}
@@ -141,8 +150,8 @@ void VKLInstanceCreateInfo::printSelections() {
 			printf(" ");
 		}
 		printf(" %d: %s", i, supportedExtensions[i].extensionName);
-		for (uint32_t j = 0; j < extensions.size(); ++j) {
-			if (strcmp(supportedExtensions[i].extensionName, extensions[j]) == 0) {
+		for (uint32_t j = 0; j < m_extensions.size(); ++j) {
+			if (strcmp(supportedExtensions[i].extensionName, m_extensions[j]) == 0) {
 				for (int k = 0; k < 50 - strlen(supportedExtensions[i].extensionName); k++) {
 					printf(" ");
 				}
@@ -153,117 +162,145 @@ void VKLInstanceCreateInfo::printSelections() {
 	}
 }
 
-VKLInstanceCreateInfo& VKLInstanceCreateInfo::setProcAddr(PFN_vkGetInstanceProcAddr vkFunc) {
-	procAddr = vkFunc;
-	
-	m_vkEnumerateInstanceLayerProperties = (PFN_vkEnumerateInstanceLayerProperties)procAddr(NULL, "vkEnumerateInstanceLayerProperties");
-	m_vkEnumerateInstanceExtensionProperties = (PFN_vkEnumerateInstanceExtensionProperties)procAddr(NULL, "vkEnumerateInstanceExtensionProperties");
-	
-	uint32_t layerCount = 0;
-	m_vkEnumerateInstanceLayerProperties(&layerCount, NULL);
-	supportedLayers.resize(layerCount);
-	m_vkEnumerateInstanceLayerProperties(&layerCount, supportedLayers.data());
-	
-	uint32_t extensionCount = 0;
-	m_vkEnumerateInstanceExtensionProperties(NULL, &extensionCount, NULL);
-	supportedExtensions.resize(extensionCount);
-	m_vkEnumerateInstanceExtensionProperties(NULL, &extensionCount, supportedExtensions.data());
-	
-	//if(supportsExtension("VK_KHR_get_physical_device_properties2")) {
-	//	addExtension("VK_KHR_get_physical_device_properties2");
-	//}
-	
-	return *this;
+VKLInstanceCreateInfo& VKLInstanceCreateInfo::procAddr(PFN_vkGetInstanceProcAddr vkFunc) {
+	m_procAddr = vkFunc;
+	return invalidate();
 }
 
-VKLInstanceCreateInfo& VKLInstanceCreateInfo::setAllocationCallbacks(VkAllocationCallbacks* allocationCallbacks) {
-	this->allocationCallbacks = allocationCallbacks;
-	return *this;
+VKLInstanceCreateInfo& VKLInstanceCreateInfo::allocationCallbacks(VkAllocationCallbacks* allocationCallbacks) {
+	m_allocationCallbacks = allocationCallbacks;
+	return invalidate();
 }
 
 VKLInstanceCreateInfo& VKLInstanceCreateInfo::addLayer(const char* layer) {
-	if(procAddr == NULL) {
-		printf("Must set procAddr before adding layers!\n");
-		return *this;
+	for (const char* lay : m_layers) {
+		if (strcmp(lay, layer) == 0) {
+			return invalidate();
+		}
 	}
-	
-	if(supportsLayer(layer)) {
-		layers.push_back(layer);
-		
-		ci.enabledLayerCount= layers.size();
-		ci.ppEnabledLayerNames = layers.data();
-	} else {
-		printf("Warning: %s layer is not supported by instance\n", layer);
-	}
-	
-	return *this;
+
+	m_layers.push_back(layer);
+	return invalidate();
 }
 
 VKLInstanceCreateInfo& VKLInstanceCreateInfo::addExtension(const char* extension) {
-	if(procAddr == NULL) {
-		printf("Must set procAddr before adding extensions!\n");
-		return *this;
+	for (const char* ext : m_extensions) {
+		if (strcmp(ext, extension) == 0) {
+			return invalidate();
+		}
 	}
-	
-	if(supportsExtension(extension)) {
-		extensions.push_back(extension);
-		
-		ci.enabledExtensionCount = extensions.size();
-		ci.ppEnabledExtensionNames = extensions.data();
-	} else {
-		printf("Warning: %s extension is not supported by instance\n", extension);
-	}
-	
-	return *this;
+	m_extensions.push_back(extension);
+	return invalidate();
 }
 
 VKLInstanceCreateInfo& VKLInstanceCreateInfo::addExtensions(const char** extensions, uint32_t extensionCount) {
-	if(procAddr == NULL) {
-		printf("Must set procAddr before adding extensions!\n");
-		return *this;
-	}
-	
 	for(int  i = 0; i < extensionCount; i++) {
-		if(supportsExtension(extensions[i])) {
-			this->extensions.push_back(extensions[i]);
-		} else {
-			printf("Warning: %s extension is not supported by instance\n", extensions[i]);
-		}
+		m_extensions.push_back(extensions[i]);
 	}
 	
-	ci.enabledExtensionCount = this->extensions.size();
-	ci.ppEnabledExtensionNames = this->extensions.data();
-	
-	return *this;
+	return invalidate();
 }
 
-VKLInstanceCreateInfo& VKLInstanceCreateInfo::makeDebug() {
-	addExtension("VK_EXT_debug_report");
-	addLayer("VK_LAYER_KHRONOS_validation");
-	
-	return *this;
+VKLInstanceCreateInfo& VKLInstanceCreateInfo::debug(VkBool32 debug) {
+	m_debug = debug;
+	return invalidate();
 }
 
-bool VKLInstanceCreateInfo::supportsExtension(const char* extension) const {
-	for(int i = 0; i < supportedExtensions.size(); i++) {
+bool VKLInstanceCreateInfo::supportsExtension(const char* extension) {
+	if (!validate()) {
+		printf("VKLInstanceCreateInfo not valid\n");
+		return false;
+	}
+	
+	return _supportsExtension(extension);
+}
+
+bool VKLInstanceCreateInfo::supportsLayer(const char* layer)  {
+	if (!validate()) {
+		printf("VKLInstanceCreateInfo not valid\n");
+		return false;
+	}
+	return _supportsLayer(layer);
+}
+
+bool VKLInstanceCreateInfo::_supportsExtension(const char* extension) {
+	for (int i = 0; i < supportedExtensions.size(); i++) {
 		if (strcmp(supportedExtensions[i].extensionName, extension) == 0) {
 			return true;
 		}
 	}
-	
+
 	return false;
 }
 
-bool VKLInstanceCreateInfo::supportsLayer(const char* layer) const {
-	for(int i = 0; i < supportedLayers.size(); i++) {
+bool VKLInstanceCreateInfo::_supportsLayer(const char* layer) {
+	for (int i = 0; i < supportedLayers.size(); i++) {
 		if (strcmp(supportedLayers[i].layerName, layer) == 0) {
 			return true;
 		}
 	}
-	
+
 	return false;
 }
 
-bool VKLInstanceCreateInfo::validate() {
-	return procAddr != NULL;
+bool VKLInstanceCreateInfo::_validate() {
+#ifdef VKL_VALIDATION
+	if (m_procAddr == NULL) {
+		printf("VKL Validation Error: VKLInstanceCreateInfo::procAddr was not set!\n");
+		return false;
+	}
+#endif
+
+	m_vkEnumerateInstanceLayerProperties = (PFN_vkEnumerateInstanceLayerProperties)m_procAddr(NULL, "vkEnumerateInstanceLayerProperties");
+	m_vkEnumerateInstanceExtensionProperties = (PFN_vkEnumerateInstanceExtensionProperties)m_procAddr(NULL, "vkEnumerateInstanceExtensionProperties");
+
+	uint32_t layerCount = 0;
+	m_vkEnumerateInstanceLayerProperties(&layerCount, NULL);
+	supportedLayers.resize(layerCount);
+	m_vkEnumerateInstanceLayerProperties(&layerCount, supportedLayers.data());
+
+	uint32_t extensionCount = 0;
+	m_vkEnumerateInstanceExtensionProperties(NULL, &extensionCount, NULL);
+	supportedExtensions.resize(extensionCount);
+	m_vkEnumerateInstanceExtensionProperties(NULL, &extensionCount, supportedExtensions.data());
+
+#ifdef VKL_VALIDATION
+	for (const char* lay : m_layers) {
+		if (!_supportsLayer(lay)) {
+			printf("VKL Validation Error: Layer '%s' is not supported by instance!\n", lay);
+			return false;
+		}
+	}
+
+	for (const char* ext : m_extensions) {
+		if (!_supportsExtension(ext)) {
+			printf("VKL Validation Error: Extension '%s' is not supported by instance!\n", ext);
+			return false;
+		}
+	}
+#endif
+
+	if (_supportsExtension("VK_KHR_get_physical_device_properties2")) {
+		addExtension("VK_KHR_get_physical_device_properties2");
+	}
+
+	if (m_debug) {
+		if (_supportsExtension("VK_EXT_debug_report")) {
+			addExtension("VK_EXT_debug_report");
+		}
+
+		if (_supportsLayer("VK_LAYER_KHRONOS_validation")) {
+			addLayer("VK_LAYER_KHRONOS_validation");
+		}
+
+		_printSelections();
+	}
+
+	m_createInfo.enabledLayerCount = m_layers.size();
+	m_createInfo.ppEnabledLayerNames = m_layers.data();
+
+	m_createInfo.enabledExtensionCount = m_extensions.size();
+	m_createInfo.ppEnabledExtensionNames = m_extensions.data();
+
+	return true;
 }

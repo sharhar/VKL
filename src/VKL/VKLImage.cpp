@@ -1,21 +1,21 @@
 #include <VKL/VKL.h>
 
-VKLImage::VKLImage() : VKLBuilder<VKLImageCreateInfo>("VKLImage") {
+VKLImage::VKLImage() : VKLCreator<VKLImageCreateInfo>("VKLImage") {
 	m_device = NULL;
 	m_allocation = VK_NULL_HANDLE;
 	m_handle = VK_NULL_HANDLE;
 	m_view = VK_NULL_HANDLE;
 }
 
-VKLImage::VKLImage(const VKLImageCreateInfo& createInfo) : VKLBuilder<VKLImageCreateInfo>("VKLImage") {
+VKLImage::VKLImage(const VKLImageCreateInfo& createInfo) : VKLCreator<VKLImageCreateInfo>("VKLImage") {
 	m_device = NULL;
 	m_allocation = VK_NULL_HANDLE;
 	m_handle = VK_NULL_HANDLE;
 	m_view = VK_NULL_HANDLE;
-	build(createInfo);
+	create(createInfo);
 }
 
-void VKLImage::_build(const VKLImageCreateInfo& createInfo) {
+void VKLImage::_create(const VKLImageCreateInfo& createInfo) {
 	m_device = createInfo.device;
 
 	if (createInfo.handle != VK_NULL_HANDLE) {
@@ -68,7 +68,7 @@ VkImageView VKLImage::view() {
 	return m_view;
 }
 
-void VKLImage::destroy() {
+void VKLImage::_destroy() {
 	m_device->vk.DestroyImageView(m_device->handle(), m_view, m_device->allocationCallbacks());
 
 	if (m_allocation != VK_NULL_HANDLE) {
@@ -193,7 +193,7 @@ VKLImageCreateInfo& VKLImageCreateInfo::setMemoryUsage(VmaMemoryUsage memoryUsag
 	return *this;
 }
 
-bool VKLImageCreateInfo::validate() {
+bool VKLImageCreateInfo::_validate() {
 	if(device == NULL) {
 		return false;
 	}
