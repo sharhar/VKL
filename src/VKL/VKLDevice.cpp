@@ -279,12 +279,12 @@ VKLDeviceCreateInfo::VKLDeviceCreateInfo() {
 	m_createInfo.pEnabledFeatures = &m_features;
 }
 
-VKLDeviceCreateInfo& VKLDeviceCreateInfo::physicalDevice(const VKLPhysicalDevice& physicalDevice) {
-	m_physicalDevice = &physicalDevice;
+VKLDeviceCreateInfo& VKLDeviceCreateInfo::physicalDevice(const VKLPhysicalDevice* physicalDevice) {
+	m_physicalDevice = physicalDevice;
 	
-	m_instance = physicalDevice.instance();
+	m_instance = physicalDevice->instance();
 	
-	m_features = physicalDevice.getFeatures();
+	m_features = physicalDevice->getFeatures();
 	
 	m_createInfo.enabledLayerCount = m_instance->getLayers().size();
 	m_createInfo.ppEnabledLayerNames = m_instance->getLayers().data();
@@ -412,7 +412,7 @@ static bool allocateQueueType(const VKLPhysicalDevice* physicalDevice, std::vect
 bool VKLDeviceCreateInfo::_validate() {
 #ifdef VKL_VALIDATION
 	if(m_physicalDevice == NULL) {
-		printf("VKL Validation Error: VKLInstanceCreateInfo::procAddr was not set!\n");
+		printf("VKL Validation Error: VKLDeviceCreateInfo::physicalDevice was not set!\n");
 		return false;
 	}
 #endif
@@ -434,6 +434,10 @@ bool VKLDeviceCreateInfo::_validate() {
 		}
 	}
 #endif
+
+	if (_supportsExtension("VK_KHR_portability_subset")) {
+		addExtension("VK_KHR_portability_subset");
+	}
 	
 	m_queueCreateInfos.clear();
 	m_queueTypeIndicies[0].clear();
@@ -451,7 +455,7 @@ bool VKLDeviceCreateInfo::_validate() {
 							VK_QUEUE_GRAPHICS_BIT, VK_QUEUE_TRANSFER_BIT, VK_QUEUE_COMPUTE_BIT, VK_NULL_HANDLE)) {
 		free(queueFamilyCounts);
 		
-		printf("VKL Validation Error: VKLInstanceCreateInfo::procAddr was not set!\n");
+		printf("VKL Validation Error: Could not allocate the requested number of graphics queues!\n");
 		return false;
 	}
 	
@@ -460,7 +464,7 @@ bool VKLDeviceCreateInfo::_validate() {
 							VK_QUEUE_COMPUTE_BIT, VK_QUEUE_TRANSFER_BIT, VK_QUEUE_GRAPHICS_BIT, VK_NULL_HANDLE)) {
 		free(queueFamilyCounts);
 		
-		printf("VKL Validation Error: VKLInstanceCreateInfo::procAddr was not set!\n");
+		printf("VKL Validation Error: Could not allocate the requested number of compute queues!\n");
 		return false;
 	}
 	
@@ -469,7 +473,7 @@ bool VKLDeviceCreateInfo::_validate() {
 							VK_QUEUE_TRANSFER_BIT, VK_QUEUE_COMPUTE_BIT, VK_QUEUE_GRAPHICS_BIT, VK_NULL_HANDLE)) {
 		free(queueFamilyCounts);
 		
-		printf("VKL Validation Error: VKLInstanceCreateInfo::procAddr was not set!\n");
+		printf("VKL Validation Error: Could not allocate the requested number of transfer queues!\n");
 		return false;
 	}
 	

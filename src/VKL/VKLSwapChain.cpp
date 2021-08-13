@@ -24,10 +24,10 @@ void VKLSwapChain::_create(const VKLSwapChainCreateInfo& createInfo) {
 	m_swapChainImages = new VKLImage[m_swapChainImageCount];
 	
 	VKLImageCreateInfo imageCreateInfo;
-	imageCreateInfo.setDevice(m_device).setViewFormat(createInfo.m_createInfo.imageFormat);
+	imageCreateInfo.device(m_device).viewFormat(createInfo.m_createInfo.imageFormat);
 
 	for(int i = 0; i < m_swapChainImageCount; i++) {
-		imageCreateInfo.setHandle(presentImages[i]);
+		imageCreateInfo.handle(presentImages[i]);
 		m_swapChainImages[i].create(imageCreateInfo);
 	}
 
@@ -209,8 +209,8 @@ VKLSwapChainCreateInfo::VKLSwapChainCreateInfo() {
 	m_createInfo.oldSwapchain = VK_NULL_HANDLE;
 }
 
-VKLSwapChainCreateInfo& VKLSwapChainCreateInfo::queue(const VKLQueue& queue) {
-	m_queue = &queue;
+VKLSwapChainCreateInfo& VKLSwapChainCreateInfo::queue(const VKLQueue* queue) {
+	m_queue = queue;
 	
 	return invalidate();
 }
@@ -252,7 +252,13 @@ VKLSwapChainCreateInfo& VKLSwapChainCreateInfo::presentMode(VkPresentModeKHR pre
 }
 
 bool VKLSwapChainCreateInfo::_validate() {
-	if(m_queue == NULL || m_createInfo.surface == VK_NULL_HANDLE) {
+	if(m_queue == NULL) {
+		printf("VKL Validation Error: VKLSwapChainCreateInfo::queue was not set!\n");
+		return false;
+	}
+
+	if (m_createInfo.surface == VK_NULL_HANDLE) {
+		printf("VKL Validation Error: VKLSwapChainCreateInfo::surface was not set!\n");
 		return false;
 	}
 	
@@ -274,6 +280,11 @@ bool VKLSwapChainCreateInfo::_validate() {
 	}
 	
 	if(!foundFormat) {
+		if (m_createInfo.imageFormat != VK_FORMAT_UNDEFINED) {
+			printf("VKL Validation Warning: Requested format is not supported by the surface!\n");
+			printf("                        Reverting to first supported format from vkGetPhysicalDeviceSurfaceFormatsKHR (VkFormat = %d)\n", surfaceFormats[0].format);
+		}
+
 		m_createInfo.imageFormat = surfaceFormats[0].format;
 		m_createInfo.imageColorSpace = surfaceFormats[0].colorSpace;
 	}

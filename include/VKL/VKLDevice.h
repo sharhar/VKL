@@ -154,7 +154,7 @@ class VKLDeviceCreateInfo : public VKLCreateInfo<VKLDeviceCreateInfo> {
 public:
 	VKLDeviceCreateInfo();
 	
-	VKLDeviceCreateInfo& physicalDevice(const VKLPhysicalDevice& physicalDevice);
+	VKLDeviceCreateInfo& physicalDevice(const VKLPhysicalDevice* physicalDevice);
 	VKLDeviceCreateInfo& queueTypeCount(VKLQueueType type, uint32_t count);
 	VKLDeviceCreateInfo& addExtension(const char* extension);
 

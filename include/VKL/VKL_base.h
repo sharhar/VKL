@@ -84,12 +84,14 @@ public:
 			_create(createInfo);
 			m_valid = VK_TRUE;
 		} else {
-			printf("%s could not be built because the createInfo was not filled in.\n", m_name);
+			printf("%s could not be built because the createInfo was not valid.\n", m_name);
 		}
 	}
 	
 	void destroy() {
-		_destroy();
+		if (m_valid) {
+			_destroy();
+		}
 		m_valid = VK_FALSE;
 	}
 protected:

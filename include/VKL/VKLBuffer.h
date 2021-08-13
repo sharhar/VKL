@@ -14,19 +14,21 @@ class VKLBufferCreateInfo : public VKLCreateInfo<VKLBufferCreateInfo> {
 public:
 	VKLBufferCreateInfo();
 	
-	VKLBufferCreateInfo& setDevice(const VKLDevice* device);
-	VKLBufferCreateInfo& setSize(VkDeviceSize size);
-	VKLBufferCreateInfo& setUsage(VkBufferUsageFlags usage);
-	VKLBufferCreateInfo& setAllocationFlags(VmaAllocationCreateFlags flags);
-	VKLBufferCreateInfo& setMemoryUsage(VmaMemoryUsage memoryUsage);
-	
-	VkBufferCreateInfo bufferCreateInfo;
-	VmaAllocationCreateInfo allocationCreateInfo;
-	
-	const VKLDevice* device;
+	VKLBufferCreateInfo& device(const VKLDevice* device);
+	VKLBufferCreateInfo& size(VkDeviceSize size);
+	VKLBufferCreateInfo& usage(VkBufferUsageFlags usage);
+	VKLBufferCreateInfo& allocationFlags(VmaAllocationCreateFlags flags);
+	VKLBufferCreateInfo& memoryUsage(VmaMemoryUsage memoryUsage);
 	
 private:
+	VkBufferCreateInfo m_bufferCreateInfo;
+	VmaAllocationCreateInfo m_allocationCreateInfo;
+	
+	const VKLDevice* m_device;
+
 	bool _validate();
+
+	friend class VKLBuffer;
 };
 
 class VKLBuffer : public VKLHandle<VkBuffer>, public VKLCreator<VKLBufferCreateInfo> {

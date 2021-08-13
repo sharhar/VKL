@@ -7,32 +7,34 @@ class VKLImageCreateInfo : public VKLCreateInfo<VKLImageCreateInfo>  {
 public:
 	VKLImageCreateInfo();
 	
-	VKLImageCreateInfo& setDevice(const VKLDevice* device);
+	VKLImageCreateInfo& device(const VKLDevice* device);
 	
-	VKLImageCreateInfo& setHandle(VkImage image);
+	VKLImageCreateInfo& handle(VkImage image);
 	
-	VKLImageCreateInfo& setImageType(VkImageType type);
-	VKLImageCreateInfo& setFormat(VkFormat format);
-	VKLImageCreateInfo& setExtent(uint32_t width, uint32_t height, uint32_t depth);
-	VKLImageCreateInfo& setTiling(VkImageTiling tiling);
-	VKLImageCreateInfo& setUsage(VkImageUsageFlags usage);
-	VKLImageCreateInfo& setInitialLayout(VkImageLayout layout);
+	VKLImageCreateInfo& imageType(VkImageType type);
+	VKLImageCreateInfo& format(VkFormat format);
+	VKLImageCreateInfo& extent(uint32_t width, uint32_t height, uint32_t depth);
+	VKLImageCreateInfo& tiling(VkImageTiling tiling);
+	VKLImageCreateInfo& usage(VkImageUsageFlags usage);
+	VKLImageCreateInfo& initialLayout(VkImageLayout layout);
 	
-	VKLImageCreateInfo& setViewType(VkImageViewType type);
-	VKLImageCreateInfo& setViewFormat(VkFormat format);
+	VKLImageCreateInfo& viewType(VkImageViewType type);
+	VKLImageCreateInfo& viewFormat(VkFormat format);
 	
-	VKLImageCreateInfo& setAllocationFlags(VmaAllocationCreateFlags flags);
-	VKLImageCreateInfo& setMemoryUsage(VmaMemoryUsage memoryUsage);
-	
-	VkImageCreateInfo imageCreateInfo;
-	VkImageViewCreateInfo viewCreateInfo;
-	VmaAllocationCreateInfo allocationCreateInfo;
-	VkImage handle;
-	
-	const VKLDevice* device;
+	VKLImageCreateInfo& allocationFlags(VmaAllocationCreateFlags flags);
+	VKLImageCreateInfo& memoryUsage(VmaMemoryUsage memoryUsage);
 
 private:
+	VkImageCreateInfo m_imageCreateInfo;
+	VkImageViewCreateInfo m_viewCreateInfo;
+	VmaAllocationCreateInfo m_allocationCreateInfo;
+	VkImage m_handle;
+	
+	const VKLDevice* m_device;
+
 	bool _validate();
+
+	friend class VKLImage;
 };
 
 class VKLImage : public VKLHandle<VkImage>, public VKLCreator<VKLImageCreateInfo> {

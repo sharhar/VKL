@@ -63,9 +63,9 @@ void VKLBuffer::copyFrom(VKLBuffer* src, const VKLQueue* transferQueue, VkBuffer
 
 void VKLBuffer::uploadData(const VKLQueue* transferQueue, void* data, size_t size, size_t offset) {
 	VKLBufferCreateInfo tempBufferCreateInfo;
-	tempBufferCreateInfo.setDevice(m_device).setSize(size)
-						.setMemoryUsage(VMA_MEMORY_USAGE_CPU_TO_GPU)
-						.setUsage(VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
+	tempBufferCreateInfo.device(m_device).size(size)
+						.memoryUsage(VMA_MEMORY_USAGE_CPU_TO_GPU)
+						.usage(VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
 	
 	VKLBuffer tempStageBuffer(tempBufferCreateInfo);
 	
@@ -82,12 +82,12 @@ void VKLBuffer::uploadData(const VKLQueue* transferQueue, void* data, size_t siz
 }
 
 void VKLBuffer::_create(const VKLBufferCreateInfo& createInfo) {
-	m_device = createInfo.device;
+	m_device = createInfo.m_device;
 	
-	VK_CALL(vmaCreateBuffer(m_device->allocator(), &createInfo.bufferCreateInfo,
-							&createInfo.allocationCreateInfo, &m_handle, &m_allocation, NULL));
+	VK_CALL(vmaCreateBuffer(m_device->allocator(), &createInfo.m_bufferCreateInfo,
+							&createInfo.m_allocationCreateInfo, &m_handle, &m_allocation, NULL));
 	m_memoryBarrier.buffer = m_handle;
-	m_memoryBarrier.size = createInfo.bufferCreateInfo.size;
+	m_memoryBarrier.size = createInfo.m_bufferCreateInfo.size;
 }
 
 void VKLBuffer::_destroy() {
@@ -95,60 +95,71 @@ void VKLBuffer::_destroy() {
 }
 
 VKLBufferCreateInfo::VKLBufferCreateInfo() {
-	device = NULL;
+	m_device = NULL;
 	
-	memset(&bufferCreateInfo, 0, sizeof(VkBufferCreateInfo));
-	bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-	bufferCreateInfo.pNext = NULL;
-	bufferCreateInfo.flags = 0;
-	bufferCreateInfo.usage = 0;
-	bufferCreateInfo.size = 0;
-	bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-	bufferCreateInfo.queueFamilyIndexCount = 0;
-	bufferCreateInfo.pQueueFamilyIndices = NULL;
+	memset(&m_bufferCreateInfo, 0, sizeof(VkBufferCreateInfo));
+	m_bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+	m_bufferCreateInfo.pNext = NULL;
+	m_bufferCreateInfo.flags = 0;
+	m_bufferCreateInfo.usage = 0;
+	m_bufferCreateInfo.size = 0;
+	m_bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+	m_bufferCreateInfo.queueFamilyIndexCount = 0;
+	m_bufferCreateInfo.pQueueFamilyIndices = NULL;
 	
-	memset(&allocationCreateInfo, 0, sizeof(VmaAllocationCreateInfo));
-	allocationCreateInfo.flags = 0;
-	allocationCreateInfo.usage = VMA_MEMORY_USAGE_UNKNOWN;
-	allocationCreateInfo.memoryTypeBits = 0;
-	allocationCreateInfo.pUserData = NULL;
-	allocationCreateInfo.pool = VK_NULL_HANDLE;
-	allocationCreateInfo.requiredFlags = 0;
-	allocationCreateInfo.preferredFlags = 0;
+	memset(&m_allocationCreateInfo, 0, sizeof(VmaAllocationCreateInfo));
+	m_allocationCreateInfo.flags = 0;
+	m_allocationCreateInfo.usage = VMA_MEMORY_USAGE_UNKNOWN;
+	m_allocationCreateInfo.memoryTypeBits = 0;
+	m_allocationCreateInfo.pUserData = NULL;
+	m_allocationCreateInfo.pool = VK_NULL_HANDLE;
+	m_allocationCreateInfo.requiredFlags = 0;
+	m_allocationCreateInfo.preferredFlags = 0;
 }
 
-VKLBufferCreateInfo& VKLBufferCreateInfo::setDevice(const VKLDevice* device) {
-	this->device = device;
+VKLBufferCreateInfo& VKLBufferCreateInfo::device(const VKLDevice* device) {
+	m_device = device;
 	
-	return *this;
+	return invalidate();
 }
 
-VKLBufferCreateInfo& VKLBufferCreateInfo::setSize(VkDeviceSize size) {
-	bufferCreateInfo.size = size;
+VKLBufferCreateInfo& VKLBufferCreateInfo::size(VkDeviceSize size) {
+	m_bufferCreateInfo.size = size;
 	
-	return *this;
+	return invalidate();
 }
 
-VKLBufferCreateInfo& VKLBufferCreateInfo::setUsage(VkBufferUsageFlags usage) {
-	bufferCreateInfo.usage = usage;
+VKLBufferCreateInfo& VKLBufferCreateInfo::usage(VkBufferUsageFlags usage) {
+	m_bufferCreateInfo.usage = usage;
 	
-	return *this;
+	return invalidate();
 }
 
-VKLBufferCreateInfo& VKLBufferCreateInfo::setAllocationFlags(VmaAllocationCreateFlags flags) {
-	allocationCreateInfo.flags = flags;
+VKLBufferCreateInfo& VKLBufferCreateInfo::allocationFlags(VmaAllocationCreateFlags flags) {
+	m_allocationCreateInfo.flags = flags;
 	
-	return *this;
+	return invalidate();
 }
 
-VKLBufferCreateInfo& VKLBufferCreateInfo::setMemoryUsage(VmaMemoryUsage memoryUsage) {
-	allocationCreateInfo.usage = memoryUsage;
+VKLBufferCreateInfo& VKLBufferCreateInfo::memoryUsage(VmaMemoryUsage memoryUsage) {
+	m_allocationCreateInfo.usage = memoryUsage;
 	
-	return *this;
+	return invalidate();
 }
 
 bool VKLBufferCreateInfo::_validate() {
-	if(device == NULL || bufferCreateInfo.size == 0) {
+	if(m_device == NULL) {
+		printf("VKL Validation Error: VKLBufferCreateInfo::device is not set!\n");
+		return false;
+	}
+
+	if (m_bufferCreateInfo.size == 0) {
+		printf("VKL Validation Error: VKLBufferCreateInfo::size is not set!\n");
+		return false;
+	}
+
+	if (m_allocationCreateInfo.flags == 0 && m_allocationCreateInfo.usage == VMA_MEMORY_USAGE_UNKNOWN) {
+		printf("VKL Validation Error: No memory usage or flags are set in VKLBufferCreateInfo!\n");
 		return false;
 	}
 	

@@ -9,7 +9,7 @@ class VKLSwapChainCreateInfo : public VKLCreateInfo<VKLSwapChainCreateInfo> {
 public:
 	VKLSwapChainCreateInfo();
 	
-	VKLSwapChainCreateInfo& queue(const VKLQueue& queue);
+	VKLSwapChainCreateInfo& queue(const VKLQueue* queue);
 	VKLSwapChainCreateInfo& surface(VkSurfaceKHR surface);
 	VKLSwapChainCreateInfo& size(VkExtent2D size);
 	VKLSwapChainCreateInfo& imageFormat(VkFormat format);

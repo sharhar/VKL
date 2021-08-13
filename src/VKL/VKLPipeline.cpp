@@ -9,7 +9,7 @@ void VKLPipeline::_destroy() {
 }
 
 void VKLPipeline::_create(const VKLPipelineCreateInfo& createInfo) {
-	m_device = createInfo.shader->device();
+	m_device = createInfo.m_shader->device();
 	
 	VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateCreateInfo;
 	memset(&inputAssemblyStateCreateInfo, 0, sizeof(VkPipelineInputAssemblyStateCreateInfo));
@@ -19,10 +19,10 @@ void VKLPipeline::_create(const VKLPipelineCreateInfo& createInfo) {
 
 	VkViewport viewport;
 	memset(&viewport, 0, sizeof(VkViewport));
-	viewport.x = createInfo.renderTarget->getRenderArea().offset.x;
-	viewport.y = createInfo.renderTarget->getRenderArea().offset.y;
-	viewport.width = createInfo.renderTarget->getRenderArea().extent.width;
-	viewport.height = createInfo.renderTarget->getRenderArea().extent.height;
+	viewport.x = createInfo.m_renderTarget->getRenderArea().offset.x;
+	viewport.y = createInfo.m_renderTarget->getRenderArea().offset.y;
+	viewport.width = createInfo.m_renderTarget->getRenderArea().extent.width;
+	viewport.height = createInfo.m_renderTarget->getRenderArea().extent.height;
 	viewport.minDepth = 0;
 	viewport.maxDepth = 1;
 
@@ -30,8 +30,8 @@ void VKLPipeline::_create(const VKLPipelineCreateInfo& createInfo) {
 	memset(&scissors, 0, sizeof(VkRect2D));
 	scissors.offset.x = 0;
 	scissors.offset.y = 0;
-	scissors.extent.width = createInfo.renderTarget->getRenderArea().extent.width;
-	scissors.extent.height = createInfo.renderTarget->getRenderArea().extent.height;
+	scissors.extent.width = createInfo.m_renderTarget->getRenderArea().extent.width;
+	scissors.extent.height = createInfo.m_renderTarget->getRenderArea().extent.height;
 
 	VkPipelineViewportStateCreateInfo viewportState;
 	memset(&viewportState, 0, sizeof(VkPipelineViewportStateCreateInfo));
@@ -117,13 +117,13 @@ void VKLPipeline::_create(const VKLPipelineCreateInfo& createInfo) {
 	dynamicStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
 	dynamicStateCreateInfo.dynamicStateCount = 0;
 	dynamicStateCreateInfo.pDynamicStates = dynamicState;
-	
+
 	VkGraphicsPipelineCreateInfo pipelineCreateInfo;
 	memset(&pipelineCreateInfo, 0, sizeof(VkGraphicsPipelineCreateInfo));
 	pipelineCreateInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-	pipelineCreateInfo.stageCount = createInfo.shader->getShaderStageCreateInfos().size();
-	pipelineCreateInfo.pStages = createInfo.shader->getShaderStageCreateInfos().data();
-	pipelineCreateInfo.pVertexInputState = createInfo.shader->getVertexInputState();
+	pipelineCreateInfo.stageCount = createInfo.m_shader->getShaderStageCreateInfos().size();
+	pipelineCreateInfo.pStages = createInfo.m_shader->getShaderStageCreateInfos().data();
+	pipelineCreateInfo.pVertexInputState = &createInfo.vertexInput.m_createInfo;
 	pipelineCreateInfo.pInputAssemblyState = &inputAssemblyStateCreateInfo;
 	pipelineCreateInfo.pTessellationState = NULL;
 	pipelineCreateInfo.pViewportState = &viewportState;
@@ -132,8 +132,8 @@ void VKLPipeline::_create(const VKLPipelineCreateInfo& createInfo) {
 	pipelineCreateInfo.pDepthStencilState = &depthState;
 	pipelineCreateInfo.pColorBlendState = &colorBlendState;
 	pipelineCreateInfo.pDynamicState = &dynamicStateCreateInfo;
-	pipelineCreateInfo.layout = createInfo.shader->getPipelineLayout();
-	pipelineCreateInfo.renderPass = createInfo.renderTarget->getRenderPass();
+	pipelineCreateInfo.layout = createInfo.m_shader->getPipelineLayout();
+	pipelineCreateInfo.renderPass = createInfo.m_renderTarget->getRenderPass();
 	pipelineCreateInfo.subpass = 0;
 	pipelineCreateInfo.basePipelineHandle = NULL;
 	pipelineCreateInfo.basePipelineIndex = 0;
@@ -142,27 +142,113 @@ void VKLPipeline::_create(const VKLPipelineCreateInfo& createInfo) {
 												 &pipelineCreateInfo, m_device->allocationCallbacks(), &m_handle));
 }
 
-VKLPipelineCreateInfo::VKLPipelineCreateInfo() {
-	shader = NULL;
-	renderTarget = NULL;
+VKLPipelineCreateInfo::VKLPipelineCreateInfo() : vertexInput(*this) {
+	m_shader = NULL;
+	m_renderTarget = NULL;
 }
 
-VKLPipelineCreateInfo& VKLPipelineCreateInfo::setShader(const VKLShader* shader) {
-	this->shader = shader;
+VKLPipelineCreateInfo& VKLPipelineCreateInfo::shader(const VKLShader* shader) {
+	m_shader = shader;
 	
-	return *this;
+	return invalidate();
 }
 
-VKLPipelineCreateInfo& VKLPipelineCreateInfo::setRenderTarget(const VKLRenderTarget* renderTarget) {
-	this->renderTarget = renderTarget;
+VKLPipelineCreateInfo& VKLPipelineCreateInfo::renderTarget(const VKLRenderTarget* renderTarget) {
+	m_renderTarget = renderTarget;
 	
-	return *this;
+	return invalidate();
 }
 
 bool VKLPipelineCreateInfo::_validate() {
-	if(shader == NULL || renderTarget == NULL) {
+	if(m_shader == NULL) {
+		printf("VKL Validation Error: VKLPipelineCreateInfo::shader is not set!\n");
+		return false;
+	}
+
+	if (m_renderTarget == NULL) {
+		printf("VKL Validation Error: VKLPipelineCreateInfo::renderTarget is not set!\n");
+		return false;
+	}
+
+	if (!vertexInput.validate()) {
+		printf("VKL Validation Error: VKLPipelineCreateInfo::vertexInput is not valid!\n");
 		return false;
 	}
 	
 	return true;
+}
+
+VKLVertexInputBindingDesc& VKLPipelineVertexInputStateCreateInfo::addBinding(uint32_t binding, uint32_t stride) {
+	m_vertexInputBindings.push_back(VKLVertexInputBindingDesc(binding, stride, *this));
+
+	return m_vertexInputBindings.back();
+}
+
+VKLPipelineCreateInfo& VKLPipelineVertexInputStateCreateInfo::end() {
+	return m_parent;
+}
+
+VKLPipelineVertexInputStateCreateInfo::VKLPipelineVertexInputStateCreateInfo(VKLPipelineCreateInfo& parent) : m_parent(parent) {
+	m_vertexInputBindingsBuffer = NULL;
+
+	memset(&m_createInfo, 0, sizeof(VkPipelineVertexInputStateCreateInfo));
+	m_createInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+	m_createInfo.pNext = NULL;
+	m_createInfo.flags = 0;
+	m_createInfo.pVertexAttributeDescriptions = NULL;
+	m_createInfo.vertexAttributeDescriptionCount = 0;
+	m_createInfo.pVertexBindingDescriptions = NULL;
+	m_createInfo.vertexBindingDescriptionCount = 0;
+}
+
+void VKLPipelineVertexInputStateCreateInfo::addVertexAttrib(uint32_t location, uint32_t binding, VkFormat format, uint32_t offset) {
+	VkVertexInputAttributeDescription result;
+	result.binding = binding;
+	result.format = format;
+	result.location = location;
+	result.offset = offset;
+
+	m_vertexAttributes.push_back(result);
+}
+
+bool VKLPipelineVertexInputStateCreateInfo::validate() {
+	if (m_vertexInputBindingsBuffer != NULL) {
+		free(m_vertexInputBindingsBuffer);
+	}
+
+	m_vertexInputBindingsBuffer = (VkVertexInputBindingDescription*)malloc(sizeof(VkVertexInputBindingDescription) * m_vertexInputBindings.size());
+	
+	for (int i = 0; i < m_vertexInputBindings.size(); i++) {
+		m_vertexInputBindingsBuffer[i] = m_vertexInputBindings[i].m_desc;
+	}
+
+	m_createInfo.pVertexAttributeDescriptions = m_vertexAttributes.data();
+	m_createInfo.vertexAttributeDescriptionCount = m_vertexAttributes.size();
+	m_createInfo.pVertexBindingDescriptions = m_vertexInputBindingsBuffer;
+	m_createInfo.vertexBindingDescriptionCount = m_vertexInputBindings.size();
+
+	return true;
+}
+
+VKLVertexInputBindingDesc::VKLVertexInputBindingDesc(uint32_t binding, uint32_t stride, VKLPipelineVertexInputStateCreateInfo& parent) : m_parent(parent) {
+	memset(&m_desc, 0, sizeof(VkVertexInputBindingDescription));
+	m_desc.binding = binding;
+	m_desc.stride = stride;
+	m_desc.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+}
+
+VKLVertexInputBindingDesc& VKLVertexInputBindingDesc::inputRate(VkVertexInputRate inputRate) {
+	m_desc.inputRate = inputRate;
+
+	return *this;
+}
+
+VKLVertexInputBindingDesc& VKLVertexInputBindingDesc::addAttrib(uint32_t location, VkFormat format, uint32_t offset) {
+	m_parent.addVertexAttrib(location, m_desc.binding, format, offset);
+
+	return *this;
+}
+
+VKLPipelineVertexInputStateCreateInfo& VKLVertexInputBindingDesc::end() {
+	return m_parent;
 }
