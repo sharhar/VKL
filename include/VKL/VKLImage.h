@@ -9,8 +9,6 @@ public:
 	
 	VKLImageCreateInfo& device(const VKLDevice* device);
 	
-	VKLImageCreateInfo& handle(VkImage image);
-	
 	VKLImageCreateInfo& imageType(VkImageType type);
 	VKLImageCreateInfo& format(VkFormat format);
 	VKLImageCreateInfo& extent(uint32_t width, uint32_t height, uint32_t depth);
@@ -18,17 +16,12 @@ public:
 	VKLImageCreateInfo& usage(VkImageUsageFlags usage);
 	VKLImageCreateInfo& initialLayout(VkImageLayout layout);
 	
-	VKLImageCreateInfo& viewType(VkImageViewType type);
-	VKLImageCreateInfo& viewFormat(VkFormat format);
-	
 	VKLImageCreateInfo& allocationFlags(VmaAllocationCreateFlags flags);
 	VKLImageCreateInfo& memoryUsage(VmaMemoryUsage memoryUsage);
 
 private:
 	VkImageCreateInfo m_imageCreateInfo;
-	VkImageViewCreateInfo m_viewCreateInfo;
 	VmaAllocationCreateInfo m_allocationCreateInfo;
-	VkImage m_handle;
 	
 	const VKLDevice* m_device;
 
@@ -48,16 +41,22 @@ public:
 	VkImageMemoryBarrier* getMemoryBarrier();
 	void resetBarrier();
 
-	VkImageView view();
+	VkFormat format() const;
 private:
-	VkImageView m_view;
 	VkImageMemoryBarrier m_memoryBarrier;
 	VmaAllocation m_allocation;
+
+	VkFormat m_format;
+
+	void initBarrier(VkImageLayout layout);
 
 	const VKLDevice* m_device;
 	
 	void _destroy();
 	void _create(const VKLImageCreateInfo& createInfo);
+
+	friend class VKLImageView;
+	friend class VKLSwapChain;
 };
 
 #endif

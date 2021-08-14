@@ -18,23 +18,6 @@ typedef struct {
 
 class VKLShaderCreateInfo;
 
-/*
-class VKLVertexInputBinding {
-public:
-	VKLVertexInputBinding& stride(uint32_t stride);
-	VKLVertexInputBinding& inputRate(VkVertexInputRate inputRate);
-	VKLVertexInputBinding& addAttrib(uint32_t location, VkFormat format, uint32_t offset);
-	
-	VKLShaderCreateInfo& end();
-
-private:
-	VKLVertexInputBinding(uint32_t binding, VKLShaderCreateInfo& parent);
-	
-	VkVertexInputBindingDescription m_desc;
-	
-	VKLShaderCreateInfo& m_parent;
-};
-*/
 class VKLDescriptorSetLayoutCreateInfo {
 public:
 	VKLDescriptorSetLayoutCreateInfo& addBinding(uint32_t binding, VkDescriptorType type,

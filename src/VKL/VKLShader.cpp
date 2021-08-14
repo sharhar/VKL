@@ -86,27 +86,6 @@ void VKLShader::_create(const VKLShaderCreateInfo& createInfo) {
 	layoutCreateInfo.pPushConstantRanges = m_pushConstantRanges;
 	
 	VK_CALL(m_device->vk.CreatePipelineLayout(m_device->handle(), &layoutCreateInfo, m_device->allocationCallbacks(), &m_layout));
-	
-	/*
-	m_vertexInputBindingDescs = (VkVertexInputBindingDescription*)malloc(sizeof(VkVertexInputBindingDescription) *
-																	   createInfo.vertexInputBindings.size());
-	for(int i = 0; i < createInfo.vertexInputBindings.size(); i++) {
-		m_vertexInputBindingDescs[i] = createInfo.vertexInputBindings[i].desc;
-	}
-	
-	m_vertexAttribDescs = (VkVertexInputAttributeDescription*)malloc(sizeof(VkVertexInputAttributeDescription) *
-																	 createInfo.vertexAttribs.size());
-	memcpy(m_vertexAttribDescs, createInfo.vertexAttribs.data(), sizeof(VkVertexInputAttributeDescription) *
-																	createInfo.vertexAttribs.size());
-	
-	m_vertexInputState.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-	m_vertexInputState.pNext = NULL;
-	m_vertexInputState.flags = 0;
-	m_vertexInputState.pVertexAttributeDescriptions = m_vertexAttribDescs;
-	m_vertexInputState.vertexAttributeDescriptionCount = createInfo.vertexAttribs.size();
-	m_vertexInputState.pVertexBindingDescriptions = m_vertexInputBindingDescs;
-	m_vertexInputState.vertexBindingDescriptionCount = createInfo.vertexInputBindings.size();
-	*/
 }
 
 VKLShaderCreateInfo::VKLShaderCreateInfo() {

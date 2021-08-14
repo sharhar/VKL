@@ -22,13 +22,15 @@ void VKLSwapChain::_create(const VKLSwapChainCreateInfo& createInfo) {
 	m_device->vk.GetSwapchainImagesKHR(m_device->handle(), m_handle, &m_swapChainImageCount, presentImages);
 
 	m_swapChainImages = new VKLImage[m_swapChainImageCount];
-	
-	VKLImageCreateInfo imageCreateInfo;
-	imageCreateInfo.device(m_device).viewFormat(createInfo.m_createInfo.imageFormat);
+	m_swapChainImageViews = new VKLImageView[m_swapChainImageCount];
 
 	for(int i = 0; i < m_swapChainImageCount; i++) {
-		imageCreateInfo.handle(presentImages[i]);
-		m_swapChainImages[i].create(imageCreateInfo);
+		m_swapChainImages[i].m_device = m_device;
+		m_swapChainImages[i].m_handle = presentImages[i];
+		m_swapChainImages[i].m_format = createInfo.m_createInfo.imageFormat;
+		m_swapChainImages[i].initBarrier(VK_IMAGE_LAYOUT_UNDEFINED);
+		
+		m_swapChainImageViews[i].create(VKLImageViewCreateInfo().image(&m_swapChainImages[i]));
 	}
 
 	free(presentImages);
@@ -106,7 +108,7 @@ void VKLSwapChain::_create(const VKLSwapChainCreateInfo& createInfo) {
 	m_frameBuffers = (VkFramebuffer*)malloc(sizeof(VkFramebuffer) * m_swapChainImageCount);
 	
 	for(int i = 0; i < m_swapChainImageCount; i++) {
-		frameBufferAttachments[0] = m_swapChainImages[i].view();
+		frameBufferAttachments[0] = m_swapChainImageViews[i].handle();// m_swapChainImages[i].view();
 		
 		VK_CALL(m_device->vk.CreateFramebuffer(m_device->handle(), &frameBufferCreateInfo, m_device->allocationCallbacks(), &m_frameBuffers[i]));
 	}
@@ -157,10 +159,11 @@ void VKLSwapChain::_destroy() {
 	m_device->vk.DestroySemaphore(m_device->handle(), m_presentSemaphore, m_device->allocationCallbacks());
 	
 	for (int i = 0; i < m_swapChainImageCount; i++) {
-		m_swapChainImages[i].destroy();
+		m_swapChainImageViews[i].destroy();
 		m_device->vk.DestroyFramebuffer(m_device->handle(), m_frameBuffers[i], m_device->allocationCallbacks());
 	}
 
+	delete[] m_swapChainImageViews;
 	delete[] m_swapChainImages;
 
 	m_device->vk.DestroySwapchainKHR(m_device->handle(), m_handle, m_device->allocationCallbacks());

@@ -35,6 +35,7 @@ public:
 	void present();
 private:
 	VKLImage* m_swapChainImages;
+	VKLImageView* m_swapChainImageViews;
 	VkFramebuffer* m_frameBuffers;
 	uint32_t m_swapChainImageCount;
 	

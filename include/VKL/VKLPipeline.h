@@ -1,10 +1,3 @@
-//
-//  VKLPipeline.h
-//  VKL
-//
-//  Created by Shahar Sandhaus on 8/6/21.
-//
-
 #ifndef VKLPipeline_h
 #define VKLPipeline_h
 
@@ -84,4 +77,4 @@ private:
 	void _create(const VKLPipelineCreateInfo& createInfo);
 };
 
-#endif /* VKLPipeline_h */
+#endif

@@ -7,8 +7,6 @@
 
 class VKLPhysicalDevice : public VKLHandle<VkPhysicalDevice> {
 public:
-	VKLPhysicalDevice(VkPhysicalDevice physicalDevice, const VKLInstance* instance);
-	
 	const VKLInstance* instance() const;
 
 	VkPhysicalDeviceFeatures getFeatures() const;
@@ -24,6 +22,8 @@ public:
 	std::vector<VkSurfaceFormatKHR> getSurfaceFormats(VkSurfaceKHR surface) const;
 	std::vector<VkPresentModeKHR> getSurfacePresentModes(VkSurfaceKHR surface) const;
 private:
+	VKLPhysicalDevice(VkPhysicalDevice physicalDevice, const VKLInstance* instance);
+
 	const VKLInstance* m_instance;
 
 	VkPhysicalDeviceFeatures m_features;
@@ -31,6 +31,8 @@ private:
 	std::vector<VkQueueFamilyProperties> m_queueFamilyProperties;
 	std::vector<VkExtensionProperties> m_extensions;
 	VkPhysicalDeviceMemoryProperties m_memoryProperties;
+
+	friend class VKLInstance;
 };
 
 #endif

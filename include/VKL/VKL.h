@@ -9,8 +9,10 @@
 #include <VKL/VKLDevice.h>
 #include <VKL/VKLSwapChain.h>
 #include <VKL/VKLImage.h>
+#include <VKL/VKLImageView.h>
 #include <VKL/VKLCommandBuffer.h>
 #include <VKL/VKLRenderTarget.h>
+#include <VKL/VKLRenderPass.h>
 #include <VKL/VKLBuffer.h>
 #include <VKL/VKLShader.h>
 #include <VKL/VKLPipeline.h>

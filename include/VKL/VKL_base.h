@@ -25,12 +25,14 @@ class VKLPhysicalDevice;
 class VKLDevice;
 class VKLQueue;
 class VKLImage;
+class VKLImageView;
 class VKLSwapChain;
 class VKLCommandBuffer;
 class VKLRenderTarget;
 class VKLBuffer;
 class VKLShader;
 class VKLPipeline;
+class VKLRenderPass;
 
 template<typename T>
 class VKLHandle {
