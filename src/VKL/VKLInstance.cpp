@@ -53,6 +53,11 @@ void VKLInstance::_create(const VKLInstanceCreateInfo& createInfo) {
 	vk.GetPhysicalDeviceSurfaceFormatsKHR = (PFN_vkGetPhysicalDeviceSurfaceFormatsKHR)procAddr("vkGetPhysicalDeviceSurfaceFormatsKHR");
 	vk.GetPhysicalDeviceSurfacePresentModesKHR = (PFN_vkGetPhysicalDeviceSurfacePresentModesKHR)procAddr("vkGetPhysicalDeviceSurfacePresentModesKHR");
 
+#ifdef VKL_SURFACE_WIN32
+	vk.CreateWin32SurfaceKHR = procAddr("vkCreateWin32SurfaceKHR");
+	vk.GetPhysicalDeviceWin32PresentationSupportKHR = procAddr("vkGetPhysicalDeviceWin32PresentationSupportKHR");
+#endif
+
 	VkPhysicalDevice* physicalDevices = NULL;
 	uint32_t physicalDeviceCount = 0;
 
@@ -84,10 +89,6 @@ const std::vector<const char*>& VKLInstance::getLayers() const {
 
 const std::vector<const char*>& VKLInstance::getExtensions() const {
 	return m_extensions;
-}
-
-void VKLInstance::destroySurface(VkSurfaceKHR surface) const {
-	vk.DestroySurfaceKHR(m_handle, surface, m_allocationCallbacks);
 }
 
 void VKLInstance::_destroy() {
@@ -291,6 +292,10 @@ bool VKLInstanceCreateInfo::_validate() {
 
 		if (_supportsLayer("VK_LAYER_KHRONOS_validation")) {
 			addLayer("VK_LAYER_KHRONOS_validation");
+		}
+
+		if (_supportsLayer("VK_LAYER_LUNARG_monitor")) {
+			addLayer("VK_LAYER_LUNARG_monitor");
 		}
 
 		_printSelections();

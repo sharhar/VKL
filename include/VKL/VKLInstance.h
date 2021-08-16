@@ -36,6 +36,11 @@ typedef struct VKLInstancePFNS {
 	PFN_vkGetPhysicalDeviceSurfaceCapabilitiesKHR GetPhysicalDeviceSurfaceCapabilitiesKHR;
 	PFN_vkGetPhysicalDeviceSurfaceFormatsKHR GetPhysicalDeviceSurfaceFormatsKHR;
 	PFN_vkGetPhysicalDeviceSurfacePresentModesKHR GetPhysicalDeviceSurfacePresentModesKHR;
+
+#ifdef VKL_SURFACE_WIN32
+	void* CreateWin32SurfaceKHR;
+	void* GetPhysicalDeviceWin32PresentationSupportKHR;
+#endif
 } __VKLInstancePFNS;
 
 class VKLInstanceCreateInfo : public VKLCreateInfo<VKLInstanceCreateInfo>{
@@ -91,7 +96,6 @@ public:
 	const std::vector<VKLPhysicalDevice>& getPhysicalDevices() const;
 	const std::vector<const char*>& getLayers() const;
 	const std::vector<const char*>& getExtensions() const;
-	void destroySurface(VkSurfaceKHR surface) const;
 	
 	VKLInstancePFNS vk;
 private:

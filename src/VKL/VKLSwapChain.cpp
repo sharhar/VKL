@@ -4,7 +4,6 @@ VKLSwapChain::VKLSwapChain() : VKLCreator<VKLSwapChainCreateInfo>("VKLSwapChain"
 	
 }
 
-
 VKLSwapChain::VKLSwapChain(const VKLSwapChainCreateInfo& createInfo) : VKLCreator<VKLSwapChainCreateInfo>("VKLSwapChain")  {
 	this->create(createInfo);
 }
@@ -24,7 +23,7 @@ void VKLSwapChain::_create(const VKLSwapChainCreateInfo& createInfo) {
 	m_swapChainImages = new VKLImage[m_swapChainImageCount];
 	m_swapChainImageViews = new VKLImageView[m_swapChainImageCount];
 
-	for(int i = 0; i < m_swapChainImageCount; i++) {
+	for(int i = 0; i < m_swapChainImageCount; i++) { // TODO: init these VKLImage objects in a less hacky way
 		m_swapChainImages[i].m_device = m_device;
 		m_swapChainImages[i].m_handle = presentImages[i];
 		m_swapChainImages[i].m_format = createInfo.m_createInfo.imageFormat;
@@ -108,7 +107,7 @@ void VKLSwapChain::_create(const VKLSwapChainCreateInfo& createInfo) {
 	m_frameBuffers = (VkFramebuffer*)malloc(sizeof(VkFramebuffer) * m_swapChainImageCount);
 	
 	for(int i = 0; i < m_swapChainImageCount; i++) {
-		frameBufferAttachments[0] = m_swapChainImageViews[i].handle();// m_swapChainImages[i].view();
+		frameBufferAttachments[0] = m_swapChainImageViews[i].handle();
 		
 		VK_CALL(m_device->vk.CreateFramebuffer(m_device->handle(), &frameBufferCreateInfo, m_device->allocationCallbacks(), &m_frameBuffers[i]));
 	}

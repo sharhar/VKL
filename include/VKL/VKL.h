@@ -4,6 +4,7 @@
 #include <VKL/VKL_base.h>
 
 #include <VKL/VKLInstance.h>
+#include <VKL/VKLSurface.h>
 #include <VKL/VKLPhysicalDevice.h>
 #include <VKL/VKLQueue.h>
 #include <VKL/VKLDevice.h>
