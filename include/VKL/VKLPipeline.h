@@ -54,13 +54,13 @@ public:
 	VKLPipelineCreateInfo();
 	
 	VKLPipelineCreateInfo& shader(const VKLShader* shader);
-	VKLPipelineCreateInfo& renderTarget(const VKLRenderTarget* renderTarget);
+	VKLPipelineCreateInfo& renderPass(const VKLRenderPass* renderPass);
 
 	VKLPipelineVertexInputStateCreateInfo vertexInput;
 
 private:
 	const VKLShader* m_shader;
-	const VKLRenderTarget* m_renderTarget;
+	const VKLRenderPass* m_renderPass;
 
 	bool _validate();
 

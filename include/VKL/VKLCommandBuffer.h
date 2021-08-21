@@ -9,7 +9,6 @@ public:
 
 	VkCommandPool pool();
 	
-	void imageBarrier(VKLImage* image, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask);
 	void bufferBarrier(VKLBuffer* buffer, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask);
 	
 	void copyBuffer(VKLBuffer* dst, VKLBuffer* src, VkBufferCopy bufferCopy);

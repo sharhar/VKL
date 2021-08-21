@@ -2,11 +2,11 @@
 #define VK_USE_PLATFORM_WIN32_KHR
 #endif
 
-#include <VKL/VKL.h>
-
-#ifdef VKL_SURFACE_GLFW
-typedef VkResult (*PFN_glfwCreateWindowSurface)(VkInstance, void*, const VkAllocationCallbacks*, VkSurfaceKHR*);
+#ifdef VKL_SURFACE_MACOS
+#define VK_USE_PLATFORM_METAL_EXT
 #endif
+
+#include <VKL/VKL.h>
 
 VKLSurface::VKLSurface() : VKLCreator<VKLSurfaceCreateInfo>("VKLSurface") {
 	m_instance = NULL;
@@ -20,24 +20,21 @@ VKLSurface::VKLSurface(const VKLSurfaceCreateInfo& createInfo) : VKLCreator<VKLS
 void VKLSurface::_create(const VKLSurfaceCreateInfo& createInfo) {
 	m_instance = createInfo.m_instance;
 
-	void** ptrs;
-
 	switch (createInfo.m_type) {
 	case VKL_SURFACE_CREATE_INFO_TYPE_HANDLE:
 		m_handle = *(VkSurfaceKHR*)createInfo.m_createInfoPtr;
-		break;
-	case VKL_SURFACE_CREATE_INFO_TYPE_GLFW:
-#ifdef VKL_SURFACE_GLFW
-		ptrs = (void**)createInfo.m_createInfoPtr;
-
-		((PFN_glfwCreateWindowSurface)ptrs[0])(m_instance->handle(), ptrs[1], 
-												m_instance->allocationCallbacks(), &m_handle);
-#endif
 		break;
 	case VKL_SURFACE_CREATE_INFO_TYPE_WIN32:
 #ifdef VKL_SURFACE_WIN32
 		((PFN_vkCreateWin32SurfaceKHR)m_instance->vk.CreateWin32SurfaceKHR)(m_instance->handle(), 
 													(VkWin32SurfaceCreateInfoKHR*)createInfo.m_createInfoPtr, 
+													m_instance->allocationCallbacks(), &m_handle);
+#endif
+		break;
+	case VKL_SURFACE_CREATE_INFO_TYPE_MACOS:
+#ifdef VKL_SURFACE_MACOS
+	((PFN_vkCreateMetalSurfaceEXT)m_instance->vk.CreateMetalSurfaceEXT)(m_instance->handle(),
+													(VkMetalSurfaceCreateInfoEXT*)createInfo.m_createInfoPtr,
 													m_instance->allocationCallbacks(), &m_handle);
 #endif
 		break;
@@ -148,47 +145,53 @@ bool VKLSurfaceCreateInfoWin32::_validate() {
 
 #endif
 
-#ifdef VKL_SURFACE_GLFW
+#ifdef VKL_SURFACE_MACOS
 
-VKLSurfaceCreateInfoGLFW::VKLSurfaceCreateInfoGLFW() {
-	m_ptrs[0] = NULL;
-	m_ptrs[1] = NULL;
-
-	m_createInfoPtr = m_ptrs;
-
-	m_type = VKL_SURFACE_CREATE_INFO_TYPE_GLFW;
-}
-
-VKLSurfaceCreateInfoGLFW& VKLSurfaceCreateInfoGLFW::instance(const VKLInstance* instance) {
-	m_instance = instance;
-
-	return (VKLSurfaceCreateInfoGLFW&)invalidate();
-}
-
-VKLSurfaceCreateInfoGLFW& VKLSurfaceCreateInfoGLFW::window(void* window) {
-	m_ptrs[1] = window;
-
-	return (VKLSurfaceCreateInfoGLFW&)invalidate();
-}
-
-VKLSurfaceCreateInfoGLFW& VKLSurfaceCreateInfoGLFW::createSurfaceFunc(void* func) {
-	m_ptrs[0] = func;
-
-	return (VKLSurfaceCreateInfoGLFW&)invalidate();
-}
+VKLSurfaceCreateInfoMacOS::VKLSurfaceCreateInfoMacOS() {
+	m_createInfoPtr = malloc(sizeof(VkMetalSurfaceCreateInfoEXT));
+	m_type = VKL_SURFACE_CREATE_INFO_TYPE_MACOS;
 	
-bool VKLSurfaceCreateInfoGLFW::_validate() {
-	if (m_ptrs[0] == NULL) {
-		printf("VKL Validation Error: VKLSurfaceCreateInfoGLFW::createSurfaceFunc was not set!\n");
+	VkMetalSurfaceCreateInfoEXT* createInfo = (VkMetalSurfaceCreateInfoEXT*)m_createInfoPtr;
+	
+	createInfo->sType = VK_STRUCTURE_TYPE_METAL_SURFACE_CREATE_INFO_EXT;
+	createInfo->pNext = NULL;
+	createInfo->flags = 0;
+	createInfo->pLayer = NULL;
+}
+
+VKLSurfaceCreateInfoMacOS::~VKLSurfaceCreateInfoMacOS() {
+	free(m_createInfoPtr);
+}
+
+VKLSurfaceCreateInfoMacOS& VKLSurfaceCreateInfoMacOS::instance(const VKLInstance* instance) {
+	m_instance = instance;
+	
+	return (VKLSurfaceCreateInfoMacOS&)invalidate();
+}
+
+VKLSurfaceCreateInfoMacOS& VKLSurfaceCreateInfoMacOS::caLayer(void* caLayer) {
+	VkMetalSurfaceCreateInfoEXT* createInfo = (VkMetalSurfaceCreateInfoEXT*)m_createInfoPtr;
+	
+	createInfo->pLayer = caLayer;
+	
+	return (VKLSurfaceCreateInfoMacOS&)invalidate();
+}
+
+bool VKLSurfaceCreateInfoMacOS::_validate() {
+	if(m_instance == NULL) {
+		printf("VKL Validation Error: VKLSurfaceCreateInfoMacOS::instance was not set!\n");
 		return false;
 	}
-
-	if (m_ptrs[1] == NULL) {
-		printf("VKL Validation Error: VKLSurfaceCreateInfoGLFW::window was not set!\n");
-		return false ;
+	
+	VkMetalSurfaceCreateInfoEXT* createInfo = (VkMetalSurfaceCreateInfoEXT*)m_createInfoPtr;
+	
+	if(createInfo->pLayer == NULL) {
+		printf("VKL Validation Error: VKLSurfaceCreateInfoMacOS::caLayer was not set!\n");
+		return false;
 	}
-
+	
 	return true;
 }
 
 #endif
+

@@ -13,6 +13,8 @@ public:
 	VKLCommandBuffer* getCmdBuffer() const;
 	
 	void submit(const VKLCommandBuffer* cmdBuffer, VkFence fence) const;
+	void submit(const VKLCommandBuffer* cmdBuffer, VkFence fence, const VkSemaphore* signalSempahore) const;
+	void submit(const VKLCommandBuffer* cmdBuffer, VkFence fence, const VkSemaphore* signalSempahore, uint32_t waitSemaphoreCount, const VkSemaphore* pWaitSemaphores, const VkPipelineStageFlags* pWaitDstStageMask) const;
 	void waitIdle() const;
 private:
 	uint32_t m_familyIndex;

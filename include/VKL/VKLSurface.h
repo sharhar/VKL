@@ -6,8 +6,8 @@
 typedef enum {
 	VKL_SURFACE_CREATE_INFO_TYPE_UNDEFINED = 0,
 	VKL_SURFACE_CREATE_INFO_TYPE_HANDLE = 1,
-	VKL_SURFACE_CREATE_INFO_TYPE_GLFW = 2,
-	VKL_SURFACE_CREATE_INFO_TYPE_WIN32 = 3,
+	VKL_SURFACE_CREATE_INFO_TYPE_WIN32 = 2,
+	VKL_SURFACE_CREATE_INFO_TYPE_MACOS = 3,
 } VKLSurfaceCreateInfoType;
 
 class VKLSurfaceCreateInfo : public VKLCreateInfo<VKLSurfaceCreateInfo> {
@@ -52,18 +52,18 @@ private:
 
 #endif
 
-#ifdef VKL_SURFACE_GLFW
+#ifdef VKL_SURFACE_MACOS
 
-class VKLSurfaceCreateInfoGLFW : public VKLSurfaceCreateInfo {
+class VKLSurfaceCreateInfoMacOS : public VKLSurfaceCreateInfo {
 public:
-	VKLSurfaceCreateInfoGLFW();
+	VKLSurfaceCreateInfoMacOS();
+	~VKLSurfaceCreateInfoMacOS();
 
-	VKLSurfaceCreateInfoGLFW& instance(const VKLInstance* instance);
-	VKLSurfaceCreateInfoGLFW& window(void* window);
-	VKLSurfaceCreateInfoGLFW& createSurfaceFunc(void* func);
+	VKLSurfaceCreateInfoMacOS& instance(const VKLInstance* instance);
+	VKLSurfaceCreateInfoMacOS& caLayer(void* caLayer);
+
 private:
 	bool _validate();
-	void* m_ptrs[2];
 };
 
 #endif

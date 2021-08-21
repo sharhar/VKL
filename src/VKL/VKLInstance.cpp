@@ -57,6 +57,10 @@ void VKLInstance::_create(const VKLInstanceCreateInfo& createInfo) {
 	vk.CreateWin32SurfaceKHR = procAddr("vkCreateWin32SurfaceKHR");
 	vk.GetPhysicalDeviceWin32PresentationSupportKHR = procAddr("vkGetPhysicalDeviceWin32PresentationSupportKHR");
 #endif
+	
+#ifdef VKL_SURFACE_MACOS
+	vk.CreateMetalSurfaceEXT = procAddr("vkCreateMetalSurfaceEXT");
+#endif
 
 	VkPhysicalDevice* physicalDevices = NULL;
 	uint32_t physicalDeviceCount = 0;

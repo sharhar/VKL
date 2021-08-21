@@ -3,8 +3,6 @@
 
 #include "VKL_base.h"
 
-#include "VKLRenderTarget.h"
-
 class VKLSwapChainCreateInfo : public VKLCreateInfo<VKLSwapChainCreateInfo> {
 public:
 	VKLSwapChainCreateInfo();
@@ -27,28 +25,27 @@ private:
 	friend class VKLSwapChain;
 };
 
-class VKLSwapChain : public VKLRenderTarget, public VKLHandle<VkSwapchainKHR>, public VKLCreator<VKLSwapChainCreateInfo> {
+class VKLSwapChain : public VKLHandle<VkSwapchainKHR>, public VKLCreator<VKLSwapChainCreateInfo> {
 public:
 	VKLSwapChain();
 	VKLSwapChain(const VKLSwapChainCreateInfo& createInfo);
 	
-	void present();
+	VKLImage& getCurrentImage();
+	
+	void present(const VKLImage* image);
+	void present(const VKLImage* image, uint32_t waitSemaphoreCount, const VkSemaphore* waitSemaphores, const VkPipelineStageFlags* pWaitDstStageMask);
 private:
 	VKLImage* m_swapChainImages;
-	VKLImageView* m_swapChainImageViews;
-	VkFramebuffer* m_frameBuffers;
 	uint32_t m_swapChainImageCount;
 	
 	uint32_t m_currentImgIndex;
 	
-	VkSemaphore m_presentSemaphore;
+	VkFence m_fence;
+	
+	VKLCommandBuffer* m_cmdBuffer;
 
 	const VKLDevice* m_device;
 	const VKLQueue* m_queue;
-	
-	VkFramebuffer getCurrentFramebuffer();
-	void preRenderCallback(VKLCommandBuffer* cmdBuffer);
-	void postRenderCallback(VKLCommandBuffer* cmdBuffer);
 	
 	void _destroy();
 	void _create(const VKLSwapChainCreateInfo& createInfo);

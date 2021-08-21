@@ -21,119 +21,80 @@ void VKLSwapChain::_create(const VKLSwapChainCreateInfo& createInfo) {
 	m_device->vk.GetSwapchainImagesKHR(m_device->handle(), m_handle, &m_swapChainImageCount, presentImages);
 
 	m_swapChainImages = new VKLImage[m_swapChainImageCount];
-	m_swapChainImageViews = new VKLImageView[m_swapChainImageCount];
-
-	for(int i = 0; i < m_swapChainImageCount; i++) { // TODO: init these VKLImage objects in a less hacky way
-		m_swapChainImages[i].m_device = m_device;
-		m_swapChainImages[i].m_handle = presentImages[i];
-		m_swapChainImages[i].m_format = createInfo.m_createInfo.imageFormat;
-		m_swapChainImages[i].initBarrier(VK_IMAGE_LAYOUT_UNDEFINED);
-		
-		m_swapChainImageViews[i].create(VKLImageViewCreateInfo().image(&m_swapChainImages[i]));
+	
+	m_cmdBuffer = new VKLCommandBuffer(m_queue);
+	
+	VKLImageCreateInfo imageCreateInfo;
+	imageCreateInfo.device(m_device)
+					.format(createInfo.m_createInfo.imageFormat)
+					.usage(createInfo.m_createInfo.imageUsage)
+					.extent(createInfo.m_createInfo.imageExtent.width, createInfo.m_createInfo.imageExtent.height, 1).validate();
+	
+	m_cmdBuffer->begin();
+	
+	for(int i = 0; i < m_swapChainImageCount; i++) {
+		m_swapChainImages[i]._create(imageCreateInfo, presentImages[i]);
+		m_swapChainImages[i].cmdTransitionBarrier(m_cmdBuffer, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
 	}
 
 	free(presentImages);
-
-	VKLCommandBuffer* cmdBuffer = m_queue->getCmdBuffer();
 	
-	cmdBuffer->begin();
+	m_cmdBuffer->end();
 	
-	for (int i = 0; i < m_swapChainImageCount; i++) {
-		m_swapChainImages[i].setNewAccessMask(VK_ACCESS_MEMORY_READ_BIT);
-		m_swapChainImages[i].setNewLayout(VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
-		cmdBuffer->imageBarrier(&m_swapChainImages[i], VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
-		m_swapChainImages[i].resetBarrier();
-	}
+	m_queue->submit(m_cmdBuffer, VK_NULL_HANDLE);
+	m_queue->waitIdle();
 	
-	cmdBuffer->end();
+	m_fence = m_device->createFence(0);
 	
-	VkFence fence = m_device->createFence(0);
+	VK_CALL(m_device->vk.AcquireNextImageKHR(m_device->handle(), m_handle, UINT64_MAX, VK_NULL_HANDLE, m_fence, &m_currentImgIndex));
 	
-	m_queue->submit(cmdBuffer, fence);
-	
-	VkAttachmentDescription passAttachments[2];
-	memset(passAttachments, 0, sizeof(VkAttachmentDescription) * 2);
-	passAttachments[0].format = createInfo.m_createInfo.imageFormat;
-	passAttachments[0].samples = VK_SAMPLE_COUNT_1_BIT;
-	passAttachments[0].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-	passAttachments[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-	passAttachments[0].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-	passAttachments[0].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-	passAttachments[0].initialLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-	passAttachments[0].finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-	passAttachments[1].format = VK_FORMAT_D32_SFLOAT;
-	passAttachments[1].samples = VK_SAMPLE_COUNT_1_BIT;
-	passAttachments[1].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-	passAttachments[1].storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-	passAttachments[1].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-	passAttachments[1].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-	passAttachments[1].initialLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-	passAttachments[1].finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-	VkAttachmentReference colorAttachmentReference;
-	memset(&colorAttachmentReference, 0, sizeof(VkAttachmentReference));
-	colorAttachmentReference.attachment = 0;
-	colorAttachmentReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-	VkAttachmentReference depthAttachmentReference;
-	memset(&depthAttachmentReference, 0, sizeof(VkAttachmentReference));
-	depthAttachmentReference.attachment = 1;
-	depthAttachmentReference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-	
-	VkSubpassDescription subpass;
-	memset(&subpass, 0, sizeof(VkSubpassDescription));
-	subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-	subpass.colorAttachmentCount = 1;
-	subpass.pColorAttachments = &colorAttachmentReference;
-	subpass.pDepthStencilAttachment = NULL;//&depthAttachmentReference;
-	
-	initRenderTarget(m_device, passAttachments, 1, &subpass, 1);
-	
-	VkImageView frameBufferAttachments[2];
-	frameBufferAttachments[0] = VK_NULL_HANDLE;
-	frameBufferAttachments[1] = VK_NULL_HANDLE;
-	
-	VkFramebufferCreateInfo frameBufferCreateInfo;
-	memset(&frameBufferCreateInfo, 0, sizeof(VkFramebufferCreateInfo));
-	frameBufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-	frameBufferCreateInfo.renderPass = m_renderPass;
-	frameBufferCreateInfo.attachmentCount = 1;
-	frameBufferCreateInfo.pAttachments = frameBufferAttachments;
-	frameBufferCreateInfo.width = createInfo.m_createInfo.imageExtent.width;
-	frameBufferCreateInfo.height = createInfo.m_createInfo.imageExtent.height;
-	frameBufferCreateInfo.layers = 1;
-	
-	m_frameBuffers = (VkFramebuffer*)malloc(sizeof(VkFramebuffer) * m_swapChainImageCount);
-	
-	for(int i = 0; i < m_swapChainImageCount; i++) {
-		frameBufferAttachments[0] = m_swapChainImageViews[i].handle();
-		
-		VK_CALL(m_device->vk.CreateFramebuffer(m_device->handle(), &frameBufferCreateInfo, m_device->allocationCallbacks(), &m_frameBuffers[i]));
-	}
-	
-	m_renderArea.offset.x = 0;
-	m_renderArea.offset.y = 0;
-	m_renderArea.extent = createInfo.m_createInfo.imageExtent;
-	
-	m_device->waitForFence(fence);
-	m_device->destroyFence(fence);
-	
-	VkSemaphoreCreateInfo semaphoreCreateInfo;
-	semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-	semaphoreCreateInfo.pNext = NULL;
-	semaphoreCreateInfo.flags = 0;
-	
-	VK_CALL(m_device->vk.CreateSemaphore(m_device->handle(), &semaphoreCreateInfo, m_device->allocationCallbacks(), &m_presentSemaphore));
-	VK_CALL(m_device->vk.AcquireNextImageKHR(m_device->handle(), m_handle, UINT64_MAX, m_presentSemaphore, VK_NULL_HANDLE, &m_currentImgIndex));
+	m_device->waitForFence(m_fence);
+	m_device->resetFence(m_fence);
 }
 
-void VKLSwapChain::present() {
+VKLImage& VKLSwapChain::getCurrentImage() {
+	return m_swapChainImages[m_currentImgIndex];
+}
+
+void VKLSwapChain::present(const VKLImage* image) {
+	present(image, 0, NULL, NULL);
+}
+
+void VKLSwapChain::present(const VKLImage* image, uint32_t waitSemaphoreCount, const VkSemaphore* waitSemaphores, const VkPipelineStageFlags* pWaitDstStageMask) {
+	VkImageBlit imageBlit;
+	imageBlit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	imageBlit.srcSubresource.mipLevel = 0;
+	imageBlit.srcSubresource.baseArrayLayer = 0;
+	imageBlit.srcSubresource.layerCount = 1;
+	imageBlit.srcOffsets[0].x = 0;
+	imageBlit.srcOffsets[0].y = 0;
+	imageBlit.srcOffsets[0].z = 0;
+	imageBlit.srcOffsets[1].x = image->extent().width;
+	imageBlit.srcOffsets[1].y = image->extent().height;
+	imageBlit.srcOffsets[1].z = 1;
+	imageBlit.dstSubresource = imageBlit.srcSubresource;
+	imageBlit.dstOffsets[0].x = 0;
+	imageBlit.dstOffsets[0].y = 0;
+	imageBlit.dstOffsets[0].z = 0;
+	imageBlit.dstOffsets[1].x = getCurrentImage().extent().width;
+	imageBlit.dstOffsets[1].y = getCurrentImage().extent().height;
+	imageBlit.dstOffsets[1].z = 1;
+	
+	m_cmdBuffer->begin();
+	
+	m_device->vk.CmdBlitImage(m_cmdBuffer->handle(), image->handle(), image->layout(), getCurrentImage().handle(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &imageBlit, VK_FILTER_LINEAR);
+	
+	getCurrentImage().cmdTransitionBarrier(m_cmdBuffer, VK_ACCESS_MEMORY_READ_BIT, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
+	m_cmdBuffer->end();
+	
+	m_queue->submit(m_cmdBuffer, VK_NULL_HANDLE, NULL, waitSemaphoreCount, waitSemaphores, pWaitDstStageMask);
+	m_queue->waitIdle();
+	
 	VkPresentInfoKHR presentInfo;
 	presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 	presentInfo.pNext = NULL;
-	presentInfo.waitSemaphoreCount = 1;
-	presentInfo.pWaitSemaphores = &m_presentSemaphore;
+	presentInfo.waitSemaphoreCount = 0;
+	presentInfo.pWaitSemaphores = NULL;
 	presentInfo.swapchainCount = 1;
 	presentInfo.pSwapchains = &m_handle;
 	presentInfo.pImageIndices = &m_currentImgIndex;
@@ -141,50 +102,29 @@ void VKLSwapChain::present() {
 	
 	VK_CALL(m_device->vk.QueuePresentKHR(m_queue->handle(), &presentInfo));
 	
-	m_device->vk.DestroySemaphore(m_device->handle(), m_presentSemaphore, m_device->allocationCallbacks());
+	m_cmdBuffer->begin();
+	getCurrentImage().cmdTransitionBarrier(m_cmdBuffer, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
+	m_cmdBuffer->end();
 	
-	VkSemaphoreCreateInfo semaphoreCreateInfo;
-	semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-	semaphoreCreateInfo.pNext = NULL;
-	semaphoreCreateInfo.flags = 0;
+	m_queue->submit(m_cmdBuffer, VK_NULL_HANDLE);
+	m_queue->waitIdle();
 	
-	VK_CALL(m_device->vk.CreateSemaphore(m_device->handle(), &semaphoreCreateInfo, m_device->allocationCallbacks(), &m_presentSemaphore));
-	VK_CALL(m_device->vk.AcquireNextImageKHR(m_device->handle(), m_handle, UINT64_MAX, m_presentSemaphore, VK_NULL_HANDLE, &m_currentImgIndex));
+	VK_CALL(m_device->vk.AcquireNextImageKHR(m_device->handle(), m_handle, UINT64_MAX, VK_NULL_HANDLE, m_fence, &m_currentImgIndex));
+	
+	m_device->waitForFence(m_fence);
+	m_device->resetFence(m_fence);
 }
 
 void VKLSwapChain::_destroy() {
-	destroyRenderTarget();
+	m_device->destroyFence(m_fence);
 	
-	m_device->vk.DestroySemaphore(m_device->handle(), m_presentSemaphore, m_device->allocationCallbacks());
-	
-	for (int i = 0; i < m_swapChainImageCount; i++) {
-		m_swapChainImageViews[i].destroy();
-		m_device->vk.DestroyFramebuffer(m_device->handle(), m_frameBuffers[i], m_device->allocationCallbacks());
-	}
-
-	delete[] m_swapChainImageViews;
 	delete[] m_swapChainImages;
+	
+	m_cmdBuffer->destroy();
+	
+	delete m_cmdBuffer;
 
 	m_device->vk.DestroySwapchainKHR(m_device->handle(), m_handle, m_device->allocationCallbacks());
-}
-
-VkFramebuffer VKLSwapChain::getCurrentFramebuffer() {
-	return m_frameBuffers[m_currentImgIndex];
-}
-
-void VKLSwapChain::preRenderCallback(VKLCommandBuffer* cmdBuffer) {
-	m_swapChainImages[m_currentImgIndex].setNewAccessMask(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT);
-	m_swapChainImages[m_currentImgIndex].setNewLayout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-	cmdBuffer->imageBarrier(&m_swapChainImages[m_currentImgIndex], VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
-	m_swapChainImages[m_currentImgIndex].resetBarrier();
-	
-}
-
-void VKLSwapChain::postRenderCallback(VKLCommandBuffer* cmdBuffer) {
-	m_swapChainImages[m_currentImgIndex].setNewAccessMask(VK_ACCESS_MEMORY_READ_BIT);
-	m_swapChainImages[m_currentImgIndex].setNewLayout(VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
-	cmdBuffer->imageBarrier(&m_swapChainImages[m_currentImgIndex], VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT);
-	m_swapChainImages[m_currentImgIndex].resetBarrier();
 }
 
 VKLSwapChainCreateInfo::VKLSwapChainCreateInfo() {
@@ -200,7 +140,7 @@ VKLSwapChainCreateInfo::VKLSwapChainCreateInfo() {
 	m_createInfo.imageExtent.width = -1;
 	m_createInfo.imageExtent.height = -1;
 	m_createInfo.imageArrayLayers = 1;
-	m_createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+	m_createInfo.imageUsage = VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 	m_createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
 	m_createInfo.queueFamilyIndexCount = 0;
 	m_createInfo.pQueueFamilyIndices = NULL;

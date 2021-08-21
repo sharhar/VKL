@@ -35,11 +35,12 @@ public:
 	VKLImage();
 	VKLImage(const VKLImageCreateInfo& createInfo);
 	
-	void setNewAccessMask(VkAccessFlags accessMask);
-	void setNewLayout(VkImageLayout layout);
+	VkAccessFlags accessMask() const;
+	VkImageLayout layout() const;
 	
-	VkImageMemoryBarrier* getMemoryBarrier();
-	void resetBarrier();
+	VkExtent3D extent() const;
+	
+	void cmdTransitionBarrier(VKLCommandBuffer* cmdBuffer, VkAccessFlags accessMask, VkImageLayout layout, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask);
 
 	VkFormat format() const;
 private:
@@ -47,6 +48,8 @@ private:
 	VmaAllocation m_allocation;
 
 	VkFormat m_format;
+	
+	VkExtent3D m_size;
 
 	void initBarrier(VkImageLayout layout);
 
@@ -54,6 +57,7 @@ private:
 	
 	void _destroy();
 	void _create(const VKLImageCreateInfo& createInfo);
+	void _create(const VKLImageCreateInfo& createInfo, VkImage handle);
 
 	friend class VKLImageView;
 	friend class VKLSwapChain;

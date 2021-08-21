@@ -376,11 +376,16 @@ static int32_t getQueueFamilyWithProperties(const VKLPhysicalDevice* physicalDev
 
 static bool allocateQueueType(const VKLPhysicalDevice* physicalDevice, std::vector<VkQueueFamilyProperties>& queueFamilyProperties, uint32_t* queueFamilyCounts,
 							  uint32_t typeCount, std::vector<VKLQueueLocation>& typeFamilyIndicies, VkQueueFlags supportedFlags, VkQueueFlags weakExcludeFlags, VkQueueFlags strongExcludeFlags, VkSurfaceKHR surface) {
+	VKLQueueLocation tempStackQueueLocation;
+	
 	for(int i = 0; i < typeCount; i++) {
 		int32_t index = getQueueFamilyWithProperties(physicalDevice, queueFamilyProperties, supportedFlags, weakExcludeFlags | strongExcludeFlags, surface);
 		
 		if(index != -1) {
-			typeFamilyIndicies.push_back({(uint32_t)index, queueFamilyCounts[index] });
+			tempStackQueueLocation.familyIndex = (uint32_t)index;
+			tempStackQueueLocation.localIndex = queueFamilyCounts[index];
+			
+			typeFamilyIndicies.push_back(tempStackQueueLocation);
 			queueFamilyProperties[index].queueCount = queueFamilyProperties[index].queueCount - 1;
 			queueFamilyCounts[index] = queueFamilyCounts[index] + 1;
 		}
@@ -390,7 +395,9 @@ static bool allocateQueueType(const VKLPhysicalDevice* physicalDevice, std::vect
 		int32_t index = getQueueFamilyWithProperties(physicalDevice, queueFamilyProperties, supportedFlags, strongExcludeFlags, surface);
 		
 		if(index != -1) {
-			typeFamilyIndicies.push_back({(uint32_t)index, queueFamilyCounts[index] });
+			tempStackQueueLocation.familyIndex = (uint32_t)index;
+			tempStackQueueLocation.localIndex = queueFamilyCounts[index];
+			typeFamilyIndicies.push_back(tempStackQueueLocation);
 			queueFamilyProperties[index].queueCount = queueFamilyProperties[index].queueCount - 1;
 			queueFamilyCounts[index] = queueFamilyCounts[index] + 1;
 		}
@@ -400,7 +407,9 @@ static bool allocateQueueType(const VKLPhysicalDevice* physicalDevice, std::vect
 		int32_t index = getQueueFamilyWithProperties(physicalDevice, queueFamilyProperties, supportedFlags, 0, surface);
 		
 		if(index != -1) {
-			typeFamilyIndicies.push_back({(uint32_t)index, queueFamilyCounts[index] });
+			tempStackQueueLocation.familyIndex = (uint32_t)index;
+			tempStackQueueLocation.localIndex = queueFamilyCounts[index];
+			typeFamilyIndicies.push_back(tempStackQueueLocation);
 			queueFamilyProperties[index].queueCount = queueFamilyProperties[index].queueCount - 1;
 			queueFamilyCounts[index] = queueFamilyCounts[index] + 1;
 		}

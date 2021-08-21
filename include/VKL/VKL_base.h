@@ -28,7 +28,7 @@ class VKLImage;
 class VKLImageView;
 class VKLSwapChain;
 class VKLCommandBuffer;
-class VKLRenderTarget;
+class VKLRenderPass;
 class VKLBuffer;
 class VKLShader;
 class VKLPipeline;

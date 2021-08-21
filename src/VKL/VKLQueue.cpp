@@ -27,19 +27,27 @@ uint32_t VKLQueue::getFamilyIndex() const {
 }
 
 void VKLQueue::submit(const VKLCommandBuffer* cmdBuffer, VkFence fence) const {
+	submit(cmdBuffer, fence, NULL, 0, NULL, NULL);
+}
+
+void VKLQueue::submit(const VKLCommandBuffer* cmdBuffer, VkFence fence, const VkSemaphore* signalSempahore) const {
+	submit(cmdBuffer, fence, signalSempahore, 0, NULL, NULL);
+}
+
+void VKLQueue::submit(const VKLCommandBuffer* cmdBuffer, VkFence fence, const VkSemaphore* signalSempahore, uint32_t waitSemaphoreCount, const VkSemaphore* pWaitSemaphores, const VkPipelineStageFlags* pWaitDstStageMask) const {
 	VkCommandBuffer cmdBuffHandle = cmdBuffer->handle();
 	
 	VkSubmitInfo submitInfo;
 	memset(&submitInfo, 0, sizeof(VkSubmitInfo));
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 	submitInfo.pNext = NULL;
-	submitInfo.waitSemaphoreCount = 0;
-	submitInfo.pWaitSemaphores = NULL;
-	submitInfo.pWaitDstStageMask = NULL;
+	submitInfo.waitSemaphoreCount = waitSemaphoreCount;
+	submitInfo.pWaitSemaphores = pWaitSemaphores;
+	submitInfo.pWaitDstStageMask = pWaitDstStageMask;
 	submitInfo.commandBufferCount = 1;
 	submitInfo.pCommandBuffers = &cmdBuffHandle;
-	submitInfo.signalSemaphoreCount = 0;
-	submitInfo.pSignalSemaphores = NULL;
+	submitInfo.signalSemaphoreCount = signalSempahore == NULL ? 0 : 1;
+	submitInfo.pSignalSemaphores = signalSempahore;
 	
 	VK_CALL(m_device->vk.QueueSubmit(m_handle, 1, &submitInfo, fence));
 }

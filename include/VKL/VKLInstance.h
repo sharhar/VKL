@@ -38,8 +38,12 @@ typedef struct VKLInstancePFNS {
 	PFN_vkGetPhysicalDeviceSurfacePresentModesKHR GetPhysicalDeviceSurfacePresentModesKHR;
 
 #ifdef VKL_SURFACE_WIN32
-	void* CreateWin32SurfaceKHR;
-	void* GetPhysicalDeviceWin32PresentationSupportKHR;
+	PFN_vkVoidFunction CreateWin32SurfaceKHR;
+	PFN_vkVoidFunction GetPhysicalDeviceWin32PresentationSupportKHR;
+#endif
+	
+#ifdef VKL_SURFACE_MACOS
+	PFN_vkVoidFunction CreateMetalSurfaceEXT;
 #endif
 } __VKLInstancePFNS;
 

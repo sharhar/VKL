@@ -14,10 +14,21 @@ VKLImage::VKLImage(const VKLImageCreateInfo& createInfo) : VKLCreator<VKLImageCr
 }
 
 void VKLImage::_create(const VKLImageCreateInfo& createInfo) {
+	_create(createInfo, VK_NULL_HANDLE);
+}
+
+
+void VKLImage::_create(const VKLImageCreateInfo& createInfo, VkImage handle) {
 	m_device = createInfo.m_device;
 	m_format = createInfo.m_imageCreateInfo.format;
-
-	vmaCreateImage(m_device->allocator(), &createInfo.m_imageCreateInfo, &createInfo.m_allocationCreateInfo, &m_handle, &m_allocation, NULL);
+	m_size = createInfo.m_imageCreateInfo.extent;
+	
+	if(handle == VK_NULL_HANDLE) {
+		vmaCreateImage(m_device->allocator(), &createInfo.m_imageCreateInfo, &createInfo.m_allocationCreateInfo, &m_handle, &m_allocation, NULL);
+	} else {
+		m_handle = handle;
+	}
+	
 
 	initBarrier(createInfo.m_imageCreateInfo.initialLayout);
 }
@@ -39,19 +50,24 @@ void VKLImage::initBarrier(VkImageLayout layout) {
 	m_memoryBarrier.subresourceRange.layerCount = 1;
 }
 
-void VKLImage::setNewAccessMask(VkAccessFlags accessMask) {
+VkAccessFlags VKLImage::accessMask() const {
+	return m_memoryBarrier.dstAccessMask;
+}
+
+VkImageLayout VKLImage::layout() const {
+	return m_memoryBarrier.newLayout;
+}
+
+VkExtent3D VKLImage::extent() const {
+	return m_size;
+}
+
+void VKLImage::cmdTransitionBarrier(VKLCommandBuffer* cmdBuffer, VkAccessFlags accessMask, VkImageLayout layout, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask) {
 	m_memoryBarrier.dstAccessMask = accessMask;
-}
-
-void VKLImage::setNewLayout(VkImageLayout layout) {
 	m_memoryBarrier.newLayout = layout;
-}
-
-VkImageMemoryBarrier* VKLImage::getMemoryBarrier() {
-	return &m_memoryBarrier;
-}
-
-void VKLImage::resetBarrier() {
+	
+	m_device->vk.CmdPipelineBarrier(cmdBuffer->handle(), srcStageMask, dstStageMask, 0, 0, NULL, 0, NULL, 1, &m_memoryBarrier);
+	
 	m_memoryBarrier.srcAccessMask = m_memoryBarrier.dstAccessMask;
 	m_memoryBarrier.oldLayout = m_memoryBarrier.newLayout;
 }

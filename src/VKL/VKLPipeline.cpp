@@ -19,10 +19,10 @@ void VKLPipeline::_create(const VKLPipelineCreateInfo& createInfo) {
 
 	VkViewport viewport;
 	memset(&viewport, 0, sizeof(VkViewport));
-	viewport.x = createInfo.m_renderTarget->getRenderArea().offset.x;
-	viewport.y = createInfo.m_renderTarget->getRenderArea().offset.y;
-	viewport.width = createInfo.m_renderTarget->getRenderArea().extent.width;
-	viewport.height = createInfo.m_renderTarget->getRenderArea().extent.height;
+	viewport.x = 0;//createInfo.m_renderPass->getRenderArea().offset.x;
+	viewport.y = 0;//createInfo.m_renderPass->getRenderArea().offset.y;
+	viewport.width = 800;//createInfo.m_renderPass->getRenderArea().extent.width;
+	viewport.height = 600;//createInfo.m_renderPass->getRenderArea().extent.height;
 	viewport.minDepth = 0;
 	viewport.maxDepth = 1;
 
@@ -30,8 +30,8 @@ void VKLPipeline::_create(const VKLPipelineCreateInfo& createInfo) {
 	memset(&scissors, 0, sizeof(VkRect2D));
 	scissors.offset.x = 0;
 	scissors.offset.y = 0;
-	scissors.extent.width = createInfo.m_renderTarget->getRenderArea().extent.width;
-	scissors.extent.height = createInfo.m_renderTarget->getRenderArea().extent.height;
+	scissors.extent.width = 800;//createInfo.m_renderTarget->getRenderArea().extent.width;
+	scissors.extent.height = 600;//createInfo.m_renderTarget->getRenderArea().extent.height;
 
 	VkPipelineViewportStateCreateInfo viewportState;
 	memset(&viewportState, 0, sizeof(VkPipelineViewportStateCreateInfo));
@@ -133,7 +133,7 @@ void VKLPipeline::_create(const VKLPipelineCreateInfo& createInfo) {
 	pipelineCreateInfo.pColorBlendState = &colorBlendState;
 	pipelineCreateInfo.pDynamicState = &dynamicStateCreateInfo;
 	pipelineCreateInfo.layout = createInfo.m_shader->getPipelineLayout();
-	pipelineCreateInfo.renderPass = createInfo.m_renderTarget->getRenderPass();
+	pipelineCreateInfo.renderPass = createInfo.m_renderPass->handle();
 	pipelineCreateInfo.subpass = 0;
 	pipelineCreateInfo.basePipelineHandle = NULL;
 	pipelineCreateInfo.basePipelineIndex = 0;
@@ -144,7 +144,7 @@ void VKLPipeline::_create(const VKLPipelineCreateInfo& createInfo) {
 
 VKLPipelineCreateInfo::VKLPipelineCreateInfo() : vertexInput(*this) {
 	m_shader = NULL;
-	m_renderTarget = NULL;
+	m_renderPass = NULL;
 }
 
 VKLPipelineCreateInfo& VKLPipelineCreateInfo::shader(const VKLShader* shader) {
@@ -153,8 +153,8 @@ VKLPipelineCreateInfo& VKLPipelineCreateInfo::shader(const VKLShader* shader) {
 	return invalidate();
 }
 
-VKLPipelineCreateInfo& VKLPipelineCreateInfo::renderTarget(const VKLRenderTarget* renderTarget) {
-	m_renderTarget = renderTarget;
+VKLPipelineCreateInfo& VKLPipelineCreateInfo::renderPass(const VKLRenderPass* renderPass) {
+	m_renderPass = renderPass;
 	
 	return invalidate();
 }
@@ -165,8 +165,8 @@ bool VKLPipelineCreateInfo::_validate() {
 		return false;
 	}
 
-	if (m_renderTarget == NULL) {
-		printf("VKL Validation Error: VKLPipelineCreateInfo::renderTarget is not set!\n");
+	if (m_renderPass == NULL) {
+		printf("VKL Validation Error: VKLPipelineCreateInfo::renderPass is not set!\n");
 		return false;
 	}
 
