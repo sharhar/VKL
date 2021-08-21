@@ -100,12 +100,17 @@ class VKLRenderPass : public VKLHandle<VkRenderPass>, public VKLCreator<VKLRende
 public:
 	VKLRenderPass();
 	VKLRenderPass(const VKLRenderPassCreateInfo& createInfo);
-
+	
+	const VKLDevice* device() const;
 private:
 	const VKLDevice* m_device;
+	
+	uint32_t m_attachmentCount;
 
 	void _destroy();
 	void _create(const VKLRenderPassCreateInfo& createInfo);
+	
+	friend class VKLFramebufferCreateInfo;
 };
 
 #endif

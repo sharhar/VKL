@@ -1,11 +1,16 @@
 #include <VKL/VKL.h>
 
 VKLRenderPass::VKLRenderPass() : VKLCreator<VKLRenderPassCreateInfo>("VKLRenderPass") {
-	
+	m_attachmentCount = 0;
 }
 
 VKLRenderPass::VKLRenderPass(const VKLRenderPassCreateInfo& createInfo) : VKLCreator<VKLRenderPassCreateInfo>("VKLRenderPass") {
+	m_attachmentCount = 0;
 	create(createInfo);
+}
+
+const VKLDevice* VKLRenderPass::device() const{
+	return m_device;
 }
 
 void VKLRenderPass::_destroy() {
@@ -14,6 +19,7 @@ void VKLRenderPass::_destroy() {
 
 void VKLRenderPass::_create(const VKLRenderPassCreateInfo& createInfo) {
 	m_device = createInfo.m_device;
+	m_attachmentCount = createInfo.m_attachmentDescriptions.size();
 	
 	VK_CALL(m_device->vk.CreateRenderPass(m_device->handle(), &createInfo.m_createInfo, m_device->allocationCallbacks(), &m_handle));
 }

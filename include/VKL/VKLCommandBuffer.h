@@ -16,6 +16,9 @@ public:
 	void begin();
 	void end();
 	void reset();
+	
+	void nextSubpass(VkSubpassContents contents);
+	void endRenderPass();
 
 	void destroy();
 private:

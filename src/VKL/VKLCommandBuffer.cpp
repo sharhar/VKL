@@ -45,6 +45,14 @@ void VKLCommandBuffer::reset() {
 	
 }
 
+void VKLCommandBuffer::nextSubpass(VkSubpassContents contents) {
+	m_device->vk.CmdNextSubpass(m_handle, contents);
+}
+
+void VKLCommandBuffer::endRenderPass() {
+	m_device->vk.CmdEndRenderPass(m_handle);
+}
+
 void VKLCommandBuffer::bufferBarrier(VKLBuffer* buffer, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask) {
 	m_device->vk.CmdPipelineBarrier(m_handle, srcStageMask, dstStageMask, 0, 0, NULL, 1, buffer->getMemoryBarrier(), 0, NULL);
 }
