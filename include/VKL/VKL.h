@@ -16,5 +16,6 @@
 #include <VKL/VKLBuffer.h>
 #include <VKL/VKLShader.h>
 #include <VKL/VKLPipeline.h>
+#include <VKL/VKLDescriptorSet.h>
 
 #endif

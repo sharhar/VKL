@@ -62,20 +62,13 @@ void VKLSwapChain::present(const VKLImage* image) {
 
 void VKLSwapChain::present(const VKLImage* image, uint32_t waitSemaphoreCount, const VkSemaphore* waitSemaphores, const VkPipelineStageFlags* pWaitDstStageMask) {
 	VkImageBlit imageBlit;
+	memset(&imageBlit, 0, sizeof(VkImageBlit));
 	imageBlit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-	imageBlit.srcSubresource.mipLevel = 0;
-	imageBlit.srcSubresource.baseArrayLayer = 0;
 	imageBlit.srcSubresource.layerCount = 1;
-	imageBlit.srcOffsets[0].x = 0;
-	imageBlit.srcOffsets[0].y = 0;
-	imageBlit.srcOffsets[0].z = 0;
 	imageBlit.srcOffsets[1].x = image->extent().width;
 	imageBlit.srcOffsets[1].y = image->extent().height;
 	imageBlit.srcOffsets[1].z = 1;
 	imageBlit.dstSubresource = imageBlit.srcSubresource;
-	imageBlit.dstOffsets[0].x = 0;
-	imageBlit.dstOffsets[0].y = 0;
-	imageBlit.dstOffsets[0].z = 0;
 	imageBlit.dstOffsets[1].x = getCurrentImage().extent().width;
 	imageBlit.dstOffsets[1].y = getCurrentImage().extent().height;
 	imageBlit.dstOffsets[1].z = 1;

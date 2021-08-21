@@ -61,6 +61,7 @@ void VKLShader::_create(const VKLShaderCreateInfo& createInfo) {
 	
 	m_descSetCount = createInfo.m_descriptorSetLayouts.size();
 	
+	
 	VkDescriptorSetLayoutCreateInfo descSetLayoutInfo;
 	descSetLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
 	descSetLayoutInfo.pNext = NULL;
@@ -71,6 +72,16 @@ void VKLShader::_create(const VKLShaderCreateInfo& createInfo) {
 		
 		VK_CALL(m_device->vk.CreateDescriptorSetLayout(m_device->handle(), &descSetLayoutInfo,
 													   m_device->allocationCallbacks(), &m_descriptorSetLayouts[i]));
+		
+		m_descriptorPoolSizes.push_back(std::vector<VkDescriptorPoolSize>());
+		
+		for(int j = 0; j < createInfo.m_descriptorSetLayouts[i].m_bindings.size(); j++) {
+			VkDescriptorPoolSize descriptorPoolSize;
+			descriptorPoolSize.descriptorCount = createInfo.m_descriptorSetLayouts[i].m_bindings[j].descriptorCount;
+			descriptorPoolSize.type = createInfo.m_descriptorSetLayouts[i].m_bindings[j].descriptorType;
+			m_descriptorPoolSizes.back().push_back(descriptorPoolSize);
+		}
+		
 	}
 	
 	m_pushConstantRanges = (VkPushConstantRange*)malloc(sizeof(VkPushConstantRange) * createInfo.m_pushConstantRanges.size());

@@ -49,6 +49,23 @@ private:
 	friend class VKLRenderPassCreateInfo;
 };
 
+class VKLSubpassDependency {
+public:
+	VKLSubpassDependency& stages(VkPipelineStageFlags srcStage, VkPipelineStageFlags dstStage);
+	VKLSubpassDependency& access(VkAccessFlags srcAccess, VkAccessFlags dstAccess);
+	
+	VKLRenderPassCreateInfo& end();
+	
+private:
+	VKLSubpassDependency(VKLRenderPassCreateInfo& parent, uint32_t srcSubpass, uint32_t dstSubpass, VkDependencyFlags dependencyFlags);
+	
+	VKLRenderPassCreateInfo& m_parent;
+
+	VkSubpassDependency m_dependency;
+
+	friend class VKLRenderPassCreateInfo;
+};
+
 class VKLRenderPassCreateInfo : public VKLCreateInfo<VKLRenderPassCreateInfo> {
 public:
 	VKLRenderPassCreateInfo();
@@ -56,6 +73,7 @@ public:
 	VKLRenderPassCreateInfo& device(const VKLDevice* device);
 	VKLAttachmentDescription& addAttachment(VkFormat format);
 	VKLSubpassDescription& addSubpass();
+	VKLSubpassDependency& addSubpassDependency(uint32_t srcSubpass, uint32_t dstSubpass, VkDependencyFlags dependencyFlags);
 
 private:
 	const VKLDevice* m_device;
@@ -66,10 +84,13 @@ private:
 	
 	std::vector<VkAttachmentDescription> m_attachmentDescriptionsBuffer;
 	std::vector<VkSubpassDescription> m_subpassDecriptionBuffer;
+	std::vector<VkSubpassDependency> m_subpassDependenciesBuffer;
 
 	std::vector<VKLAttachmentDescription> m_attachmentDescriptions;
 	std::vector<VKLSubpassDescription> m_subpassDescriptions;
+	std::vector<VKLSubpassDependency> m_subpassDependencies;
 
+	friend class VKLSubpassDependency;
 	friend class VKLSubpassDescription;
 	friend class VKLAttachmentDescription;
 	friend class VKLRenderPass;

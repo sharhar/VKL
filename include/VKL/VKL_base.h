@@ -33,6 +33,7 @@ class VKLBuffer;
 class VKLShader;
 class VKLPipeline;
 class VKLRenderPass;
+class VKLDescriptorSet;
 
 template<typename T>
 class VKLHandle {

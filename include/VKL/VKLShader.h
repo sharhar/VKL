@@ -76,13 +76,15 @@ private:
 	uint32_t m_descSetCount;
 	
 	VkPipelineLayout m_layout;
-	//VkVertexInputBindingDescription* m_vertexInputBindingDescs;
-	//VkVertexInputAttributeDescription* m_vertexAttribDescs;
 	VkPushConstantRange* m_pushConstantRanges;
 	VkDescriptorSetLayout* m_descriptorSetLayouts;
 	
+	std::vector< std::vector<VkDescriptorPoolSize> > m_descriptorPoolSizes;
+	
 	void _destroy();
 	void _create(const VKLShaderCreateInfo& createInfo);
+	
+	friend class VKLDescriptorSet;
 };
 
 #endif /* VKLShader_h */

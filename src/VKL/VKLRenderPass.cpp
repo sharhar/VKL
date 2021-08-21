@@ -47,6 +47,14 @@ VKLSubpassDescription& VKLRenderPassCreateInfo::addSubpass() {
 	return m_subpassDescriptions.back();
 }
 
+VKLSubpassDependency& VKLRenderPassCreateInfo::addSubpassDependency(uint32_t srcSubpass, uint32_t dstSubpass, VkDependencyFlags dependencyFlags) {
+	m_subpassDependencies.push_back(VKLSubpassDependency(*this, srcSubpass, dstSubpass, dependencyFlags));
+
+	invalidate();
+
+	return m_subpassDependencies.back();
+}
+
 bool VKLRenderPassCreateInfo::_validate() {
 	if (m_device == NULL) {
 		printf("VKL Validation Error: VKLRenderPassCreateInfo::device was not set!\n");
@@ -57,6 +65,8 @@ bool VKLRenderPassCreateInfo::_validate() {
 	m_createInfo.pAttachments = m_attachmentDescriptionsBuffer.data();
 	m_createInfo.subpassCount = m_subpassDecriptionBuffer.size();
 	m_createInfo.pSubpasses = m_subpassDecriptionBuffer.data();
+	m_createInfo.dependencyCount = m_subpassDependenciesBuffer.size();
+	m_createInfo.pDependencies = m_subpassDependenciesBuffer.data();
 
 	return true;
 }
@@ -160,4 +170,32 @@ VKLSubpassDescription::VKLSubpassDescription(VKLRenderPassCreateInfo& parent) : 
 	memset(&m_desc, 0, sizeof(VkSubpassDescription));
 	m_desc.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 	m_desc.pDepthStencilAttachment = NULL;
+}
+
+VKLSubpassDependency& VKLSubpassDependency::stages(VkPipelineStageFlags srcStage, VkPipelineStageFlags dstStage) {
+	m_dependency.srcStageMask = srcStage;
+	m_dependency.dstStageMask = dstStage;
+	
+	return *this;
+}
+
+VKLSubpassDependency& VKLSubpassDependency::access(VkAccessFlags srcAccess, VkAccessFlags dstAccess) {
+	m_dependency.srcAccessMask = srcAccess;
+	m_dependency.dstAccessMask = dstAccess;
+	
+	return *this;
+}
+
+VKLRenderPassCreateInfo& VKLSubpassDependency::end() {
+	m_parent.m_subpassDependenciesBuffer.push_back(m_dependency);
+	
+	return m_parent;
+}
+
+VKLSubpassDependency::VKLSubpassDependency(VKLRenderPassCreateInfo& parent, uint32_t srcSubpass, uint32_t dstSubpass, VkDependencyFlags dependencyFlags) : m_parent(parent) {
+	memset(&m_dependency, 0, sizeof(VkSubpassDependency));
+	
+	m_dependency.dependencyFlags = dependencyFlags;
+	m_dependency.srcSubpass = srcSubpass;
+	m_dependency.dstSubpass = dstSubpass;
 }
