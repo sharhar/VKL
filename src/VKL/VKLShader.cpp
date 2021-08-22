@@ -12,7 +12,7 @@ const std::vector<VkPipelineShaderStageCreateInfo>& VKLShader::getShaderStageCre
 	return m_shaderStageCreateInfos;
 }
 
-VkPipelineLayout VKLShader::getPipelineLayout() const {
+VkPipelineLayout VKLShader::pipelineLayout() const {
 	return m_layout;
 }
 
@@ -20,7 +20,7 @@ const VKLDevice* VKLShader::device() const {
 	return m_device;
 }
 
-const VkDescriptorSetLayout* VKLShader::getDescriptorSetLayouts() const {
+const VkDescriptorSetLayout* VKLShader::descriptorSetLayouts() const {
 	return m_descriptorSetLayouts;
 }
 

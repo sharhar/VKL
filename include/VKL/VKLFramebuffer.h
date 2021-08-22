@@ -26,13 +26,17 @@ public:
 	VKLFramebuffer();
 	VKLFramebuffer(const VKLFramebufferCreateInfo& createInfo);
 	
-	void beginRenderPass(const VKLCommandBuffer* cmdBuffer, VkSubpassContents contents);
-	void beginRenderPass(const VKLCommandBuffer* cmdBuffer, VkSubpassContents contents, VkRect2D area);
+	VkExtent2D size() const;
+	const VKLRenderPass* renderPass() const;
+	const VkClearValue* clearValues() const;
+	const std::vector<const VKLImageView*>& attachments() const;
 	
 	void setClearValue(VkClearValue clearValue, uint32_t index);
 private:
 	const VKLRenderPass* m_renderPass;
 	const VKLDevice* m_device;
+	
+	VkExtent2D m_size;
 	
 	std::vector<const VKLImageView*> m_attachments;
 	

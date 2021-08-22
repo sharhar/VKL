@@ -4,12 +4,31 @@ VKLPipeline::VKLPipeline() : VKLCreator<VKLPipelineCreateInfo>("VKLPipeline") {
 	
 }
 
+const VKLShader* VKLPipeline::shader() const {
+	return m_shader;
+}
+
+const VKLDevice* VKLPipeline::device() const {
+	return m_device;
+}
+
+VkPipelineLayout VKLPipeline::layout() const {
+	return m_shader->pipelineLayout();
+}
+
+
+VkPipelineBindPoint VKLPipeline::bindPoint() const {
+	return m_bindPoint;
+}
+
 void VKLPipeline::_destroy() {
 	m_device->vk.DestroyPipeline(m_device->handle(), m_handle, m_device->allocationCallbacks());
 }
 
 void VKLPipeline::_create(const VKLPipelineCreateInfo& createInfo) {
 	m_device = createInfo.m_shader->device();
+	m_shader = createInfo.m_shader;
+	m_bindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 	
 	VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateCreateInfo;
 	memset(&inputAssemblyStateCreateInfo, 0, sizeof(VkPipelineInputAssemblyStateCreateInfo));
@@ -139,7 +158,7 @@ void VKLPipeline::_create(const VKLPipelineCreateInfo& createInfo) {
 	pipelineCreateInfo.pDepthStencilState = &depthState;
 	pipelineCreateInfo.pColorBlendState = &colorBlendState;
 	pipelineCreateInfo.pDynamicState = &dynamicStateCreateInfo;
-	pipelineCreateInfo.layout = createInfo.m_shader->getPipelineLayout();
+	pipelineCreateInfo.layout = createInfo.m_shader->pipelineLayout();
 	pipelineCreateInfo.renderPass = createInfo.m_renderPass->handle();
 	pipelineCreateInfo.subpass = createInfo.m_subpass;
 	pipelineCreateInfo.basePipelineHandle = NULL;

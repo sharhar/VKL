@@ -4,6 +4,7 @@
 VKLDescriptorSet::VKLDescriptorSet(const VKLShader* shader, uint32_t set) {
 	m_shader = shader;
 	m_device = m_shader->device();
+	m_set = set;
 	
 	VkDescriptorPoolCreateInfo descriptorPoolCreateInfo;
 	memset(&descriptorPoolCreateInfo, 0, sizeof(VkDescriptorPoolCreateInfo));
@@ -19,7 +20,7 @@ VKLDescriptorSet::VKLDescriptorSet(const VKLShader* shader, uint32_t set) {
 	descriptorSetAllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
 	descriptorSetAllocateInfo.descriptorPool = m_pool;
 	descriptorSetAllocateInfo.descriptorSetCount = 1;
-	descriptorSetAllocateInfo.pSetLayouts = &shader->getDescriptorSetLayouts()[set];
+	descriptorSetAllocateInfo.pSetLayouts = &shader->descriptorSetLayouts()[set];
 
 	VK_CALL(m_device->vk.AllocateDescriptorSets(m_device->handle(), &descriptorSetAllocateInfo, &m_handle));
 }
@@ -27,6 +28,22 @@ VKLDescriptorSet::VKLDescriptorSet(const VKLShader* shader, uint32_t set) {
 VkDescriptorPool VKLDescriptorSet::pool() const {
 	return m_pool;
 }
+
+const VKLShader* VKLDescriptorSet::shader() const {
+	return m_shader;
+}
+
+const VKLDevice* VKLDescriptorSet::device() const {
+	return m_shader->device();
+}
+
+uint32_t VKLDescriptorSet::set() const {
+	return m_set;
+}
+
+//void VKLDescriptorSet::bind(const VKLCommandBuffer* cmdBuffer) const {
+//	m_device->vk.CmdBindDescriptorSets(cmdBuffer->handle(), VK_PIPELINE_BIND_POINT_GRAPHICS, m_shader->pipelineLayout(), m_set, 1, &m_handle, 0, NULL);
+//}
 
 void VKLDescriptorSet::writeImage(uint32_t binding, VkDescriptorType type, VkImageView view, VkImageLayout layout, VkSampler sampler) {
 	VkDescriptorImageInfo descriptorImageInfo;

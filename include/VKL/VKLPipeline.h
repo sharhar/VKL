@@ -71,8 +71,16 @@ private:
 class VKLPipeline : public VKLHandle<VkPipeline>, public VKLCreator<VKLPipelineCreateInfo> {
 public:
 	VKLPipeline();
+	
+	const VKLShader* shader() const;
+	const VKLDevice* device() const;
+	VkPipelineLayout layout() const;
+	VkPipelineBindPoint bindPoint() const;
 private:
 	const VKLDevice* m_device;
+	const VKLShader* m_shader;
+	
+	VkPipelineBindPoint m_bindPoint;
 	
 	void _destroy();
 	void _create(const VKLPipelineCreateInfo& createInfo);

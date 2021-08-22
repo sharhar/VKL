@@ -9,12 +9,20 @@ public:
 	
 	VkDescriptorPool pool() const;
 	
+	//void bind(const VKLCommandBuffer* cmdBuffer) const;
+	
+	const VKLShader* shader() const;
+	const VKLDevice* device() const;
+	uint32_t set() const;
+	
 	void writeImage(uint32_t binding, VkDescriptorType type, VkImageView view, VkImageLayout layout, VkSampler sampler);
 	
 	void destroy();
 private:
 	const VKLShader* m_shader;
 	const VKLDevice* m_device;
+	
+	uint32_t m_set;
 	
 	VkDescriptorPool m_pool;
 };

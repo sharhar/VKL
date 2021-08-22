@@ -27,6 +27,10 @@ VKLBuffer::VKLBuffer(const VKLBufferCreateInfo& createInfo) : VKLCreator<VKLBuff
 	this->create(createInfo);
 }
 
+//void VKLBuffer::bindVertex(const VKLCommandBuffer* cmdBuffer, uint32_t binding, VkDeviceSize offset) const {
+//	m_device->vk.CmdBindVertexBuffers(cmdBuffer->handle(), binding, 1, &m_handle, &offset);
+//}
+
 void VKLBuffer::setData(void* data, size_t size, size_t offset) {
 	uint8_t* mappedData;
 	vmaMapMemory(m_device->allocator(), m_allocation, (void**)&mappedData);

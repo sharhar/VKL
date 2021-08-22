@@ -65,9 +65,9 @@ public:
 	VKLShader(const VKLShaderCreateInfo& createInfo);
 	
 	const std::vector<VkPipelineShaderStageCreateInfo>& getShaderStageCreateInfos() const;
-	VkPipelineLayout getPipelineLayout() const;
+	VkPipelineLayout pipelineLayout() const;
 	const VKLDevice* device() const;
-	const VkDescriptorSetLayout* getDescriptorSetLayouts() const;
+	const VkDescriptorSetLayout* descriptorSetLayouts() const;
 private:
 	const VKLDevice* m_device;
 	
