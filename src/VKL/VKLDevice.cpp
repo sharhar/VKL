@@ -223,8 +223,8 @@ const VKLPhysicalDevice* VKLDevice::physical() const {
 	return m_physicalDevice;
 }
 
-VKLQueue VKLDevice::getQueue(VKLQueueType type, uint32_t queueIndex) const {
-	return m_queues[type][queueIndex];
+const VKLQueue* VKLDevice::getQueue(VKLQueueType type, uint32_t queueIndex) const {
+	return &m_queues[type][queueIndex];
 }
 
 VkFence VKLDevice::createFence(VkFenceCreateFlags flags) const {

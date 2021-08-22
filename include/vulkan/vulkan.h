@@ -149,6 +149,11 @@ typedef enum VkResult {
     VK_ERROR_INCOMPATIBLE_DISPLAY_KHR = -1000003001,
     VK_ERROR_VALIDATION_FAILED_EXT = -1000011001,
     VK_ERROR_INVALID_SHADER_NV = -1000012000,
+	// Provided by VK_VERSION_1_1
+	VK_ERROR_OUT_OF_POOL_MEMORY = -1000069000,
+	  // Provided by VK_VERSION_1_1
+	VK_ERROR_INVALID_EXTERNAL_HANDLE = -1000072003,
+	
     VK_RESULT_BEGIN_RANGE = VK_ERROR_FORMAT_NOT_SUPPORTED,
     VK_RESULT_END_RANGE = VK_INCOMPLETE,
     VK_RESULT_RANGE_SIZE = (VK_INCOMPLETE - VK_ERROR_FORMAT_NOT_SUPPORTED + 1),
@@ -216,6 +221,7 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_MIR_SURFACE_CREATE_INFO_KHR = 1000007000,
     VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR = 1000008000,
     VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR = 1000009000,
+	VK_STRUCTURE_TYPE_METAL_SURFACE_CREATE_INFO_EXT = 1000217000,
     VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT = 1000011000,
     VK_STRUCTURE_TYPE_BEGIN_RANGE = VK_STRUCTURE_TYPE_APPLICATION_INFO,
     VK_STRUCTURE_TYPE_END_RANGE = VK_STRUCTURE_TYPE_LOADER_DEVICE_CREATE_INFO,
@@ -2232,10 +2238,6 @@ typedef struct VkDrawIndirectCommand {
     uint32_t    firstInstance;
 } VkDrawIndirectCommand;
 
-typedef struct VkBaseInStructure {
-	VkStructureType                    sType;
-	const struct VkBaseInStructure* pNext;
-} VkBaseInStructure;
 
 typedef VkResult (VKAPI_PTR *PFN_vkCreateInstance)(const VkInstanceCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkInstance* pInstance);
 typedef void (VKAPI_PTR *PFN_vkDestroyInstance)(VkInstance instance, const VkAllocationCallbacks* pAllocator);
@@ -3838,6 +3840,35 @@ VKAPI_ATTR void VKAPI_CALL vkDebugReportMessageEXT(
 #define VK_IMG_FILTER_CUBIC_SPEC_VERSION  1
 #define VK_IMG_FILTER_CUBIC_EXTENSION_NAME "VK_IMG_filter_cubic"
 
+#ifdef VK_USE_PLATFORM_METAL_EXT
+#define VK_EXT_metal_surface 1
+
+#ifdef __OBJC__
+@class CAMetalLayer;
+#else
+typedef void CAMetalLayer;
+#endif
+
+#define VK_EXT_METAL_SURFACE_SPEC_VERSION 1
+#define VK_EXT_METAL_SURFACE_EXTENSION_NAME "VK_EXT_metal_surface"
+typedef VkFlags VkMetalSurfaceCreateFlagsEXT;
+typedef struct VkMetalSurfaceCreateInfoEXT {
+	VkStructureType                 sType;
+	const void*                     pNext;
+	VkMetalSurfaceCreateFlagsEXT    flags;
+	const CAMetalLayer*             pLayer;
+} VkMetalSurfaceCreateInfoEXT;
+
+typedef VkResult (VKAPI_PTR *PFN_vkCreateMetalSurfaceEXT)(VkInstance instance, const VkMetalSurfaceCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface);
+
+#ifndef VK_NO_PROTOTYPES
+VKAPI_ATTR VkResult VKAPI_CALL vkCreateMetalSurfaceEXT(
+	VkInstance                                  instance,
+	const VkMetalSurfaceCreateInfoEXT*          pCreateInfo,
+	const VkAllocationCallbacks*                pAllocator,
+	VkSurfaceKHR*                               pSurface);
+#endif
+#endif
 
 #ifdef __cplusplus
 }

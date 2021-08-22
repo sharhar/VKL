@@ -198,7 +198,7 @@ public:
 	PFN_vkVoidFunction procAddr(const char* name) const;
 	const VKLPhysicalDevice* physical() const;
 	
-	VKLQueue getQueue(VKLQueueType type, uint32_t queueIndex) const;
+	const VKLQueue* getQueue(VKLQueueType type, uint32_t queueIndex) const;
 	
 	VkFence createFence(VkFenceCreateFlags flags) const;
 	void waitForFence(VkFence fence) const;
