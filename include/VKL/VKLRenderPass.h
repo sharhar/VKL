@@ -28,6 +28,7 @@ private:
 	VkAttachmentReference m_depthAttachment;
 
 	friend class VKLRenderPassCreateInfo;
+	friend class VKLRenderPass;
 };
 
 class VKLAttachmentDescription {
@@ -106,11 +107,14 @@ private:
 	const VKLDevice* m_device;
 	
 	uint32_t m_attachmentCount;
+	uint32_t m_subpassCount;
+	uint32_t* m_subpassColorAttachmentCounts;
 
 	void _destroy();
 	void _create(const VKLRenderPassCreateInfo& createInfo);
 	
 	friend class VKLFramebufferCreateInfo;
+	friend class VKLPipeline;
 };
 
 #endif

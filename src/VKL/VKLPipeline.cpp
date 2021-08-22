@@ -88,25 +88,31 @@ void VKLPipeline::_create(const VKLPipelineCreateInfo& createInfo) {
 	depthState.minDepthBounds = 0;
 	depthState.maxDepthBounds = 0;
 
-	VkPipelineColorBlendAttachmentState colorBlendAttachmentState[2];
-	memset(&colorBlendAttachmentState[0], 0, sizeof(VkPipelineColorBlendAttachmentState));
-	colorBlendAttachmentState[0].blendEnable = VK_FALSE;
-	colorBlendAttachmentState[0].srcColorBlendFactor = VK_BLEND_FACTOR_SRC_COLOR;
-	colorBlendAttachmentState[0].dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_DST_COLOR;
-	colorBlendAttachmentState[0].colorBlendOp = VK_BLEND_OP_ADD;
-	colorBlendAttachmentState[0].srcAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-	colorBlendAttachmentState[0].dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-	colorBlendAttachmentState[0].alphaBlendOp = VK_BLEND_OP_ADD;
-	colorBlendAttachmentState[0].colorWriteMask = 0xf;
-	colorBlendAttachmentState[1] = colorBlendAttachmentState[0];
+	VkPipelineColorBlendAttachmentState colorBlendAttachmentState;
+	memset(&colorBlendAttachmentState, 0, sizeof(VkPipelineColorBlendAttachmentState));
+	colorBlendAttachmentState.blendEnable = VK_FALSE;
+	colorBlendAttachmentState.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_COLOR;
+	colorBlendAttachmentState.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_DST_COLOR;
+	colorBlendAttachmentState.colorBlendOp = VK_BLEND_OP_ADD;
+	colorBlendAttachmentState.srcAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+	colorBlendAttachmentState.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+	colorBlendAttachmentState.alphaBlendOp = VK_BLEND_OP_ADD;
+	colorBlendAttachmentState.colorWriteMask = 0xf;
+	
+	VkPipelineColorBlendAttachmentState* colorBlendAttachmentStates = (VkPipelineColorBlendAttachmentState*)malloc(sizeof(VkPipelineColorBlendAttachmentState)
+																												   * createInfo.m_renderPass->m_subpassColorAttachmentCounts[createInfo.m_subpass]);
+	
+	for(int i = 0; i < createInfo.m_renderPass->m_subpassColorAttachmentCounts[createInfo.m_subpass]; i++) {
+		colorBlendAttachmentStates[i] = colorBlendAttachmentState;
+	}
 	
 	VkPipelineColorBlendStateCreateInfo colorBlendState;
 	memset(&colorBlendState, 0, sizeof(VkPipelineColorBlendStateCreateInfo));
 	colorBlendState.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
 	colorBlendState.logicOpEnable = VK_FALSE;
 	colorBlendState.logicOp = VK_LOGIC_OP_CLEAR;
-	colorBlendState.attachmentCount = 1;
-	colorBlendState.pAttachments = colorBlendAttachmentState;
+	colorBlendState.attachmentCount = createInfo.m_renderPass->m_subpassColorAttachmentCounts[createInfo.m_subpass];
+	colorBlendState.pAttachments = colorBlendAttachmentStates;
 	colorBlendState.blendConstants[0] = 0.0;
 	colorBlendState.blendConstants[1] = 0.0;
 	colorBlendState.blendConstants[2] = 0.0;
@@ -141,6 +147,8 @@ void VKLPipeline::_create(const VKLPipelineCreateInfo& createInfo) {
 	
 	VK_CALL(m_device->vk.CreateGraphicsPipelines(m_device->handle(), VK_NULL_HANDLE, 1,
 												 &pipelineCreateInfo, m_device->allocationCallbacks(), &m_handle));
+	
+	free(colorBlendAttachmentStates);
 }
 
 VKLPipelineCreateInfo::VKLPipelineCreateInfo() : vertexInput(*this) {

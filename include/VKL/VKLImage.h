@@ -40,7 +40,11 @@ public:
 	
 	VkExtent3D extent() const;
 	
+	void transition(const VKLQueue* queue, VkAccessFlags accessMask, VkImageLayout layout, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask);
 	void cmdTransitionBarrier(VKLCommandBuffer* cmdBuffer, VkAccessFlags accessMask, VkImageLayout layout, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask);
+	
+	void setData(void* data, size_t size, size_t pixelSize);
+	void uploadData(const VKLQueue* transferQueue, void* data, size_t size, size_t pixelSize);
 
 	VkFormat format() const;
 private:

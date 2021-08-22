@@ -53,10 +53,7 @@ void VKLBuffer::copyFrom(VKLBuffer* src, const VKLQueue* transferQueue, VkBuffer
 	transferQueue->getCmdBuffer()->copyBuffer(this, src, bufferCopy);
 	transferQueue->getCmdBuffer()->end();
 	
-	VkFence fence = m_device->createFence(0);
-	transferQueue->submit(transferQueue->getCmdBuffer(), fence);
-	m_device->waitForFence(fence);
-	m_device->destroyFence(fence);
+	transferQueue->submitAndWait(transferQueue->getCmdBuffer());
 	
 	transferQueue->getCmdBuffer()->reset();
 }

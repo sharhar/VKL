@@ -102,7 +102,7 @@ bool VKLFramebufferCreateInfo::_validate() {
 	}
 	
 	if(m_renderPass->m_attachmentCount != m_attachments.size()) {
-		printf("VKL Validation Error: VKLFramebufferCreateInfo::attachmentCount (%lu) != VKLRenderPass::attachmentCount (%lu)!\n", m_attachments.size(), m_renderPass->m_attachmentCount);
+		printf("VKL Validation Error: VKLFramebufferCreateInfo::attachmentCount (%lu) != VKLRenderPass::attachmentCount (%u)!\n", m_attachments.size(), m_renderPass->m_attachmentCount);
 		return false;
 	}
 	

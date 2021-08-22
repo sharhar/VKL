@@ -253,7 +253,7 @@ void VKLDevice::destroyFence(VkFence fence) const {
 void VKLDevice::_destroy() {
 	for (int i = 0; i < 3; i++) {
 		for (int j = 0; j < m_queues[i].size(); j++) {
-			m_queues[i][j].getCmdBuffer()->destroy();
+			m_queues[i][j].destroy();
 		}
 	}
 	

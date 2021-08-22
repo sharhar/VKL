@@ -11,6 +11,8 @@ void VKLQueue::init(const VKLDevice* device, VkQueue queue, uint32_t familyIndex
 	m_device = device;
 	m_familyIndex = familyIndex;
 	
+	m_fence = m_device->createFence(0);
+	
 	m_cmdBuffer = new VKLCommandBuffer(this);
 }
 
@@ -24,6 +26,16 @@ VKLCommandBuffer* VKLQueue::getCmdBuffer() const {
 
 uint32_t VKLQueue::getFamilyIndex() const {
 	return m_familyIndex;
+}
+
+void VKLQueue::submitAndWait(const VKLCommandBuffer* cmdBuffer) const {
+	submitAndWait(cmdBuffer, 0, NULL, NULL);
+}
+
+void VKLQueue::submitAndWait(const VKLCommandBuffer* cmdBuffer, uint32_t waitSemaphoreCount, const VkSemaphore* pWaitSemaphores, const VkPipelineStageFlags* pWaitDstStageMask) const {
+	submit(cmdBuffer, m_fence, NULL, waitSemaphoreCount, pWaitSemaphores, pWaitDstStageMask);
+	m_device->waitForFence(m_fence);
+	m_device->resetFence(m_fence);
 }
 
 void VKLQueue::submit(const VKLCommandBuffer* cmdBuffer, VkFence fence) const {
@@ -54,4 +66,10 @@ void VKLQueue::submit(const VKLCommandBuffer* cmdBuffer, VkFence fence, const Vk
 
 void VKLQueue::waitIdle() const {
 	m_device->vk.QueueWaitIdle(m_handle);
+}
+
+
+void VKLQueue::destroy() {
+	m_cmdBuffer->destroy();
+	m_device->destroyFence(m_fence);
 }

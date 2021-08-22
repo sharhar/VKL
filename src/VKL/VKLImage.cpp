@@ -72,8 +72,82 @@ void VKLImage::cmdTransitionBarrier(VKLCommandBuffer* cmdBuffer, VkAccessFlags a
 	m_memoryBarrier.oldLayout = m_memoryBarrier.newLayout;
 }
 
+void VKLImage::transition(const VKLQueue* queue, VkAccessFlags accessMask, VkImageLayout layout, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask) {
+	queue->getCmdBuffer()->begin();
+	cmdTransitionBarrier(queue->getCmdBuffer(), accessMask, layout, srcStageMask, dstStageMask);
+	queue->getCmdBuffer()->end();
+	
+	queue->submitAndWait(queue->getCmdBuffer());
+}
+
 VkFormat VKLImage::format() const {
 	return m_format;
+}
+
+void VKLImage::setData(void* data, size_t size, size_t pixelSize) {
+	VkImageSubresource subresource;
+	memset(&subresource, 0, sizeof(VkImageSubresource));
+	subresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	subresource.mipLevel = 0;
+	subresource.arrayLayer = 0;
+
+	VkSubresourceLayout imageLayout;
+	m_device->vk.GetImageSubresourceLayout(m_device->handle(), m_handle, &subresource, &imageLayout);
+
+	uint32_t textureRowWidth = m_size.width * pixelSize;
+	
+	uint8_t* mappedData;
+	vmaMapMemory(m_device->allocator(), m_allocation, (void**)&mappedData);
+		if (imageLayout.rowPitch == textureRowWidth) {
+			memcpy(mappedData, data, m_size.height * textureRowWidth);
+		}
+		else {
+			uint8_t* mappedBytes = (uint8_t*)mappedData;
+			uint8_t* dataBytes = (uint8_t*)data;
+
+			for (int y = 0; y < m_size.height; y++) {
+				memcpy(&mappedBytes[y * imageLayout.rowPitch],
+						&dataBytes[y * textureRowWidth],
+						textureRowWidth);
+			}
+		}
+	
+	vmaUnmapMemory(m_device->allocator(), m_allocation);
+}
+
+void VKLImage::uploadData(const VKLQueue* transferQueue, void* data, size_t size, size_t pixelSize) {
+	VKLImage stagingImage(VKLImageCreateInfo()
+							.device(m_device)
+							.extent(m_size.width, m_size.height, m_size.depth)
+							.format(m_format)
+							.tiling(VK_IMAGE_TILING_LINEAR)
+							.usage(VK_IMAGE_USAGE_TRANSFER_SRC_BIT)
+							.initialLayout(VK_IMAGE_LAYOUT_PREINITIALIZED)
+							.memoryUsage(VMA_MEMORY_USAGE_CPU_TO_GPU));
+	
+	stagingImage.setData(data, size, pixelSize);
+	
+	VkImageCopy imageCopy;
+	memset(&imageCopy, 0, sizeof(VkImageCopy));
+	imageCopy.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	imageCopy.srcSubresource.layerCount = 1;
+	imageCopy.dstSubresource = imageCopy.srcSubresource;
+	imageCopy.extent = m_size;
+	
+	transferQueue->getCmdBuffer()->begin();
+	
+	stagingImage.cmdTransitionBarrier(transferQueue->getCmdBuffer(),
+									  VK_ACCESS_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+									  VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
+	
+	transferQueue->getCmdBuffer()->copyImage(this, &stagingImage, imageCopy);
+	transferQueue->getCmdBuffer()->end();
+	
+	transferQueue->submitAndWait(transferQueue->getCmdBuffer());
+	
+	transferQueue->getCmdBuffer()->reset();
+	
+	stagingImage.destroy();
 }
 
 void VKLImage::_destroy() {

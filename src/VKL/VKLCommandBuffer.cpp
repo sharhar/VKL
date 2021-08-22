@@ -53,15 +53,15 @@ void VKLCommandBuffer::endRenderPass() {
 	m_device->vk.CmdEndRenderPass(m_handle);
 }
 
-void VKLCommandBuffer::setViewPort(uint32_t index, uint32_t width, uint32_t height) {
+void VKLCommandBuffer::setViewPort(uint32_t index, uint32_t width, uint32_t height) {
 	setViewPort(index, 0, 0, width, height);
 }
 
-void VKLCommandBuffer::setViewPort(uint32_t index, uint32_t x, uint32_t y, uint32_t width, uint32_t height) {
+void VKLCommandBuffer::setViewPort(uint32_t index, uint32_t x, uint32_t y, uint32_t width, uint32_t height) {
 	setViewPort(index, x, y, width, height, 0, 1);
 }
 
-void VKLCommandBuffer::setViewPort(uint32_t index, uint32_t x, uint32_t y, uint32_t width, uint32_t height, uint32_t z, uint32_t depth) {
+void VKLCommandBuffer::setViewPort(uint32_t index, uint32_t x, uint32_t y, uint32_t width, uint32_t height, uint32_t z, uint32_t depth) {
 	VkViewport viewport;
 	viewport.x = x;
 	viewport.y = y;
@@ -73,11 +73,11 @@ void VKLCommandBuffer::setViewPort(uint32_t index, uint32_t x, uint32_t y, uint
 	m_device->vk.CmdSetViewport(m_handle, index, 1, &viewport);
 }
 
-void VKLCommandBuffer::setScissor(uint32_t index, uint32_t width, uint32_t height) {
+void VKLCommandBuffer::setScissor(uint32_t index, uint32_t width, uint32_t height) {
 	setScissor(index, 0, 0, width, height);
 }
 
-void VKLCommandBuffer::setScissor(uint32_t index, uint32_t x, uint32_t y, uint32_t width, uint32_t height) {
+void VKLCommandBuffer::setScissor(uint32_t index, uint32_t x, uint32_t y, uint32_t width, uint32_t height) {
 	VkRect2D scissor;
 	scissor.offset.x = x;
 	scissor.offset.y = y;
@@ -91,24 +91,12 @@ void VKLCommandBuffer::bufferBarrier(VKLBuffer* buffer, VkPipelineStageFlags src
 	m_device->vk.CmdPipelineBarrier(m_handle, srcStageMask, dstStageMask, 0, 0, NULL, 1, buffer->getMemoryBarrier(), 0, NULL);
 }
 
-void VKLCommandBuffer::copyBuffer(VKLBuffer* dst, VKLBuffer* src, VkBufferCopy bufferCopy) {
-	//src->setNewAccessMask(VK_ACCESS_TRANSFER_READ_BIT);
-	//bufferBarrier(src, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
-	//src->resetBarrier();
-	
-	//dst->setNewAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT);
-	//bufferBarrier(dst, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
-	//dst->resetBarrier();
-	
+void VKLCommandBuffer::copyBuffer(const VKLBuffer* dst, const VKLBuffer* src, VkBufferCopy bufferCopy) {
 	m_device->vk.CmdCopyBuffer(m_handle, src->handle(), dst->handle(), 1, &bufferCopy);
-	
-	//src->setNewAccessMask(VK_ACCESS_TRANSFER_READ_BIT);
-	//bufferBarrier(src, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
-	//src->resetBarrier();
-	
-	//dst->setNewAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT);
-	//bufferBarrier(dst, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
-	//dst->resetBarrier();
+}
+
+void VKLCommandBuffer::copyImage(const VKLImage* dst, const VKLImage* src, VkImageCopy imageCopy) {
+	m_device->vk.CmdCopyImage(m_handle, src->handle(), src->layout(), dst->handle(), dst->layout(), 1, &imageCopy);
 }
 
 void VKLCommandBuffer::destroy() {

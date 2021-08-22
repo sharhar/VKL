@@ -21,6 +21,14 @@ void VKLRenderPass::_create(const VKLRenderPassCreateInfo& createInfo) {
 	m_device = createInfo.m_device;
 	m_attachmentCount = createInfo.m_attachmentDescriptions.size();
 	
+	
+	m_subpassCount = createInfo.m_subpassDescriptions.size();
+	m_subpassColorAttachmentCounts = (uint32_t*)malloc(sizeof(uint32_t) * m_subpassCount);
+	
+	for(int i = 0; i < m_subpassCount; i++) {
+		m_subpassColorAttachmentCounts[i] = createInfo.m_subpassDescriptions[i].m_colorAttachments.size();
+	}
+	
 	VK_CALL(m_device->vk.CreateRenderPass(m_device->handle(), &createInfo.m_createInfo, m_device->allocationCallbacks(), &m_handle));
 }
 

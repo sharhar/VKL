@@ -1,4 +1,4 @@
-#include <VKl/VKL.h>
+#include <VKL/VKL.h>
 
 VKLImageView::VKLImageView() : VKLCreator<VKLImageViewCreateInfo>("VKLImageView") {
 	m_device = NULL;
