@@ -116,7 +116,7 @@ void VKLPipeline::_create(const VKLPipelineCreateInfo& createInfo) {
 	VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo;
 	memset(&dynamicStateCreateInfo, 0, sizeof(VkPipelineDynamicStateCreateInfo));
 	dynamicStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
-	dynamicStateCreateInfo.dynamicStateCount = 0;
+	dynamicStateCreateInfo.dynamicStateCount = 2;
 	dynamicStateCreateInfo.pDynamicStates = dynamicState;
 
 	VkGraphicsPipelineCreateInfo pipelineCreateInfo;

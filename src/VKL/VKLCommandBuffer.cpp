@@ -53,6 +53,40 @@ void VKLCommandBuffer::endRenderPass() {
 	m_device->vk.CmdEndRenderPass(m_handle);
 }
 
+void VKLCommandBuffer::setViewPort(uint32_t index, uint32_t width, uint32_t height) {
+	setViewPort(index, 0, 0, width, height);
+}
+
+void VKLCommandBuffer::setViewPort(uint32_t index, uint32_t x, uint32_t y, uint32_t width, uint32_t height) {
+	setViewPort(index, x, y, width, height, 0, 1);
+}
+
+void VKLCommandBuffer::setViewPort(uint32_t index, uint32_t x, uint32_t y, uint32_t width, uint32_t height, uint32_t z, uint32_t depth) {
+	VkViewport viewport;
+	viewport.x = x;
+	viewport.y = y;
+	viewport.width = width;
+	viewport.height = height;
+	viewport.minDepth = z;
+	viewport.maxDepth = depth;
+	
+	m_device->vk.CmdSetViewport(m_handle, index, 1, &viewport);
+}
+
+void VKLCommandBuffer::setScissor(uint32_t index, uint32_t width, uint32_t height) {
+	setScissor(index, 0, 0, width, height);
+}
+
+void VKLCommandBuffer::setScissor(uint32_t index, uint32_t x, uint32_t y, uint32_t width, uint32_t height) {
+	VkRect2D scissor;
+	scissor.offset.x = x;
+	scissor.offset.y = y;
+	scissor.extent.width = width;
+	scissor.extent.height = height;
+	
+	m_device->vk.CmdSetScissor(m_handle, index, 1, &scissor);
+}
+
 void VKLCommandBuffer::bufferBarrier(VKLBuffer* buffer, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask) {
 	m_device->vk.CmdPipelineBarrier(m_handle, srcStageMask, dstStageMask, 0, 0, NULL, 1, buffer->getMemoryBarrier(), 0, NULL);
 }

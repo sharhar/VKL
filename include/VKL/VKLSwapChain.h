@@ -8,7 +8,7 @@ public:
 	VKLSwapChainCreateInfo();
 	
 	VKLSwapChainCreateInfo& queue(const VKLQueue* queue);
-	VKLSwapChainCreateInfo& surface(VkSurfaceKHR surface);
+	VKLSwapChainCreateInfo& surface(const VKLSurface* surface);
 	VKLSwapChainCreateInfo& size(VkExtent2D size);
 	VKLSwapChainCreateInfo& imageFormat(VkFormat format);
 	VKLSwapChainCreateInfo& imageCount(uint32_t imageCount);
@@ -17,6 +17,7 @@ public:
 
 private:
 	const VKLQueue* m_queue;
+	const VKLSurface* m_surface;
 
 	VkSwapchainCreateInfoKHR m_createInfo;
 
@@ -34,6 +35,9 @@ public:
 	
 	void present(const VKLImage* image);
 	void present(const VKLImage* image, uint32_t waitSemaphoreCount, const VkSemaphore* waitSemaphores, const VkPipelineStageFlags* pWaitDstStageMask);
+	
+	void rebuild();
+	void rebuild(uint32_t width, uint32_t height);
 private:
 	VKLImage* m_swapChainImages;
 	uint32_t m_swapChainImageCount;
@@ -47,8 +51,12 @@ private:
 	const VKLDevice* m_device;
 	const VKLQueue* m_queue;
 	
+	VKLSwapChainCreateInfo m_createInfo;
+	
 	void _destroy();
 	void _create(const VKLSwapChainCreateInfo& createInfo);
+	
+	void rebuild(VkSwapchainKHR oldSwapchain);
 };
 
 #endif

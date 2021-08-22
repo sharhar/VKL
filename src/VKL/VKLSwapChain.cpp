@@ -8,11 +8,31 @@ VKLSwapChain::VKLSwapChain(const VKLSwapChainCreateInfo& createInfo) : VKLCreato
 	this->create(createInfo);
 }
 
-void VKLSwapChain::_create(const VKLSwapChainCreateInfo& createInfo) {
-	m_device = createInfo.m_queue->device();
-	m_queue = createInfo.m_queue;
+void VKLSwapChain::rebuild() {
+	VkSurfaceCapabilitiesKHR surfaceCapabilities = m_device->physical()->getSurfaceCapabilities(m_createInfo.m_surface->handle());
+	rebuild(surfaceCapabilities.currentExtent.width, surfaceCapabilities.currentExtent.height);
+}
 
-	VK_CALL(m_device->vk.CreateSwapchainKHR(m_device->handle(), &createInfo.m_createInfo, m_device->allocationCallbacks(), &m_handle));
+void VKLSwapChain::rebuild(uint32_t width, uint32_t height) {
+	delete[] m_swapChainImages;
+	
+	VkExtent2D size;
+	size.width = width;
+	size.height = height;
+	
+	m_createInfo.size(size);
+	
+	VkSwapchainKHR temphandle = m_handle;
+	
+	rebuild(m_handle);
+	
+	m_device->vk.DestroySwapchainKHR(m_device->handle(), temphandle, m_device->allocationCallbacks());
+}
+
+void VKLSwapChain::rebuild(VkSwapchainKHR oldSwapchain) {
+	m_createInfo.m_createInfo.oldSwapchain = oldSwapchain;
+	
+	VK_CALL(m_device->vk.CreateSwapchainKHR(m_device->handle(), &m_createInfo.m_createInfo, m_device->allocationCallbacks(), &m_handle));
 
 	VkImage* presentImages = NULL;
 
@@ -22,13 +42,11 @@ void VKLSwapChain::_create(const VKLSwapChainCreateInfo& createInfo) {
 
 	m_swapChainImages = new VKLImage[m_swapChainImageCount];
 	
-	m_cmdBuffer = new VKLCommandBuffer(m_queue);
-	
 	VKLImageCreateInfo imageCreateInfo;
 	imageCreateInfo.device(m_device)
-					.format(createInfo.m_createInfo.imageFormat)
-					.usage(createInfo.m_createInfo.imageUsage)
-					.extent(createInfo.m_createInfo.imageExtent.width, createInfo.m_createInfo.imageExtent.height, 1).validate();
+					.format(m_createInfo.m_createInfo.imageFormat)
+					.usage(m_createInfo.m_createInfo.imageUsage)
+					.extent(m_createInfo.m_createInfo.imageExtent.width, m_createInfo.m_createInfo.imageExtent.height, 1).validate();
 	
 	m_cmdBuffer->begin();
 	
@@ -44,12 +62,20 @@ void VKLSwapChain::_create(const VKLSwapChainCreateInfo& createInfo) {
 	m_queue->submit(m_cmdBuffer, VK_NULL_HANDLE);
 	m_queue->waitIdle();
 	
-	m_fence = m_device->createFence(0);
-	
 	VK_CALL(m_device->vk.AcquireNextImageKHR(m_device->handle(), m_handle, UINT64_MAX, VK_NULL_HANDLE, m_fence, &m_currentImgIndex));
 	
 	m_device->waitForFence(m_fence);
 	m_device->resetFence(m_fence);
+}
+
+void VKLSwapChain::_create(const VKLSwapChainCreateInfo& createInfo) {
+	m_createInfo = createInfo;
+	m_device = m_createInfo.m_queue->device();
+	m_queue = m_createInfo.m_queue;
+	m_cmdBuffer = new VKLCommandBuffer(m_queue);
+	m_fence = m_device->createFence(0);
+	
+	rebuild(VK_NULL_HANDLE);
 }
 
 VKLImage& VKLSwapChain::getCurrentImage() {
@@ -72,6 +98,8 @@ void VKLSwapChain::present(const VKLImage* image, uint32_t waitSemaphoreCount, c
 	imageBlit.dstOffsets[1].x = getCurrentImage().extent().width;
 	imageBlit.dstOffsets[1].y = getCurrentImage().extent().height;
 	imageBlit.dstOffsets[1].z = 1;
+	
+	//printf("(%d, %d) (%d, %d)\n", imageBlit.srcOffsets[1].x, imageBlit.srcOffsets[1].y, imageBlit.dstOffsets[1].x, imageBlit.dstOffsets[1].y);
 	
 	m_cmdBuffer->begin();
 	
@@ -150,8 +178,9 @@ VKLSwapChainCreateInfo& VKLSwapChainCreateInfo::queue(const VKLQueue* queue) {
 	return invalidate();
 }
 
-VKLSwapChainCreateInfo& VKLSwapChainCreateInfo::surface(VkSurfaceKHR surface) {
-	m_createInfo.surface = surface;
+VKLSwapChainCreateInfo& VKLSwapChainCreateInfo::surface(const VKLSurface* surface) {
+	m_surface = surface;
+	m_createInfo.surface = m_surface->handle();
 	
 	return invalidate();
 }
