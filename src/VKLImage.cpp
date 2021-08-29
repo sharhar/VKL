@@ -4,12 +4,14 @@ VKLImage::VKLImage() : VKLCreator<VKLImageCreateInfo>("VKLImage") {
 	m_device = NULL;
 	m_allocation = VK_NULL_HANDLE;
 	m_handle = VK_NULL_HANDLE;
+	m_aspect = VK_IMAGE_ASPECT_COLOR_BIT;
 }
 
 VKLImage::VKLImage(const VKLImageCreateInfo& createInfo) : VKLCreator<VKLImageCreateInfo>("VKLImage") {
 	m_device = NULL;
 	m_allocation = VK_NULL_HANDLE;
 	m_handle = VK_NULL_HANDLE;
+	m_aspect = VK_IMAGE_ASPECT_COLOR_BIT;
 	create(createInfo);
 }
 
@@ -28,7 +30,6 @@ void VKLImage::_create(const VKLImageCreateInfo& createInfo, VkImage handle) {
 	} else {
 		m_handle = handle;
 	}
-	
 
 	initBarrier(createInfo.m_imageCreateInfo.initialLayout);
 }
@@ -43,7 +44,7 @@ void VKLImage::initBarrier(VkImageLayout layout) {
 	m_memoryBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 	m_memoryBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 	m_memoryBarrier.image = m_handle;
-	m_memoryBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	m_memoryBarrier.subresourceRange.aspectMask = m_aspect;
 	m_memoryBarrier.subresourceRange.baseMipLevel = 0;
 	m_memoryBarrier.subresourceRange.levelCount = 1;
 	m_memoryBarrier.subresourceRange.baseArrayLayer = 0;
@@ -56,6 +57,10 @@ VkAccessFlags VKLImage::accessMask() const {
 
 VkImageLayout VKLImage::layout() const {
 	return m_memoryBarrier.newLayout;
+}
+
+VkImageAspectFlags VKLImage::aspect() const {
+	return m_aspect;
 }
 
 VkExtent3D VKLImage::extent() const {

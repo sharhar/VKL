@@ -157,10 +157,13 @@ VKLSubpassDescription& VKLSubpassDescription::addColorAttachment(uint32_t attach
 }
 
 VKLSubpassDescription& VKLSubpassDescription::depthAttachment(uint32_t attachment, VkImageLayout layout) {
-	m_depthAttachment.layout = layout;
-	m_depthAttachment.attachment = attachment;
-
-	m_desc.pDepthStencilAttachment = &m_depthAttachment;
+	VkAttachmentReference* depthAttachment = (VkAttachmentReference*)malloc(sizeof(VkAttachmentReference));
+	depthAttachment->layout = layout;
+	depthAttachment->attachment = attachment;
+	
+	m_desc.pDepthStencilAttachment = depthAttachment;
+	
+	m_parent.m_heapRefs.push_back(depthAttachment);
 
 	return *this;
 }

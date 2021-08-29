@@ -25,8 +25,6 @@ private:
 	std::vector<VkAttachmentReference> m_colorAttachments;
 	std::vector<uint32_t> m_preserveAttachments;
 
-	VkAttachmentReference m_depthAttachment;
-
 	friend class VKLRenderPassCreateInfo;
 	friend class VKLRenderPass;
 };
@@ -90,6 +88,8 @@ private:
 	std::vector<VKLAttachmentDescription> m_attachmentDescriptions;
 	std::vector<VKLSubpassDescription> m_subpassDescriptions;
 	std::vector<VKLSubpassDependency> m_subpassDependencies;
+	
+	std::vector<VkAttachmentReference*> m_heapRefs;
 
 	friend class VKLSubpassDependency;
 	friend class VKLSubpassDescription;

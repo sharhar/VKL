@@ -38,7 +38,6 @@ VKLImageViewCreateInfo::VKLImageViewCreateInfo() {
 	m_createInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
 	m_createInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
 	m_createInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
-	m_createInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 	m_createInfo.subresourceRange.baseMipLevel = 0;
 	m_createInfo.subresourceRange.levelCount = 1;
 	m_createInfo.subresourceRange.baseArrayLayer = 0;
@@ -74,6 +73,9 @@ bool VKLImageViewCreateInfo::_validate() {
 	if (m_createInfo.format == VK_FORMAT_UNDEFINED) {
 		m_createInfo.format = m_image->format();
 	}
+	
+	
+	m_createInfo.subresourceRange.aspectMask = m_image->aspect();
 
 	return true;
 }

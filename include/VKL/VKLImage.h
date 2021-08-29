@@ -39,6 +39,7 @@ public:
 	VkImageLayout layout() const;
 	
 	VkExtent3D extent() const;
+	VkImageAspectFlags aspect() const;
 	
 	void transition(const VKLQueue* queue, VkAccessFlags accessMask, VkImageLayout layout, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask);
 	void cmdTransitionBarrier(VKLCommandBuffer* cmdBuffer, VkAccessFlags accessMask, VkImageLayout layout, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask);
@@ -47,6 +48,8 @@ public:
 	void uploadData(const VKLQueue* transferQueue, void* data, size_t size, size_t pixelSize);
 
 	VkFormat format() const;
+	
+	VkImageAspectFlags m_aspect;
 private:
 	VkImageMemoryBarrier m_memoryBarrier;
 	VmaAllocation m_allocation;
