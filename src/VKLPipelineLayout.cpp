@@ -1,30 +1,34 @@
 #include <VKL/VKL.h>
 
-VKLShader::VKLShader() : VKLCreator<VKLShaderCreateInfo>("VKLShader") {
+VKLPipelineLayout::VKLPipelineLayout() : VKLCreator<VKLPipelineLayoutCreateInfo>("VKLPipelineLayout") {
 	
 }
 
-VKLShader::VKLShader(const VKLShaderCreateInfo& createInfo) : VKLCreator<VKLShaderCreateInfo>("VKLShader") {
+VKLPipelineLayout::VKLPipelineLayout(const VKLPipelineLayoutCreateInfo& createInfo) : VKLCreator<VKLPipelineLayoutCreateInfo>("VKLPipelineLayout") {
 	this->create(createInfo);
 }
 
-const std::vector<VkPipelineShaderStageCreateInfo>& VKLShader::getShaderStageCreateInfos() const {
+const std::vector<VkPipelineShaderStageCreateInfo>& VKLPipelineLayout::getShaderStageCreateInfos() const {
 	return m_shaderStageCreateInfos;
 }
 
-VkPipelineLayout VKLShader::pipelineLayout() const {
-	return m_layout;
-}
-
-const VKLDevice* VKLShader::device() const {
+const VKLDevice* VKLPipelineLayout::device() const {
 	return m_device;
 }
 
-const VkDescriptorSetLayout* VKLShader::descriptorSetLayouts() const {
+const VkDescriptorSetLayout* VKLPipelineLayout::descriptorSetLayouts() const {
 	return m_descriptorSetLayouts;
 }
 
-void VKLShader::_destroy() {
+VKLPipelineType VKLPipelineLayout::type() const {
+	return m_type;
+}
+
+VkPipelineBindPoint VKLPipelineLayout::bindPoint() const {
+	return m_bindPoint;
+}
+
+void VKLPipelineLayout::_destroy() {
 	for(int i = 0; i < m_shaderStageCreateInfos.size(); i++) {
 		m_device->vk.DestroyShaderModule(m_device->handle(), m_shaderStageCreateInfos[i].module, m_device->allocationCallbacks());
 	}
@@ -33,16 +37,24 @@ void VKLShader::_destroy() {
 		m_device->vk.DestroyDescriptorSetLayout(m_device->handle(), m_descriptorSetLayouts[i], m_device->allocationCallbacks());
 	}
 	
-	m_device->vk.DestroyPipelineLayout(m_device->handle(), m_layout, m_device->allocationCallbacks());
+	m_device->vk.DestroyPipelineLayout(m_device->handle(), m_handle, m_device->allocationCallbacks());
 	
 	free(m_pushConstantRanges);
 	free(m_descriptorSetLayouts);
 }
 
-void VKLShader::_create(const VKLShaderCreateInfo& createInfo) {
+void VKLPipelineLayout::_create(const VKLPipelineLayoutCreateInfo& createInfo) {
 	m_device = createInfo.m_device;
 	
 	m_shaderStageCreateInfos.resize(createInfo.m_shaderModuleCreateInfos.size());
+	
+	m_type = createInfo.m_type;
+	
+	if(m_type == VKL_PIPELINE_TYPE_GRAPHICS) {
+		m_bindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+	} else if (m_type == VKL_PIPELINE_TYPE_COMPUTE) {
+		m_bindPoint = VK_PIPELINE_BIND_POINT_COMPUTE;
+	}
 	
 	for(int i = 0; i < m_shaderStageCreateInfos.size(); i++) {
 		m_shaderStageCreateInfos[i].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -96,20 +108,20 @@ void VKLShader::_create(const VKLShaderCreateInfo& createInfo) {
 	layoutCreateInfo.pushConstantRangeCount = createInfo.m_pushConstantRanges.size();
 	layoutCreateInfo.pPushConstantRanges = m_pushConstantRanges;
 	
-	VK_CALL(m_device->vk.CreatePipelineLayout(m_device->handle(), &layoutCreateInfo, m_device->allocationCallbacks(), &m_layout));
+	VK_CALL(m_device->vk.CreatePipelineLayout(m_device->handle(), &layoutCreateInfo, m_device->allocationCallbacks(), &m_handle));
 }
 
-VKLShaderCreateInfo::VKLShaderCreateInfo() {
+VKLPipelineLayoutCreateInfo::VKLPipelineLayoutCreateInfo() {
 	m_device = NULL;
 }
 
-VKLShaderCreateInfo& VKLShaderCreateInfo::device(const VKLDevice* device) {
+VKLPipelineLayoutCreateInfo& VKLPipelineLayoutCreateInfo::device(const VKLDevice* device) {
 	m_device = device;
 	
 	return invalidate();
 }
 
-VKLShaderCreateInfo& VKLShaderCreateInfo::addShaderModule(const uint32_t* pCode, size_t codeSize,
+VKLPipelineLayoutCreateInfo& VKLPipelineLayoutCreateInfo::addShaderModule(const uint32_t* pCode, size_t codeSize,
 														VkShaderStageFlagBits stage, const char* entryPoint) {
 	VKLShaderModuleCreateInfo result;
 	
@@ -128,7 +140,7 @@ VKLShaderCreateInfo& VKLShaderCreateInfo::addShaderModule(const uint32_t* pCode,
 	
 }
 
-void VKLShaderCreateInfo::addVertexAttrib(uint32_t location, uint32_t binding, VkFormat format, uint32_t offset) {
+void VKLPipelineLayoutCreateInfo::addVertexAttrib(uint32_t location, uint32_t binding, VkFormat format, uint32_t offset) {
 	VkVertexInputAttributeDescription attribDesc;
 	
 	attribDesc.location = location;
@@ -142,7 +154,7 @@ void VKLShaderCreateInfo::addVertexAttrib(uint32_t location, uint32_t binding, V
 }
 
 
-VKLDescriptorSetLayoutCreateInfo& VKLShaderCreateInfo::addDescriptorSet() {
+VKLDescriptorSetLayoutCreateInfo& VKLPipelineLayoutCreateInfo::addDescriptorSet() {
 	m_descriptorSetLayouts.push_back(VKLDescriptorSetLayoutCreateInfo(*this));
 
 	invalidate();
@@ -150,7 +162,7 @@ VKLDescriptorSetLayoutCreateInfo& VKLShaderCreateInfo::addDescriptorSet() {
 	return m_descriptorSetLayouts.back();
 }
 
-VKLShaderCreateInfo& VKLShaderCreateInfo::addPushConstant(VkShaderStageFlags stage, uint32_t offset, uint32_t size) {
+VKLPipelineLayoutCreateInfo& VKLPipelineLayoutCreateInfo::addPushConstant(VkShaderStageFlags stage, uint32_t offset, uint32_t size) {
 	VkPushConstantRange result;
 	result.stageFlags = stage;
 	result.offset = offset;
@@ -161,7 +173,7 @@ VKLShaderCreateInfo& VKLShaderCreateInfo::addPushConstant(VkShaderStageFlags sta
 	return invalidate();
 }
 
-bool VKLShaderCreateInfo::_validate() {
+bool VKLPipelineLayoutCreateInfo::_validate() {
 	if(m_device == NULL) {
 		printf("VKL Validation Error: VKLShaderCreateInfo::device is not set!\n");
 		return false;
@@ -172,10 +184,45 @@ bool VKLShaderCreateInfo::_validate() {
 		return false;
 	}
 	
+	if(m_shaderModuleCreateInfos.size() == 1) {
+		if(m_shaderModuleCreateInfos[0].stage != VK_SHADER_STAGE_COMPUTE_BIT) {
+			printf("VKL Validation Error: Non-compute pipeline cannot have only one stage!\n");
+			return false;
+		}
+		
+		m_type = VKL_PIPELINE_TYPE_COMPUTE;
+	} else {
+		VkBool32 foundVertex = VK_FALSE;
+		VkBool32 foundFragment = VK_FALSE;
+		
+		for(VKLShaderModuleCreateInfo& shaderModule : m_shaderModuleCreateInfos) {
+			if(shaderModule.stage == VK_SHADER_STAGE_COMPUTE_BIT) {
+				printf("VKL Validation Error: Compute shader cannot be part of pipeline with multiple stages!\n");
+				return false;
+			} else if (shaderModule.stage == VK_SHADER_STAGE_VERTEX_BIT) {
+				foundVertex = VK_TRUE;
+			} else if (shaderModule.stage == VK_SHADER_STAGE_FRAGMENT_BIT) {
+				foundFragment = VK_TRUE;
+			}
+		}
+		
+		if(!foundVertex) {
+			printf("VKL Validation Error: Graphics pipeline must have a vertex shader!\n");
+			return false;
+		}
+		
+		if(!foundFragment) {
+			printf("VKL Validation Error: Graphics pipeline must have a fragment shader!\n");
+			return false;
+		}
+		
+		m_type = VKL_PIPELINE_TYPE_GRAPHICS;
+	}
+	
 	return true;
 }
 
-VKLDescriptorSetLayoutCreateInfo::VKLDescriptorSetLayoutCreateInfo(VKLShaderCreateInfo& parent) : m_parent(parent){
+VKLDescriptorSetLayoutCreateInfo::VKLDescriptorSetLayoutCreateInfo(VKLPipelineLayoutCreateInfo& parent) : m_parent(parent){
 	
 }
 
@@ -193,6 +240,6 @@ VKLDescriptorSetLayoutCreateInfo& VKLDescriptorSetLayoutCreateInfo::addBinding(u
 	return *this;
 }
 
-VKLShaderCreateInfo& VKLDescriptorSetLayoutCreateInfo::end() {
+VKLPipelineLayoutCreateInfo& VKLDescriptorSetLayoutCreateInfo::end() {
 	return m_parent;
 }

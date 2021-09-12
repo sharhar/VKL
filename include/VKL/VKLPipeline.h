@@ -53,13 +53,13 @@ class VKLPipelineCreateInfo : public VKLCreateInfo<VKLPipelineCreateInfo> {
 public:
 	VKLPipelineCreateInfo();
 	
-	VKLPipelineCreateInfo& shader(const VKLShader* shader);
+	VKLPipelineCreateInfo& layout(const VKLPipelineLayout* layout);
 	VKLPipelineCreateInfo& renderPass(const VKLRenderPass* renderPass, uint32_t subpass);
 
 	VKLPipelineVertexInputStateCreateInfo vertexInput;
 
 private:
-	const VKLShader* m_shader;
+	const VKLPipelineLayout* m_layout;
 	const VKLRenderPass* m_renderPass;
 	uint32_t m_subpass;
 
@@ -72,15 +72,11 @@ class VKLPipeline : public VKLHandle<VkPipeline>, public VKLCreator<VKLPipelineC
 public:
 	VKLPipeline();
 	
-	const VKLShader* shader() const;
+	const VKLPipelineLayout* layout() const;
 	const VKLDevice* device() const;
-	VkPipelineLayout layout() const;
-	VkPipelineBindPoint bindPoint() const;
 private:
 	const VKLDevice* m_device;
-	const VKLShader* m_shader;
-	
-	VkPipelineBindPoint m_bindPoint;
+	const VKLPipelineLayout* m_layout;
 	
 	void _destroy();
 	void _create(const VKLPipelineCreateInfo& createInfo);

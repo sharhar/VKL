@@ -14,7 +14,7 @@
 #include <VKL/VKLCommandBuffer.h>
 #include <VKL/VKLRenderPass.h>
 #include <VKL/VKLBuffer.h>
-#include <VKL/VKLShader.h>
+#include <VKL/VKLPipelineLayout.h>
 #include <VKL/VKLPipeline.h>
 #include <VKL/VKLDescriptorSet.h>
 #include <VKL/VKLFramebuffer.h>

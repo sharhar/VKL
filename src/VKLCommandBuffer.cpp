@@ -147,7 +147,7 @@ void VKLCommandBuffer::bindPipeline(const VKLPipeline& pipeline) const {
 }
 
 void VKLCommandBuffer::bindPipeline(const VKLPipeline* pipeline) const {
-	m_device->vk.CmdBindPipeline(m_handle, pipeline->bindPoint(), pipeline->handle());
+	m_device->vk.CmdBindPipeline(m_handle, pipeline->layout()->bindPoint(), pipeline->handle());
 }
 
 void VKLCommandBuffer::bindDescriptorSet(const VKLDescriptorSet& descriptorSet) const {
@@ -156,7 +156,7 @@ void VKLCommandBuffer::bindDescriptorSet(const VKLDescriptorSet& descriptorSet) 
 
 void VKLCommandBuffer::bindDescriptorSet(const VKLDescriptorSet* descriptorSet) const {
 	VkDescriptorSet descSet = descriptorSet->handle();
-	m_device->vk.CmdBindDescriptorSets(m_handle, VK_PIPELINE_BIND_POINT_GRAPHICS, descriptorSet->shader()->pipelineLayout(), descriptorSet->set(), 1, &descSet, 0, NULL);
+	m_device->vk.CmdBindDescriptorSets(m_handle, descriptorSet->layout()->bindPoint(), descriptorSet->layout()->handle(), descriptorSet->set(), 1, &descSet, 0, NULL);
 }
 
 void VKLCommandBuffer::pushConstants(const VKLPipeline& pipeline, VkShaderStageFlags stageFlags, uint32_t offset, uint32_t size, const void* pValues) const {
@@ -164,7 +164,11 @@ void VKLCommandBuffer::pushConstants(const VKLPipeline& pipeline, VkShaderStageF
 }
 
 void VKLCommandBuffer::pushConstants(const VKLPipeline* pipeline, VkShaderStageFlags stageFlags, uint32_t offset, uint32_t size, const void* pValues) const {
-	m_device->vk.CmdPushConstants(m_handle, pipeline->layout(), stageFlags, offset, size, pValues);
+	m_device->vk.CmdPushConstants(m_handle, pipeline->layout()->handle(), stageFlags, offset, size, pValues);
+}
+
+void VKLCommandBuffer::dispatch(uint32_t x, uint32_t y, uint32_t z) const {
+	m_device->vk.CmdDispatch(m_handle, x, y, z);
 }
 
 void VKLCommandBuffer::destroy() {

@@ -47,6 +47,7 @@ public:
 	void pushConstants(const VKLPipeline* pipeline, VkShaderStageFlags stageFlags, uint32_t offset, uint32_t size, const void* pValues) const;
 	
 	void draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance) const;
+	void dispatch(uint32_t x, uint32_t y, uint32_t z) const;
 
 	void destroy();
 private:

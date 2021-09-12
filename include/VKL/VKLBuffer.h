@@ -39,6 +39,7 @@ public:
 	//void bindVertex(const VKLCommandBuffer* cmdBuffer, uint32_t binding, VkDeviceSize offset) const;
 	
 	void setData(void* data, size_t size, size_t offset);
+	void getData(void* data, size_t size, size_t offset);
 	
 	void setNewAccessMask(VkAccessFlags accessMask);
 	VkBufferMemoryBarrier* getMemoryBarrier();
