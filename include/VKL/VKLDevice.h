@@ -204,6 +204,9 @@ public:
 	void waitForFence(VkFence fence) const;
 	void resetFence(VkFence fence) const;
 	void destroyFence(VkFence fence) const;
+	
+	VkSemaphore createSemaphore() const;
+	void destroySempahore(VkSemaphore semaphore) const;
 
 	VKLDevicePFNS vk;
 	VmaVulkanFunctions vmaFuncs;

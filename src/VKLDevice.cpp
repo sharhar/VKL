@@ -250,6 +250,22 @@ void VKLDevice::destroyFence(VkFence fence) const {
 	vk.DestroyFence(m_handle, fence, m_allocationCallbacks);
 }
 
+VkSemaphore VKLDevice::createSemaphore() const {
+	VkSemaphoreCreateInfo semaphoreCreateInfo;
+	semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+	semaphoreCreateInfo.pNext = NULL;
+	semaphoreCreateInfo.flags = 0;
+	
+	VkSemaphore result;
+	VK_CALL(vk.CreateSemaphore(m_handle, &semaphoreCreateInfo, m_allocationCallbacks, &result));
+	
+	return result;
+}
+
+void VKLDevice::destroySempahore(VkSemaphore semaphore) const {
+	vk.DestroySemaphore(m_handle, semaphore, m_allocationCallbacks);
+}
+
 void VKLDevice::_destroy() {
 	for (int i = 0; i < 3; i++) {
 		for (int j = 0; j < m_queues[i].size(); j++) {

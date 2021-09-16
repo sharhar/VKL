@@ -34,6 +34,26 @@ void VKLBuffer::setData(void* data, size_t size, size_t offset) {
 	vmaUnmapMemory(m_device->allocator(), m_allocation);
 }
 
+void VKLBuffer::setData(const VKLQueue* transferQueue, VKLBuffer* stagingBuffer, void* data, size_t size, size_t offset) {
+	stagingBuffer->setData(data, size, 0);
+	
+	VkBufferCopy bufferCopy;
+	bufferCopy.size = size;
+	bufferCopy.dstOffset = offset;
+	bufferCopy.srcOffset = 0;
+	
+	copyFrom(stagingBuffer, transferQueue, bufferCopy);
+}
+
+void* VKLBuffer::map() {
+	void* result;
+	vmaMapMemory(m_device->allocator(), m_allocation, (void**)&result);
+	return result;
+}
+void VKLBuffer::unmap() {
+	vmaUnmapMemory(m_device->allocator(), m_allocation);
+}
+
 void VKLBuffer::getData(void* data, size_t size, size_t offset) {
 	uint8_t* mappedData;
 	vmaMapMemory(m_device->allocator(), m_allocation, (void**)&mappedData);
@@ -41,10 +61,21 @@ void VKLBuffer::getData(void* data, size_t size, size_t offset) {
 	vmaUnmapMemory(m_device->allocator(), m_allocation);
 }
 
+
+void VKLBuffer::getData(const VKLQueue* transferQueue, VKLBuffer* stagingBuffer, void* data, size_t size, size_t offset) {
+	VkBufferCopy bufferCopy;
+	bufferCopy.size = size;
+	bufferCopy.dstOffset = 0;
+	bufferCopy.srcOffset = offset;
+	
+	stagingBuffer->copyFrom(this, transferQueue, bufferCopy);
+	
+	stagingBuffer->getData(data, size, 0);
+}
+
 void VKLBuffer::setNewAccessMask(VkAccessFlags accessMask) {
 	m_memoryBarrier.dstAccessMask = accessMask;
 }
-
 
 VkBufferMemoryBarrier* VKLBuffer::getMemoryBarrier() {
 	return &m_memoryBarrier;
@@ -73,14 +104,20 @@ void VKLBuffer::uploadData(const VKLQueue* transferQueue, void* data, size_t siz
 	
 	VKLBuffer tempStageBuffer(tempBufferCreateInfo);
 	
-	tempStageBuffer.setData(data, size, 0);
+	setData(transferQueue, &tempStageBuffer, data, size, offset);
 	
-	VkBufferCopy bufferCopy;
-	bufferCopy.size = size;
-	bufferCopy.dstOffset = offset;
-	bufferCopy.srcOffset = 0;
+	tempStageBuffer.destroy();
+}
+
+void VKLBuffer::downloadData(const VKLQueue* transferQueue, void* data, size_t size, size_t offset) {
+	VKLBufferCreateInfo tempBufferCreateInfo;
+	tempBufferCreateInfo.device(m_device).size(size)
+						.memoryUsage(VMA_MEMORY_USAGE_GPU_TO_CPU)
+						.usage(VK_BUFFER_USAGE_TRANSFER_DST_BIT);
 	
-	copyFrom(&tempStageBuffer, transferQueue, bufferCopy);
+	VKLBuffer tempStageBuffer(tempBufferCreateInfo);
+	
+	getData(transferQueue, &tempStageBuffer, data, size, offset);
 	
 	tempStageBuffer.destroy();
 }

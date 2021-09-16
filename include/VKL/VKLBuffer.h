@@ -36,10 +36,14 @@ public:
 	VKLBuffer();
 	VKLBuffer(const VKLBufferCreateInfo& createInfo);
 	
-	//void bindVertex(const VKLCommandBuffer* cmdBuffer, uint32_t binding, VkDeviceSize offset) const;
+	void* map();
+	void unmap();
 	
 	void setData(void* data, size_t size, size_t offset);
+	void setData(const VKLQueue* transferQueue, VKLBuffer* stagingBuffer, void* data, size_t size, size_t offset);
+	
 	void getData(void* data, size_t size, size_t offset);
+	void getData(const VKLQueue* transferQueue, VKLBuffer* stagingBuffer, void* data, size_t size, size_t offset);
 	
 	void setNewAccessMask(VkAccessFlags accessMask);
 	VkBufferMemoryBarrier* getMemoryBarrier();
@@ -47,6 +51,7 @@ public:
 	
 	void copyFrom(VKLBuffer* src, const VKLQueue* transferQueue, VkBufferCopy bufferCopy);
 	void uploadData(const VKLQueue* transferQueue, void* data, size_t size, size_t offset);
+	void downloadData(const VKLQueue* transferQueue, void* data, size_t size, size_t offset);
 private:
 	const VKLDevice* m_device;
 	
