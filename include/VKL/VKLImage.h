@@ -8,6 +8,10 @@ public:
 	VKLImageCreateInfo();
 	
 	VKLImageCreateInfo& device(const VKLDevice* device);
+
+	VKLImageCreateInfo& pNext(void* pNext);
+
+	VKLImageCreateInfo& allocationPNext(void* pNext);
 	
 	VKLImageCreateInfo& imageType(VkImageType type);
 	VKLImageCreateInfo& format(VkFormat format);
@@ -16,12 +20,14 @@ public:
 	VKLImageCreateInfo& usage(VkImageUsageFlags usage);
 	VKLImageCreateInfo& initialLayout(VkImageLayout layout);
 	
-	VKLImageCreateInfo& allocationFlags(VmaAllocationCreateFlags flags);
-	VKLImageCreateInfo& memoryUsage(VmaMemoryUsage memoryUsage);
+	VKLImageCreateInfo& memoryProperties(VkMemoryPropertyFlags memoryProperties);	
 
 private:
 	VkImageCreateInfo m_imageCreateInfo;
-	VmaAllocationCreateInfo m_allocationCreateInfo;
+
+	void* m_allocationPNext;
+	
+	VkMemoryPropertyFlags m_memoryProperties;
 	
 	const VKLDevice* m_device;
 
@@ -40,11 +46,17 @@ public:
 	
 	VkExtent3D extent() const;
 	VkImageAspectFlags aspect() const;
+
+	VkDeviceMemory memory() const;
+
+	VkMemoryRequirements memoryRequirements() const;
 	
 	void transition(const VKLQueue* queue, VkAccessFlags accessMask, VkImageLayout layout, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask);
 	void cmdTransitionBarrier(VKLCommandBuffer* cmdBuffer, VkAccessFlags accessMask, VkImageLayout layout, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask);
-	
+
+	void copyFrom(VKLImage* src, const VKLQueue* transferQueue, VkImageCopy imageCopy);
 	void setData(void* data, size_t size, size_t pixelSize);
+	void getData(void* data, size_t size, size_t pixelSize);
 	void uploadData(const VKLQueue* transferQueue, void* data, size_t size, size_t pixelSize);
 
 	VkFormat format() const;
@@ -52,7 +64,7 @@ public:
 	VkImageAspectFlags m_aspect;
 private:
 	VkImageMemoryBarrier m_memoryBarrier;
-	VmaAllocation m_allocation;
+	VkDeviceMemory m_memory;
 
 	VkFormat m_format;
 	

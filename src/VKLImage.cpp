@@ -2,14 +2,14 @@
 
 VKLImage::VKLImage() : VKLCreator<VKLImageCreateInfo>("VKLImage") {
 	m_device = NULL;
-	m_allocation = VK_NULL_HANDLE;
+	m_memory = VK_NULL_HANDLE;
 	m_handle = VK_NULL_HANDLE;
 	m_aspect = VK_IMAGE_ASPECT_COLOR_BIT;
 }
 
 VKLImage::VKLImage(const VKLImageCreateInfo& createInfo) : VKLCreator<VKLImageCreateInfo>("VKLImage") {
 	m_device = NULL;
-	m_allocation = VK_NULL_HANDLE;
+	m_memory = VK_NULL_HANDLE;
 	m_handle = VK_NULL_HANDLE;
 	m_aspect = VK_IMAGE_ASPECT_COLOR_BIT;
 	create(createInfo);
@@ -26,7 +26,9 @@ void VKLImage::_create(const VKLImageCreateInfo& createInfo, VkImage handle) {
 	m_size = createInfo.m_imageCreateInfo.extent;
 	
 	if(handle == VK_NULL_HANDLE) {
-		vmaCreateImage(m_device->allocator(), &createInfo.m_imageCreateInfo, &createInfo.m_allocationCreateInfo, &m_handle, &m_allocation, NULL);
+		VK_CALL(m_device->vk.CreateImage(m_device->handle(), &createInfo.m_imageCreateInfo, m_device->allocationCallbacks(), &m_handle));
+		m_memory = m_device->allocateMemory(memoryRequirements(), createInfo.m_memoryProperties, createInfo.m_allocationPNext);
+		VK_CALL(m_device->vk.BindImageMemory(m_device->handle(), m_handle, m_memory, 0));
 	} else {
 		m_handle = handle;
 	}
@@ -67,6 +69,17 @@ VkExtent3D VKLImage::extent() const {
 	return m_size;
 }
 
+VkDeviceMemory VKLImage::memory() const {
+	return m_memory;
+}
+
+VkMemoryRequirements VKLImage::memoryRequirements() const {
+	VkMemoryRequirements memoryRequirements;
+	m_device->vk.GetImageMemoryRequirements(m_device->handle(), m_handle, &memoryRequirements);
+
+	return memoryRequirements;
+}
+
 void VKLImage::cmdTransitionBarrier(VKLCommandBuffer* cmdBuffer, VkAccessFlags accessMask, VkImageLayout layout, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask) {
 	m_memoryBarrier.dstAccessMask = accessMask;
 	m_memoryBarrier.newLayout = layout;
@@ -81,12 +94,20 @@ void VKLImage::transition(const VKLQueue* queue, VkAccessFlags accessMask, VkIma
 	queue->getCmdBuffer()->begin();
 	cmdTransitionBarrier(queue->getCmdBuffer(), accessMask, layout, srcStageMask, dstStageMask);
 	queue->getCmdBuffer()->end();
-	
 	queue->submitAndWait(queue->getCmdBuffer());
+	queue->getCmdBuffer()->reset();
 }
 
 VkFormat VKLImage::format() const {
 	return m_format;
+}
+
+void VKLImage::copyFrom(VKLImage* src, const VKLQueue* transferQueue, VkImageCopy imageCopy) {
+	transferQueue->getCmdBuffer()->begin();
+	transferQueue->getCmdBuffer()->copyImage(this, src, imageCopy);
+	transferQueue->getCmdBuffer()->end();
+	transferQueue->submitAndWait(transferQueue->getCmdBuffer());
+	transferQueue->getCmdBuffer()->reset();	
 }
 
 void VKLImage::setData(void* data, size_t size, size_t pixelSize) {
@@ -102,22 +123,56 @@ void VKLImage::setData(void* data, size_t size, size_t pixelSize) {
 	uint32_t textureRowWidth = m_size.width * pixelSize;
 	
 	uint8_t* mappedData;
-	vmaMapMemory(m_device->allocator(), m_allocation, (void**)&mappedData);
-		if (imageLayout.rowPitch == textureRowWidth) {
-			memcpy(mappedData, data, m_size.height * textureRowWidth);
-		}
-		else {
-			uint8_t* mappedBytes = (uint8_t*)mappedData;
-			uint8_t* dataBytes = (uint8_t*)data;
+	VK_CALL(m_device->vk.MapMemory(m_device->handle(), m_memory, 0, VK_WHOLE_SIZE, 0, (void**)&mappedData));
 
-			for (int y = 0; y < m_size.height; y++) {
-				memcpy(&mappedBytes[y * imageLayout.rowPitch],
-						&dataBytes[y * textureRowWidth],
-						textureRowWidth);
-			}
+	if (imageLayout.rowPitch == textureRowWidth) {
+		memcpy(mappedData, data, m_size.height * textureRowWidth);
+	}
+	else {
+		uint8_t* mappedBytes = (uint8_t*)mappedData;
+		uint8_t* dataBytes = (uint8_t*)data;
+
+		for (int y = 0; y < m_size.height; y++) {
+			memcpy(&mappedBytes[y * imageLayout.rowPitch],
+					&dataBytes[y * textureRowWidth],
+					textureRowWidth);
 		}
-	
-	vmaUnmapMemory(m_device->allocator(), m_allocation);
+	}
+
+	m_device->vk.UnmapMemory(m_device->handle(), m_memory);
+}
+
+void VKLImage::getData(void* data, size_t size, size_t pixelSize) {
+	VkImageSubresource subresource;
+	memset(&subresource, 0, sizeof(VkImageSubresource));
+	subresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	subresource.mipLevel = 0;
+	subresource.arrayLayer = 0;
+
+	VkSubresourceLayout imageLayout;
+	m_device->vk.GetImageSubresourceLayout(m_device->handle(), m_handle, &subresource, &imageLayout);
+
+	uint32_t textureRowWidth = m_size.width * pixelSize;
+
+	uint8_t* mappedData;
+
+	VK_CALL(m_device->vk.MapMemory(m_device->handle(), m_memory, 0, VK_WHOLE_SIZE, 0, (void**)&mappedData));
+
+	if (imageLayout.rowPitch == textureRowWidth) {
+		memcpy(data, mappedData, m_size.height * textureRowWidth);
+	}
+	else {
+		uint8_t* mappedBytes = (uint8_t*)mappedData;
+		uint8_t* dataBytes = (uint8_t*)data;
+
+		for (int y = 0; y < m_size.height; y++) {
+			memcpy(&dataBytes[y * textureRowWidth],
+					&mappedBytes[y * imageLayout.rowPitch],
+					textureRowWidth);
+		}
+	}
+
+	m_device->vk.UnmapMemory(m_device->handle(), m_memory);
 }
 
 void VKLImage::uploadData(const VKLQueue* transferQueue, void* data, size_t size, size_t pixelSize) {
@@ -128,7 +183,7 @@ void VKLImage::uploadData(const VKLQueue* transferQueue, void* data, size_t size
 							.tiling(VK_IMAGE_TILING_LINEAR)
 							.usage(VK_IMAGE_USAGE_TRANSFER_SRC_BIT)
 							.initialLayout(VK_IMAGE_LAYOUT_PREINITIALIZED)
-							.memoryUsage(VMA_MEMORY_USAGE_CPU_TO_GPU));
+							.memoryProperties(VK_MEMORY_PROPERTY_HOST_COHERENT_BIT));
 	
 	stagingImage.setData(data, size, pixelSize);
 	
@@ -156,7 +211,8 @@ void VKLImage::uploadData(const VKLQueue* transferQueue, void* data, size_t size
 }
 
 void VKLImage::_destroy() {
-	vmaDestroyImage(m_device->allocator(), m_handle, m_allocation);
+	m_device->vk.FreeMemory(m_device->handle(), m_memory, m_device->allocationCallbacks());
+	m_device->vk.DestroyImage(m_device->handle(), m_handle, m_device->allocationCallbacks());
 }
 
 VKLImageCreateInfo::VKLImageCreateInfo() {
@@ -172,20 +228,33 @@ VKLImageCreateInfo::VKLImageCreateInfo() {
 	m_imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
 	m_imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 	m_imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-	
-	memset(&m_allocationCreateInfo, 0, sizeof(VmaAllocationCreateInfo));
-	m_allocationCreateInfo.flags = 0;
-	m_allocationCreateInfo.usage = VMA_MEMORY_USAGE_UNKNOWN;
-	m_allocationCreateInfo.memoryTypeBits = 0;
-	m_allocationCreateInfo.pUserData = NULL;
-	m_allocationCreateInfo.pool = VK_NULL_HANDLE;
-	m_allocationCreateInfo.requiredFlags = 0;
-	m_allocationCreateInfo.preferredFlags = 0;
+
+	m_memoryProperties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+
+	m_allocationPNext = NULL;
+
+	LOG_INFO("Init VKLImageCreateInfo");
 }
 
 VKLImageCreateInfo& VKLImageCreateInfo::device(const VKLDevice* device) {
+	LOG_INFO("VKLImageCreateInfo::device");
+
 	m_device = device;
 	
+	return invalidate();
+}
+
+VKLImageCreateInfo& VKLImageCreateInfo::pNext(void* pNext) {
+	LOG_INFO("VKLImageCreateInfo::pNext");
+	m_imageCreateInfo.pNext = pNext;
+
+	return invalidate();
+}
+
+VKLImageCreateInfo& VKLImageCreateInfo::allocationPNext(void* pNext) {
+	LOG_INFO("VKLImageCreateInfo::allocationPNext");
+	m_allocationPNext = pNext;
+
 	return invalidate();
 }
 
@@ -196,12 +265,14 @@ VKLImageCreateInfo& VKLImageCreateInfo::imageType(VkImageType type) {
 }
 
 VKLImageCreateInfo& VKLImageCreateInfo::format(VkFormat format) {
+	LOG_INFO("VKLImageCreateInfo::format");
 	m_imageCreateInfo.format = format;
 	
 	return invalidate();
 }
 
 VKLImageCreateInfo& VKLImageCreateInfo::extent(uint32_t width, uint32_t height, uint32_t depth) {
+	LOG_INFO("VKLImageCreateInfo::extent");
 	m_imageCreateInfo.extent.width = width;
 	m_imageCreateInfo.extent.height = height;
 	m_imageCreateInfo.extent.depth = depth;
@@ -216,6 +287,7 @@ VKLImageCreateInfo& VKLImageCreateInfo::tiling(VkImageTiling tiling) {
 }
 
 VKLImageCreateInfo& VKLImageCreateInfo::usage(VkImageUsageFlags usage) {
+	LOG_INFO("VKLImageCreateInfo::usage");
 	m_imageCreateInfo.usage = usage;
 	
 	return invalidate();
@@ -227,16 +299,8 @@ VKLImageCreateInfo& VKLImageCreateInfo::initialLayout(VkImageLayout layout) {
 	return invalidate();
 }
 
-VKLImageCreateInfo& VKLImageCreateInfo::allocationFlags(VmaAllocationCreateFlags flags) {
-	m_allocationCreateInfo.flags = flags;
-	
-	return invalidate();
-}
-
-VKLImageCreateInfo& VKLImageCreateInfo::memoryUsage(VmaMemoryUsage memoryUsage) {
-	m_allocationCreateInfo.usage = memoryUsage;
-	
-	return invalidate();
+VKLImageCreateInfo& VKLImageCreateInfo::memoryProperties(VkMemoryPropertyFlags memoryProperties) {
+	m_memoryProperties = memoryProperties;
 }
 
 bool VKLImageCreateInfo::_validate() {

@@ -137,6 +137,8 @@ typedef struct VKLDevicePFNS {
 	PFN_vkGetSwapchainImagesKHR GetSwapchainImagesKHR;
 	PFN_vkAcquireNextImageKHR AcquireNextImageKHR;
 	PFN_vkQueuePresentKHR QueuePresentKHR;
+
+	PFN_vkGetMemoryFdKHR GetMemoryFdKHR;
 } VKLDevicePFNS;
 
 typedef enum VKLQueueType {
@@ -207,6 +209,8 @@ public:
 	
 	VkSemaphore createSemaphore() const;
 	void destroySempahore(VkSemaphore semaphore) const;
+
+	VkDeviceMemory allocateMemory(VkMemoryRequirements memoryRequirements, VkMemoryPropertyFlags desiredMemoryFlags, void* pNext = NULL) const;
 
 	VKLDevicePFNS vk;
 	VmaVulkanFunctions vmaFuncs;

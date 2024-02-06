@@ -38,6 +38,7 @@ void VKLInstance::_create(const VKLInstanceCreateInfo& createInfo) {
 	vk.GetPhysicalDeviceFormatProperties = (PFN_vkGetPhysicalDeviceFormatProperties)procAddr("vkGetPhysicalDeviceFormatProperties");
 	vk.GetPhysicalDeviceImageFormatProperties = (PFN_vkGetPhysicalDeviceImageFormatProperties)procAddr("vkGetPhysicalDeviceImageFormatProperties");
 	vk.GetPhysicalDeviceProperties = (PFN_vkGetPhysicalDeviceProperties)procAddr("vkGetPhysicalDeviceProperties");
+	vk.GetPhysicalDeviceProperties2 = (PFN_vkGetPhysicalDeviceProperties2)procAddr("vkGetPhysicalDeviceProperties2");
 	vk.GetPhysicalDeviceQueueFamilyProperties = (PFN_vkGetPhysicalDeviceQueueFamilyProperties)procAddr("vkGetPhysicalDeviceQueueFamilyProperties");
 	vk.GetPhysicalDeviceMemoryProperties = (PFN_vkGetPhysicalDeviceMemoryProperties)procAddr("vkGetPhysicalDeviceMemoryProperties");
 	vk.GetPhysicalDeviceSparseImageFormatProperties = (PFN_vkGetPhysicalDeviceSparseImageFormatProperties)procAddr("vkGetPhysicalDeviceSparseImageFormatProperties");
@@ -109,7 +110,7 @@ VKLInstanceCreateInfo::VKLInstanceCreateInfo() {
 	m_appInfo.applicationVersion = 1;
 	m_appInfo.pEngineName = NULL;
 	m_appInfo.engineVersion = 1;
-	m_appInfo.apiVersion = VK_MAKE_VERSION(1, 0, 0);
+	m_appInfo.apiVersion = VK_MAKE_API_VERSION(0, 1, 1, 0); //VK_MAKE_VERSION(1, 0, 0);
 	
 	m_createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
 	m_createInfo.pNext = NULL;
@@ -302,7 +303,7 @@ bool VKLInstanceCreateInfo::_validate() {
 			addLayer("VK_LAYER_LUNARG_monitor");
 		}
 
-		_printSelections();
+		//_printSelections();
 	}
 
 	m_createInfo.enabledLayerCount = m_layers.size();

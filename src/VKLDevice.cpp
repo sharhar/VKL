@@ -161,6 +161,8 @@ void VKLDevice::_create(const VKLDeviceCreateInfo& createInfo) {
 	vk.AcquireNextImageKHR = (PFN_vkAcquireNextImageKHR)procAddr("vkAcquireNextImageKHR");
 	vk.QueuePresentKHR = (PFN_vkQueuePresentKHR)procAddr("vkQueuePresentKHR");
 
+	vk.GetMemoryFdKHR = (PFN_vkGetMemoryFdKHR)procAddr("vkGetMemoryFdKHR"); 
+
 	vmaFuncs.vkGetPhysicalDeviceProperties = m_instance->vk.GetPhysicalDeviceProperties;
 	vmaFuncs.vkGetPhysicalDeviceMemoryProperties = m_instance->vk.GetPhysicalDeviceMemoryProperties;
 
@@ -266,6 +268,37 @@ void VKLDevice::destroySempahore(VkSemaphore semaphore) const {
 	vk.DestroySemaphore(m_handle, semaphore, m_allocationCallbacks);
 }
 
+VkDeviceMemory VKLDevice::allocateMemory(VkMemoryRequirements memoryRequirements, VkMemoryPropertyFlags desiredMemoryFlags, void* pNext) const {
+	VkMemoryAllocateInfo memoryAllocateInfo;
+	memoryAllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+	memoryAllocateInfo.pNext = pNext;
+	memoryAllocateInfo.allocationSize = memoryRequirements.size;
+
+	memoryAllocateInfo.memoryTypeIndex = -1;
+
+	uint32_t memoryTypeBits = memoryRequirements.memoryTypeBits;
+	for (uint32_t i = 0; i < 32; ++i) {
+		VkMemoryType memoryType = m_physicalDevice->getMemoryProperties().memoryTypes[i];
+		if (memoryTypeBits & 1) {
+			if ((memoryType.propertyFlags & desiredMemoryFlags) == desiredMemoryFlags) {
+				memoryAllocateInfo.memoryTypeIndex = i;
+				break;
+			}
+		}
+		memoryTypeBits = memoryTypeBits >> 1;
+	}
+
+	if(memoryAllocateInfo.memoryTypeIndex == -1) {
+		printf("Error allocating memory!!!\n");
+		return VK_NULL_HANDLE;
+	}
+
+	VkDeviceMemory memory;
+	VK_CALL(vk.AllocateMemory(m_handle, &memoryAllocateInfo, m_allocationCallbacks, &memory));
+
+	return memory;
+}
+
 void VKLDevice::_destroy() {
 	for (int i = 0; i < 3; i++) {
 		for (int j = 0; j < m_queues[i].size(); j++) {
@@ -351,7 +384,23 @@ bool VKLDeviceCreateInfo::supportsLayer(const char* layer) {
 }
 
 void VKLDeviceCreateInfo::_printSelections() {
-	
+	printf("Device Extensions:\n");
+	for (uint32_t i = 0; i < m_physicalDevice->getExtensions().size(); ++i) {
+		printf("\tExtension ");
+		if (i < 10) {
+			printf(" ");
+		}
+		printf(" %d: %s", i, m_physicalDevice->getExtensions()[i].extensionName);
+		for (uint32_t j = 0; j < m_extensions.size(); ++j) {
+			if (strcmp(m_physicalDevice->getExtensions()[i].extensionName, m_extensions[j]) == 0) {
+				for (int k = 0; k < 50 - strlen(m_physicalDevice->getExtensions()[i].extensionName); k++) {
+					printf(" ");
+				}
+				printf(" - Selected");
+			}
+		}
+		printf("\n");
+	}	
 }
 
 bool VKLDeviceCreateInfo::_supportsExtension(const char* extension) {
@@ -463,6 +512,8 @@ bool VKLDeviceCreateInfo::_validate() {
 	if (_supportsExtension("VK_KHR_portability_subset")) {
 		addExtension("VK_KHR_portability_subset");
 	}
+
+	//_printSelections();
 	
 	m_queueCreateInfos.clear();
 	m_queueTypeIndicies[0].clear();
