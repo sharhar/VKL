@@ -29,9 +29,9 @@ VKLBuffer::VKLBuffer(const VKLBufferCreateInfo& createInfo) : VKLCreator<VKLBuff
 
 void VKLBuffer::setData(void* data, size_t size, size_t offset) {
 	uint8_t* mappedData;
-	vmaMapMemory(m_device->allocator(), m_allocation, (void**)&mappedData);
+	VK_CALL(m_device->vk.MapMemory(m_device->handle(), m_memory, 0, VK_WHOLE_SIZE, 0, (void**)&mappedData));	
 	memcpy(mappedData + offset, data, size);
-	vmaUnmapMemory(m_device->allocator(), m_allocation);
+	m_device->vk.UnmapMemory(m_device->handle(), m_memory);
 }
 
 void VKLBuffer::setData(const VKLQueue* transferQueue, VKLBuffer* stagingBuffer, void* data, size_t size, size_t offset) {
@@ -47,20 +47,29 @@ void VKLBuffer::setData(const VKLQueue* transferQueue, VKLBuffer* stagingBuffer,
 
 void* VKLBuffer::map() {
 	void* result;
-	vmaMapMemory(m_device->allocator(), m_allocation, (void**)&result);
+	VK_CALL(m_device->vk.MapMemory(m_device->handle(), m_memory, 0, VK_WHOLE_SIZE, 0, &result));
 	return result;
 }
 void VKLBuffer::unmap() {
-	vmaUnmapMemory(m_device->allocator(), m_allocation);
+	m_device->vk.UnmapMemory(m_device->handle(), m_memory);
 }
 
 void VKLBuffer::getData(void* data, size_t size, size_t offset) {
 	uint8_t* mappedData;
-	vmaMapMemory(m_device->allocator(), m_allocation, (void**)&mappedData);
+	VK_CALL(m_device->vk.MapMemory(m_device->handle(), m_memory, 0, VK_WHOLE_SIZE, 0, (void**)&mappedData));	
 	memcpy(data, mappedData + offset, size);
-	vmaUnmapMemory(m_device->allocator(), m_allocation);
+	m_device->vk.UnmapMemory(m_device->handle(), m_memory);
 }
 
+VkDeviceMemory VKLBuffer::memory() const {
+	return m_memory;
+}
+
+VkMemoryRequirements VKLBuffer::memoryRequirements() const {
+	VkMemoryRequirements memoryRequirements;
+	m_device->vk.GetBufferMemoryRequirements(m_device->handle(), m_handle, &memoryRequirements);
+	return memoryRequirements;
+}
 
 void VKLBuffer::getData(const VKLQueue* transferQueue, VKLBuffer* stagingBuffer, void* data, size_t size, size_t offset) {
 	VkBufferCopy bufferCopy;
@@ -99,7 +108,7 @@ void VKLBuffer::copyFrom(VKLBuffer* src, const VKLQueue* transferQueue, VkBuffer
 void VKLBuffer::uploadData(const VKLQueue* transferQueue, void* data, size_t size, size_t offset) {
 	VKLBufferCreateInfo tempBufferCreateInfo;
 	tempBufferCreateInfo.device(m_device).size(size)
-						.memoryUsage(VMA_MEMORY_USAGE_CPU_TO_GPU)
+						.memoryProperties(VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)
 						.usage(VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
 	
 	VKLBuffer tempStageBuffer(tempBufferCreateInfo);
@@ -112,7 +121,7 @@ void VKLBuffer::uploadData(const VKLQueue* transferQueue, void* data, size_t siz
 void VKLBuffer::downloadData(const VKLQueue* transferQueue, void* data, size_t size, size_t offset) {
 	VKLBufferCreateInfo tempBufferCreateInfo;
 	tempBufferCreateInfo.device(m_device).size(size)
-						.memoryUsage(VMA_MEMORY_USAGE_GPU_TO_CPU)
+						.memoryProperties(VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)
 						.usage(VK_BUFFER_USAGE_TRANSFER_DST_BIT);
 	
 	VKLBuffer tempStageBuffer(tempBufferCreateInfo);
@@ -125,14 +134,17 @@ void VKLBuffer::downloadData(const VKLQueue* transferQueue, void* data, size_t s
 void VKLBuffer::_create(const VKLBufferCreateInfo& createInfo) {
 	m_device = createInfo.m_device;
 	
-	VK_CALL(vmaCreateBuffer(m_device->allocator(), &createInfo.m_bufferCreateInfo,
-							&createInfo.m_allocationCreateInfo, &m_handle, &m_allocation, NULL));
+	VK_CALL(m_device->vk.CreateBuffer(m_device->handle(), &createInfo.m_bufferCreateInfo, m_device->allocationCallbacks(), &m_handle));
+	m_memory = m_device->allocateMemory(memoryRequirements(), createInfo.m_memoryProperties, createInfo.m_allocationPNext);
+	VK_CALL(m_device->vk.BindBufferMemory(m_device->handle(), m_handle, m_memory, 0));
+	
 	m_memoryBarrier.buffer = m_handle;
 	m_memoryBarrier.size = createInfo.m_bufferCreateInfo.size;
 }
 
 void VKLBuffer::_destroy() {
-	vmaDestroyBuffer(m_device->allocator(), m_handle, m_allocation);
+	m_device->vk.FreeMemory(m_device->handle(), m_memory, m_device->allocationCallbacks());
+	m_device->vk.DestroyBuffer(m_device->handle(), m_handle, m_device->allocationCallbacks());
 }
 
 VKLBufferCreateInfo::VKLBufferCreateInfo() {
@@ -147,15 +159,16 @@ VKLBufferCreateInfo::VKLBufferCreateInfo() {
 	m_bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 	m_bufferCreateInfo.queueFamilyIndexCount = 0;
 	m_bufferCreateInfo.pQueueFamilyIndices = NULL;
+
+	m_memoryProperties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+
+	m_allocationPNext = NULL;
+}
+
+VKLBufferCreateInfo& VKLBufferCreateInfo::pNext(void* pNext) {
+	m_bufferCreateInfo.pNext = pNext;
 	
-	memset(&m_allocationCreateInfo, 0, sizeof(VmaAllocationCreateInfo));
-	m_allocationCreateInfo.flags = 0;
-	m_allocationCreateInfo.usage = VMA_MEMORY_USAGE_UNKNOWN;
-	m_allocationCreateInfo.memoryTypeBits = 0;
-	m_allocationCreateInfo.pUserData = NULL;
-	m_allocationCreateInfo.pool = VK_NULL_HANDLE;
-	m_allocationCreateInfo.requiredFlags = 0;
-	m_allocationCreateInfo.preferredFlags = 0;
+	return invalidate();
 }
 
 VKLBufferCreateInfo& VKLBufferCreateInfo::device(const VKLDevice* device) {
@@ -176,15 +189,15 @@ VKLBufferCreateInfo& VKLBufferCreateInfo::usage(VkBufferUsageFlags usage) {
 	return invalidate();
 }
 
-VKLBufferCreateInfo& VKLBufferCreateInfo::allocationFlags(VmaAllocationCreateFlags flags) {
-	m_allocationCreateInfo.flags = flags;
+VKLBufferCreateInfo& VKLBufferCreateInfo::allocationPNext(void* pNext) {
+	m_allocationPNext = pNext;
 	
 	return invalidate();
 }
-
-VKLBufferCreateInfo& VKLBufferCreateInfo::memoryUsage(VmaMemoryUsage memoryUsage) {
-	m_allocationCreateInfo.usage = memoryUsage;
 	
+VKLBufferCreateInfo& VKLBufferCreateInfo::memoryProperties(VkMemoryPropertyFlags memoryProperties) {
+	m_memoryProperties = memoryProperties;
+
 	return invalidate();
 }
 
@@ -196,11 +209,6 @@ bool VKLBufferCreateInfo::_validate() {
 
 	if (m_bufferCreateInfo.size == 0) {
 		printf("VKL Validation Error: VKLBufferCreateInfo::size is not set!\n");
-		return false;
-	}
-
-	if (m_allocationCreateInfo.flags == 0 && m_allocationCreateInfo.usage == VMA_MEMORY_USAGE_UNKNOWN) {
-		printf("VKL Validation Error: No memory usage or flags are set in VKLBufferCreateInfo!\n");
 		return false;
 	}
 	

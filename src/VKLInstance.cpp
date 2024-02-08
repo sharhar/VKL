@@ -110,7 +110,7 @@ VKLInstanceCreateInfo::VKLInstanceCreateInfo() {
 	m_appInfo.applicationVersion = 1;
 	m_appInfo.pEngineName = NULL;
 	m_appInfo.engineVersion = 1;
-	m_appInfo.apiVersion = VK_MAKE_API_VERSION(0, 1, 1, 0); //VK_MAKE_VERSION(1, 0, 0);
+	m_appInfo.apiVersion = VK_MAKE_API_VERSION(0, 1, 3, 0); //VK_MAKE_VERSION(1, 0, 0);
 	
 	m_createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
 	m_createInfo.pNext = NULL;

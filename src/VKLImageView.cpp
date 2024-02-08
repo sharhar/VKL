@@ -76,6 +76,7 @@ bool VKLImageViewCreateInfo::_validate() {
 	
 	
 	m_createInfo.subresourceRange.aspectMask = m_image->aspect();
-
+	m_createInfo.subresourceRange.layerCount = m_image->layers();
+	
 	return true;
 }

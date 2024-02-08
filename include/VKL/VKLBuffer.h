@@ -13,16 +13,21 @@
 class VKLBufferCreateInfo : public VKLCreateInfo<VKLBufferCreateInfo> {
 public:
 	VKLBufferCreateInfo();
+
+	VKLBufferCreateInfo& pNext(void* pNext);
 	
 	VKLBufferCreateInfo& device(const VKLDevice* device);
 	VKLBufferCreateInfo& size(VkDeviceSize size);
 	VKLBufferCreateInfo& usage(VkBufferUsageFlags usage);
-	VKLBufferCreateInfo& allocationFlags(VmaAllocationCreateFlags flags);
-	VKLBufferCreateInfo& memoryUsage(VmaMemoryUsage memoryUsage);
+
+	VKLBufferCreateInfo& allocationPNext(void* pNext);
+	
+	VKLBufferCreateInfo& memoryProperties(VkMemoryPropertyFlags memoryProperties);
 	
 private:
 	VkBufferCreateInfo m_bufferCreateInfo;
-	VmaAllocationCreateInfo m_allocationCreateInfo;
+	void* m_allocationPNext;
+	VkMemoryPropertyFlags m_memoryProperties;
 	
 	const VKLDevice* m_device;
 
@@ -35,6 +40,9 @@ class VKLBuffer : public VKLHandle<VkBuffer>, public VKLCreator<VKLBufferCreateI
 public:
 	VKLBuffer();
 	VKLBuffer(const VKLBufferCreateInfo& createInfo);
+
+	VkDeviceMemory memory() const;
+	VkMemoryRequirements memoryRequirements() const;
 	
 	void* map();
 	void unmap();
@@ -55,7 +63,7 @@ public:
 private:
 	const VKLDevice* m_device;
 	
-	VmaAllocation m_allocation;
+	VkDeviceMemory m_memory;
 	
 	VkBufferMemoryBarrier m_memoryBarrier;
 	

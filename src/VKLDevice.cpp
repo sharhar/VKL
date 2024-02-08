@@ -4,10 +4,10 @@ VKLDevice::VKLDevice() : VKLCreator<VKLDeviceCreateInfo>("VKLDevice") {
 	m_instance = NULL;
 	m_physicalDevice = NULL;
 	m_allocationCallbacks = NULL;
-	m_allocator = VK_NULL_HANDLE;
+	//m_allocator = VK_NULL_HANDLE;
 
 	memset(&vk, 0, sizeof(VKLDevicePFNS));
-	memset(&vmaFuncs, 0, sizeof(VmaVulkanFunctions));
+	//memset(&vmaFuncs, 0, sizeof(VmaVulkanFunctions));
 }
 
 
@@ -15,10 +15,10 @@ VKLDevice::VKLDevice(const VKLDeviceCreateInfo& createInfo) : VKLCreator<VKLDevi
 	m_instance = NULL;
 	m_physicalDevice = NULL;
 	m_allocationCallbacks = NULL;
-	m_allocator = VK_NULL_HANDLE;
+	//m_allocator = VK_NULL_HANDLE;
 
 	memset(&vk, 0, sizeof(VKLDevicePFNS));
-	memset(&vmaFuncs, 0, sizeof(VmaVulkanFunctions));
+	//memset(&vmaFuncs, 0, sizeof(VmaVulkanFunctions));
 
 	create(createInfo);
 }
@@ -163,24 +163,24 @@ void VKLDevice::_create(const VKLDeviceCreateInfo& createInfo) {
 
 	vk.GetMemoryFdKHR = (PFN_vkGetMemoryFdKHR)procAddr("vkGetMemoryFdKHR"); 
 
-	vmaFuncs.vkGetPhysicalDeviceProperties = m_instance->vk.GetPhysicalDeviceProperties;
-	vmaFuncs.vkGetPhysicalDeviceMemoryProperties = m_instance->vk.GetPhysicalDeviceMemoryProperties;
+	//vmaFuncs.vkGetPhysicalDeviceProperties = m_instance->vk.GetPhysicalDeviceProperties;
+	//vmaFuncs.vkGetPhysicalDeviceMemoryProperties = m_instance->vk.GetPhysicalDeviceMemoryProperties;
 
-	vmaFuncs.vkAllocateMemory = vk.AllocateMemory;
-	vmaFuncs.vkFreeMemory = vk.FreeMemory;
-	vmaFuncs.vkMapMemory = vk.MapMemory;
-	vmaFuncs.vkUnmapMemory = vk.UnmapMemory;
-	vmaFuncs.vkFlushMappedMemoryRanges = vk.FlushMappedMemoryRanges;
-	vmaFuncs.vkInvalidateMappedMemoryRanges = vk.InvalidateMappedMemoryRanges;
-	vmaFuncs.vkBindBufferMemory = vk.BindBufferMemory;
-	vmaFuncs.vkBindImageMemory = vk.BindImageMemory;
-	vmaFuncs.vkGetBufferMemoryRequirements = vk.GetBufferMemoryRequirements;
-	vmaFuncs.vkGetImageMemoryRequirements = vk.GetImageMemoryRequirements;
-	vmaFuncs.vkCreateBuffer = vk.CreateBuffer;
-	vmaFuncs.vkDestroyBuffer = vk.DestroyBuffer;
-	vmaFuncs.vkCreateImage = vk.CreateImage;
-	vmaFuncs.vkDestroyImage = vk.DestroyImage;
-	vmaFuncs.vkCmdCopyBuffer = vk.CmdCopyBuffer;
+	//vmaFuncs.vkAllocateMemory = vk.AllocateMemory;
+	//vmaFuncs.vkFreeMemory = vk.FreeMemory;
+	//vmaFuncs.vkMapMemory = vk.MapMemory;
+	//vmaFuncs.vkUnmapMemory = vk.UnmapMemory;
+	//vmaFuncs.vkFlushMappedMemoryRanges = vk.FlushMappedMemoryRanges;
+	//vmaFuncs.vkInvalidateMappedMemoryRanges = vk.InvalidateMappedMemoryRanges;
+	//vmaFuncs.vkBindBufferMemory = vk.BindBufferMemory;
+	//vmaFuncs.vkBindImageMemory = vk.BindImageMemory;
+	//vmaFuncs.vkGetBufferMemoryRequirements = vk.GetBufferMemoryRequirements;
+	//vmaFuncs.vkGetImageMemoryRequirements = vk.GetImageMemoryRequirements;
+	//vmaFuncs.vkCreateBuffer = vk.CreateBuffer;
+	//vmaFuncs.vkDestroyBuffer = vk.DestroyBuffer;
+	//vmaFuncs.vkCreateImage = vk.CreateImage;
+	//vmaFuncs.vkDestroyImage = vk.DestroyImage;
+	//vmaFuncs.vkCmdCopyBuffer = vk.CmdCopyBuffer;
 
 	uint32_t* queueFamilyCurrentIndicies = (uint32_t*)malloc(sizeof(uint32_t) * physical()->getQueueFamilyProperties().size());
 	memset(queueFamilyCurrentIndicies, 0, sizeof(uint32_t) * physical()->getQueueFamilyProperties().size());
@@ -199,23 +199,23 @@ void VKLDevice::_create(const VKLDeviceCreateInfo& createInfo) {
 	
 	free(queueFamilyCurrentIndicies);
 	
-	VmaAllocatorCreateInfo vmaAllocatorCreateInfo;
-	memset(&vmaAllocatorCreateInfo, 0, sizeof(VmaAllocatorCreateInfo));
-	vmaAllocatorCreateInfo.instance = m_instance->handle();
-	vmaAllocatorCreateInfo.physicalDevice = m_physicalDevice->handle();
-	vmaAllocatorCreateInfo.device = m_handle;
-	vmaAllocatorCreateInfo.pVulkanFunctions = &vmaFuncs;
+	//VmaAllocatorCreateInfo vmaAllocatorCreateInfo;
+	//memset(&vmaAllocatorCreateInfo, 0, sizeof(VmaAllocatorCreateInfo));
+	//vmaAllocatorCreateInfo.instance = m_instance->handle();
+	//vmaAllocatorCreateInfo.physicalDevice = m_physicalDevice->handle();
+	//vmaAllocatorCreateInfo.device = m_handle;
+	//vmaAllocatorCreateInfo.pVulkanFunctions = &vmaFuncs;
 
-	vmaCreateAllocator(&vmaAllocatorCreateInfo, &m_allocator);
+	//vmaCreateAllocator(&vmaAllocatorCreateInfo, &m_allocator);
 }
 
 const VkAllocationCallbacks* VKLDevice::allocationCallbacks() const {
 	return m_allocationCallbacks;
 }
 
-const VmaAllocator VKLDevice::allocator() const {
-	return m_allocator;
-}
+//const VmaAllocator VKLDevice::allocator() const {
+//	return m_allocator;
+//}
 
 PFN_vkVoidFunction VKLDevice::procAddr(const char* name) const {
 	return vk.GetDeviceProcAddr(m_handle, name);
@@ -306,7 +306,7 @@ void VKLDevice::_destroy() {
 		}
 	}
 	
-	vmaDestroyAllocator(m_allocator);
+	//vmaDestroyAllocator(m_allocator);
 
 	vk.DestroyDevice(m_handle, allocationCallbacks());
 }

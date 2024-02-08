@@ -13,7 +13,6 @@
 
 #define VK_NO_PROTOTYPES
 #include <vulkan/vulkan.h>
-#include <vk_mem_alloc.h>
 
 #include <assert.h>
 #include <stdio.h>
@@ -56,7 +55,7 @@ inline void log_message(const char* level, const char* format, ...) {
     va_end(args);
 }
 
-// #define LOGGING_INFO
+#define LOGGING_INFO
 #define LOGGING_ERROR
 
 #ifdef LOGGING_INFO
