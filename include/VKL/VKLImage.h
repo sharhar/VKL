@@ -19,6 +19,8 @@ public:
 	VKLImageCreateInfo& tiling(VkImageTiling tiling);
 	VKLImageCreateInfo& usage(VkImageUsageFlags usage);
 	VKLImageCreateInfo& initialLayout(VkImageLayout layout);
+
+	VKLImageCreateInfo& arrayLevels(uint32_t arrayLevels);
 	
 	VKLImageCreateInfo& memoryProperties(VkMemoryPropertyFlags memoryProperties);	
 
@@ -47,6 +49,8 @@ public:
 	VkExtent3D extent() const;
 	VkImageAspectFlags aspect() const;
 
+	int layers() const;
+
 	VkDeviceMemory memory() const;
 
 	VkMemoryRequirements memoryRequirements() const;
@@ -58,6 +62,8 @@ public:
 	void setData(void* data, size_t size, size_t pixelSize);
 	void getData(void* data, size_t size, size_t pixelSize);
 	void uploadData(const VKLQueue* transferQueue, void* data, size_t size, size_t pixelSize);
+	
+	void uploadDataBuffer(const VKLQueue* transferQueue, void* data, size_t size);
 
 	VkFormat format() const;
 	
@@ -69,6 +75,7 @@ private:
 	VkFormat m_format;
 	
 	VkExtent3D m_size;
+	int m_layers;
 
 	void initBarrier(VkImageLayout layout);
 

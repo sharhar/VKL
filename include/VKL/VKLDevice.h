@@ -139,6 +139,7 @@ typedef struct VKLDevicePFNS {
 	PFN_vkQueuePresentKHR QueuePresentKHR;
 
 	PFN_vkGetMemoryFdKHR GetMemoryFdKHR;
+	PFN_vkGetSemaphoreFdKHR GetSemaphoreFdKHR;
 } VKLDevicePFNS;
 
 typedef enum VKLQueueType {
@@ -196,7 +197,6 @@ public:
 	VKLDevice(const VKLDeviceCreateInfo& createInfo);
 
 	const VkAllocationCallbacks* allocationCallbacks() const;
-	const VmaAllocator allocator() const;
 	PFN_vkVoidFunction procAddr(const char* name) const;
 	const VKLPhysicalDevice* physical() const;
 	
@@ -213,14 +213,12 @@ public:
 	VkDeviceMemory allocateMemory(VkMemoryRequirements memoryRequirements, VkMemoryPropertyFlags desiredMemoryFlags, void* pNext = NULL) const;
 
 	VKLDevicePFNS vk;
-	VmaVulkanFunctions vmaFuncs;
 private:
 	std::vector<VKLQueue> m_queues[3];
 
 	const VKLInstance* m_instance;
 	const VKLPhysicalDevice* m_physicalDevice;
 	const VkAllocationCallbacks* m_allocationCallbacks;
-	VmaAllocator m_allocator;
 	
 	void _destroy();
 	void _create(const VKLDeviceCreateInfo& createInfo);

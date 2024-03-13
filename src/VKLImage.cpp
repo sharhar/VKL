@@ -24,6 +24,7 @@ void VKLImage::_create(const VKLImageCreateInfo& createInfo, VkImage handle) {
 	m_device = createInfo.m_device;
 	m_format = createInfo.m_imageCreateInfo.format;
 	m_size = createInfo.m_imageCreateInfo.extent;
+	m_layers = createInfo.m_imageCreateInfo.arrayLayers;	
 	
 	if(handle == VK_NULL_HANDLE) {
 		VK_CALL(m_device->vk.CreateImage(m_device->handle(), &createInfo.m_imageCreateInfo, m_device->allocationCallbacks(), &m_handle));
@@ -50,7 +51,7 @@ void VKLImage::initBarrier(VkImageLayout layout) {
 	m_memoryBarrier.subresourceRange.baseMipLevel = 0;
 	m_memoryBarrier.subresourceRange.levelCount = 1;
 	m_memoryBarrier.subresourceRange.baseArrayLayer = 0;
-	m_memoryBarrier.subresourceRange.layerCount = 1;
+	m_memoryBarrier.subresourceRange.layerCount = m_layers;
 }
 
 VkAccessFlags VKLImage::accessMask() const {
@@ -67,6 +68,10 @@ VkImageAspectFlags VKLImage::aspect() const {
 
 VkExtent3D VKLImage::extent() const {
 	return m_size;
+}
+
+int VKLImage::layers() const {
+	return m_layers;
 }
 
 VkDeviceMemory VKLImage::memory() const {
@@ -183,14 +188,15 @@ void VKLImage::uploadData(const VKLQueue* transferQueue, void* data, size_t size
 							.tiling(VK_IMAGE_TILING_LINEAR)
 							.usage(VK_IMAGE_USAGE_TRANSFER_SRC_BIT)
 							.initialLayout(VK_IMAGE_LAYOUT_PREINITIALIZED)
-							.memoryProperties(VK_MEMORY_PROPERTY_HOST_COHERENT_BIT));
+							.memoryProperties(VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)
+							.arrayLevels(m_layers));
 	
 	stagingImage.setData(data, size, pixelSize);
 	
 	VkImageCopy imageCopy;
 	memset(&imageCopy, 0, sizeof(VkImageCopy));
 	imageCopy.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-	imageCopy.srcSubresource.layerCount = 1;
+	imageCopy.srcSubresource.layerCount = m_layers;
 	imageCopy.dstSubresource = imageCopy.srcSubresource;
 	imageCopy.extent = m_size;
 	
@@ -208,6 +214,49 @@ void VKLImage::uploadData(const VKLQueue* transferQueue, void* data, size_t size
 	transferQueue->getCmdBuffer()->reset();
 	
 	stagingImage.destroy();
+}
+
+
+void VKLImage::uploadDataBuffer(const VKLQueue* transferQueue, void* data, size_t size) {
+	VKLBuffer stagingBuffer(VKLBufferCreateInfo()
+							.device(m_device)
+							.size(size)
+							.usage(VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT)
+							.memoryProperties(VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT));
+	
+	stagingBuffer.setData(data, size, 0);
+
+	VkBufferImageCopy bufferImageCopy;
+	memset(&bufferImageCopy, 0, sizeof(VkBufferImageCopy));
+	bufferImageCopy.bufferOffset = 0;
+	bufferImageCopy.bufferRowLength = 0;
+	bufferImageCopy.bufferImageHeight = 0;
+	bufferImageCopy.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	bufferImageCopy.imageSubresource.layerCount = m_layers;
+	bufferImageCopy.imageExtent = m_size;
+	
+	transferQueue->getCmdBuffer()->begin();
+	
+	this->cmdTransitionBarrier(transferQueue->getCmdBuffer(),
+							   VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+							   VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
+
+	m_device->vk.CmdCopyBufferToImage(
+		transferQueue->getCmdBuffer()->handle(),
+		stagingBuffer.handle(), // The VkBuffer containing your data
+		this->handle(), // The VkImage to copy data into
+		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, // Assuming you've transitioned the image layout beforehand
+		1,
+		&bufferImageCopy
+	);
+
+	transferQueue->getCmdBuffer()->end();
+	
+	transferQueue->submitAndWait(transferQueue->getCmdBuffer());
+	
+	transferQueue->getCmdBuffer()->reset();
+	
+	stagingBuffer.destroy();
 }
 
 void VKLImage::_destroy() {
@@ -299,8 +348,16 @@ VKLImageCreateInfo& VKLImageCreateInfo::initialLayout(VkImageLayout layout) {
 	return invalidate();
 }
 
+VKLImageCreateInfo& VKLImageCreateInfo::arrayLevels(uint32_t arrayLevels) {
+	m_imageCreateInfo.arrayLayers = arrayLevels;
+	
+	return invalidate();
+}
+
 VKLImageCreateInfo& VKLImageCreateInfo::memoryProperties(VkMemoryPropertyFlags memoryProperties) {
 	m_memoryProperties = memoryProperties;
+
+	return invalidate();
 }
 
 bool VKLImageCreateInfo::_validate() {

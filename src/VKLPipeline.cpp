@@ -100,14 +100,21 @@ void VKLPipeline::_create(const VKLPipelineCreateInfo& createInfo) {
 
 		VkPipelineColorBlendAttachmentState colorBlendAttachmentState;
 		memset(&colorBlendAttachmentState, 0, sizeof(VkPipelineColorBlendAttachmentState));
-		colorBlendAttachmentState.blendEnable = VK_FALSE;
-		colorBlendAttachmentState.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_COLOR;
-		colorBlendAttachmentState.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_DST_COLOR;
-		colorBlendAttachmentState.colorBlendOp = VK_BLEND_OP_ADD;
-		colorBlendAttachmentState.srcAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-		colorBlendAttachmentState.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+		colorBlendAttachmentState.blendEnable = VK_TRUE;
+		colorBlendAttachmentState.srcColorBlendFactor = VK_BLEND_FACTOR_ONE; // Use source color (fragment shader output)
+		colorBlendAttachmentState.dstColorBlendFactor = VK_BLEND_FACTOR_ONE; // Add to destination color (existing content in the backbuffer)
+		colorBlendAttachmentState.colorBlendOp = VK_BLEND_OP_ADD; // Add source and destination colors
+		colorBlendAttachmentState.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+		colorBlendAttachmentState.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO; // Not relevant for R32_SFLOAT
 		colorBlendAttachmentState.alphaBlendOp = VK_BLEND_OP_ADD;
-		colorBlendAttachmentState.colorWriteMask = 0xf;
+		colorBlendAttachmentState.colorWriteMask = VK_COLOR_COMPONENT_R_BIT; // Only write to the red component for R32_SFLOAT
+		//colorBlendAttachmentState.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_COLOR;
+		//colorBlendAttachmentState.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_DST_COLOR;
+		//colorBlendAttachmentState.colorBlendOp = VK_BLEND_OP_ADD;
+		//colorBlendAttachmentState.srcAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+		//colorBlendAttachmentState.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+		//colorBlendAttachmentState.alphaBlendOp = VK_BLEND_OP_ADD;
+		//colorBlendAttachmentState.colorWriteMask = 0xf;
 		
 		VkPipelineColorBlendAttachmentState* colorBlendAttachmentStates = (VkPipelineColorBlendAttachmentState*)malloc(sizeof(VkPipelineColorBlendAttachmentState)
 																													   * createInfo.m_renderPass->m_subpassColorAttachmentCounts[createInfo.m_subpass]);
