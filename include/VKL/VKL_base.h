@@ -11,14 +11,13 @@
 
 #define VKL_VALIDATION
 
-#define VK_NO_PROTOTYPES
+//#define VK_NO_PROTOTYPES
 #include <vulkan/vulkan.h>
 
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <stdarg.h>
 
 class VKLInstance;
 class VKLPhysicalDevice;
@@ -37,7 +36,7 @@ class VKLRenderPass;
 class VKLDescriptorSet;
 class VKLFramebuffer;
 
-
+#include <stdarg.h>
 
 inline void log_message(const char* level, const char* format, ...) {
     va_list args;
@@ -55,13 +54,41 @@ inline void log_message(const char* level, const char* format, ...) {
     va_end(args);
 }
 
-#define LOGGING_INFO
+// #define LOGGING_INFO
 #define LOGGING_ERROR
 
 #ifdef LOGGING_INFO
-#define LOG_INFO(format, ...) log_message("[INFO]", format, ##__VA_ARGS__)
+
+inline void log_message_noendl(const char* level, const char* format, ...) {
+    va_list args;
+    va_start(args, format);
+
+    // Estimate the size of the full message
+    int size = snprintf(NULL, 0, "%s%s", level, format) + 1; // +1 for the null terminator
+    char* full_format = (char*)malloc(size);
+    if (full_format != NULL) {
+        snprintf(full_format, size, "%s%s", level, format);
+        vprintf(full_format, args);
+        free(full_format);
+    }
+
+    va_end(args);
+}
+
+#define LOG_INFO(format, ...) log_message("[INFO] ", format, ##__VA_ARGS__)
+#define LOG_INFO_NOENDL(format, ...) log_message_noendl("[INFO] ", format, ##__VA_ARGS__)
+
+#define LOG_NIL(format, ...) log_message("", format, ##__VA_ARGS__)
+#define LOG_NIL_NOENDL(format, ...) log_message_noendl("", format, ##__VA_ARGS__)
+
 #else
+
 #define LOG_INFO(format, ...)
+#define LOG_INFO_NOENDL(format, ...)
+
+#define LOG_NIL(format, ...)
+#define LOG_NIL_NOENDL(format, ...)
+
 #endif
 
 #ifdef LOGGING_ERROR

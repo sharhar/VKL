@@ -35,6 +35,7 @@ void VKLBuffer::setData(void* data, size_t size, size_t offset) {
 }
 
 void VKLBuffer::setData(const VKLQueue* transferQueue, VKLBuffer* stagingBuffer, void* data, size_t size, size_t offset) {
+	LOG_INFO("Setting data through staging buffer");
 	stagingBuffer->setData(data, size, 0);
 	
 	VkBufferCopy bufferCopy;
@@ -42,6 +43,8 @@ void VKLBuffer::setData(const VKLQueue* transferQueue, VKLBuffer* stagingBuffer,
 	bufferCopy.dstOffset = offset;
 	bufferCopy.srcOffset = 0;
 	
+	LOG_INFO("Copying data from staging buffer to buffer");
+
 	copyFrom(stagingBuffer, transferQueue, bufferCopy);
 }
 
@@ -107,14 +110,22 @@ void VKLBuffer::copyFrom(VKLBuffer* src, const VKLQueue* transferQueue, VkBuffer
 
 void VKLBuffer::uploadData(const VKLQueue* transferQueue, void* data, size_t size, size_t offset) {
 	VKLBufferCreateInfo tempBufferCreateInfo;
+	
+	LOG_INFO("Creating temp buffer for upload");
+
 	tempBufferCreateInfo.device(m_device).size(size)
 						.memoryProperties(VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)
 						.usage(VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
 	
+
 	VKLBuffer tempStageBuffer(tempBufferCreateInfo);
 	
+	LOG_INFO("Uploading data through temp buffer");
+
 	setData(transferQueue, &tempStageBuffer, data, size, offset);
-	
+
+	LOG_INFO("Destroying temp buffer...");
+
 	tempStageBuffer.destroy();
 }
 

@@ -161,7 +161,8 @@ void VKLDevice::_create(const VKLDeviceCreateInfo& createInfo) {
 	vk.AcquireNextImageKHR = (PFN_vkAcquireNextImageKHR)procAddr("vkAcquireNextImageKHR");
 	vk.QueuePresentKHR = (PFN_vkQueuePresentKHR)procAddr("vkQueuePresentKHR");
 
-	vk.GetMemoryFdKHR = (PFN_vkGetMemoryFdKHR)procAddr("vkGetMemoryFdKHR"); 
+	vk.GetMemoryFdKHR = (PFN_vkGetMemoryFdKHR)procAddr("vkGetMemoryFdKHR");
+	vk.GetSemaphoreFdKHR = (PFN_vkGetSemaphoreFdKHR)procAddr("vkGetSemaphoreFdKHR");
 
 	//vmaFuncs.vkGetPhysicalDeviceProperties = m_instance->vk.GetPhysicalDeviceProperties;
 	//vmaFuncs.vkGetPhysicalDeviceMemoryProperties = m_instance->vk.GetPhysicalDeviceMemoryProperties;

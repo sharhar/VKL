@@ -139,6 +139,7 @@ typedef struct VKLDevicePFNS {
 	PFN_vkQueuePresentKHR QueuePresentKHR;
 
 	PFN_vkGetMemoryFdKHR GetMemoryFdKHR;
+	PFN_vkGetSemaphoreFdKHR GetSemaphoreFdKHR;
 } VKLDevicePFNS;
 
 typedef enum VKLQueueType {
