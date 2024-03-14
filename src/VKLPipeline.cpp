@@ -162,7 +162,7 @@ void VKLPipeline::_create(const VKLPipelineCreateInfo& createInfo) {
 		pipelineCreateInfo.basePipelineHandle = NULL;
 		pipelineCreateInfo.basePipelineIndex = 0;
 		
-		VK_CALL(m_device->vk.CreateGraphicsPipelines(m_device->handle(), VK_NULL_HANDLE, 1, &pipelineCreateInfo, m_device->allocationCallbacks(), &m_handle));
+		VK_CALL(m_device->vk.CreateGraphicsPipelines(m_device->handle(), (VkPipelineCache)VK_NULL_HANDLE, 1, &pipelineCreateInfo, m_device->allocationCallbacks(), &m_handle));
 		
 		free(colorBlendAttachmentStates);
 	} else if (m_layout->type() == VKL_PIPELINE_TYPE_COMPUTE) {
@@ -172,7 +172,7 @@ void VKLPipeline::_create(const VKLPipelineCreateInfo& createInfo) {
 		pipelineCreateInfo.layout = m_layout->handle();
 		pipelineCreateInfo.stage = m_layout->getShaderStageCreateInfos()[0];
 		
-		VK_CALL(m_device->vk.CreateComputePipelines(m_device->handle(), VK_NULL_HANDLE, 1, &pipelineCreateInfo, m_device->allocationCallbacks(), &m_handle));
+		VK_CALL(m_device->vk.CreateComputePipelines(m_device->handle(), (VkPipelineCache)VK_NULL_HANDLE, 1, &pipelineCreateInfo, m_device->allocationCallbacks(), &m_handle));
 	}
 	
 }
@@ -218,7 +218,7 @@ bool VKLPipelineCreateInfo::_validate() {
 }
 
 VKLVertexInputBindingDesc& VKLPipelineVertexInputStateCreateInfo::addBinding(uint32_t binding, uint32_t stride) {
-	m_vertexInputBindings.push_back(VKLVertexInputBindingDesc(binding, stride, *this));
+	m_vertexInputBindings.push_back(VKLVertexInputBindingDesc(binding, stride, this));
 
 	return m_vertexInputBindings.back();
 }
@@ -269,11 +269,13 @@ bool VKLPipelineVertexInputStateCreateInfo::validate() {
 	return true;
 }
 
-VKLVertexInputBindingDesc::VKLVertexInputBindingDesc(uint32_t binding, uint32_t stride, VKLPipelineVertexInputStateCreateInfo& parent) : m_parent(parent) {
+VKLVertexInputBindingDesc::VKLVertexInputBindingDesc(uint32_t binding, uint32_t stride, VKLPipelineVertexInputStateCreateInfo* parent) {
 	memset(&m_desc, 0, sizeof(VkVertexInputBindingDescription));
 	m_desc.binding = binding;
 	m_desc.stride = stride;
 	m_desc.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+	m_parent = parent;
 }
 
 VKLVertexInputBindingDesc& VKLVertexInputBindingDesc::inputRate(VkVertexInputRate inputRate) {
@@ -283,11 +285,11 @@ VKLVertexInputBindingDesc& VKLVertexInputBindingDesc::inputRate(VkVertexInputRat
 }
 
 VKLVertexInputBindingDesc& VKLVertexInputBindingDesc::addAttrib(uint32_t location, VkFormat format, uint32_t offset) {
-	m_parent.addVertexAttrib(location, m_desc.binding, format, offset);
+	m_parent->addVertexAttrib(location, m_desc.binding, format, offset);
 
 	return *this;
 }
 
 VKLPipelineVertexInputStateCreateInfo& VKLVertexInputBindingDesc::end() {
-	return m_parent;
+	return *m_parent;
 }

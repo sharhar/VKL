@@ -46,7 +46,7 @@ VKLRenderPassCreateInfo& VKLRenderPassCreateInfo::device(const VKLDevice* device
 }
 
 VKLAttachmentDescription& VKLRenderPassCreateInfo::addAttachment(VkFormat format) {
-	m_attachmentDescriptions.push_back(VKLAttachmentDescription(*this, format));
+	m_attachmentDescriptions.push_back(VKLAttachmentDescription(this, format));
 
 	invalidate();
 
@@ -54,7 +54,7 @@ VKLAttachmentDescription& VKLRenderPassCreateInfo::addAttachment(VkFormat format
 }
 
 VKLSubpassDescription& VKLRenderPassCreateInfo::addSubpass() {
-	m_subpassDescriptions.push_back(VKLSubpassDescription(*this));
+	m_subpassDescriptions.push_back(VKLSubpassDescription(this));
 
 	invalidate();
 
@@ -62,7 +62,7 @@ VKLSubpassDescription& VKLRenderPassCreateInfo::addSubpass() {
 }
 
 VKLSubpassDependency& VKLRenderPassCreateInfo::addSubpassDependency(uint32_t srcSubpass, uint32_t dstSubpass, VkDependencyFlags dependencyFlags) {
-	m_subpassDependencies.push_back(VKLSubpassDependency(*this, srcSubpass, dstSubpass, dependencyFlags));
+	m_subpassDependencies.push_back(VKLSubpassDependency(this, srcSubpass, dstSubpass, dependencyFlags));
 
 	invalidate();
 
@@ -113,12 +113,12 @@ VKLAttachmentDescription& VKLAttachmentDescription::layout(VkImageLayout initial
 }
 
 VKLRenderPassCreateInfo& VKLAttachmentDescription::end() {
-	m_parent.m_attachmentDescriptionsBuffer.push_back(m_desc);
+	m_parent->m_attachmentDescriptionsBuffer.push_back(m_desc);
 
-	return m_parent;
+	return *m_parent;
 }
 
-VKLAttachmentDescription::VKLAttachmentDescription(VKLRenderPassCreateInfo& parent, VkFormat format) : m_parent(parent) {
+VKLAttachmentDescription::VKLAttachmentDescription(VKLRenderPassCreateInfo* parent, VkFormat format) {
 	m_desc.flags = 0;
 	m_desc.format = format;
 	m_desc.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -128,6 +128,8 @@ VKLAttachmentDescription::VKLAttachmentDescription(VKLRenderPassCreateInfo& pare
 	m_desc.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 	m_desc.initialLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 	m_desc.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+	m_parent = parent;
 }
 
 VKLSubpassDescription& VKLSubpassDescription::addInputAttachment(uint32_t attachment, VkImageLayout layout) {
@@ -163,7 +165,7 @@ VKLSubpassDescription& VKLSubpassDescription::depthAttachment(uint32_t attachmen
 	
 	m_desc.pDepthStencilAttachment = depthAttachment;
 	
-	m_parent.m_heapRefs.push_back(depthAttachment);
+	m_parent->m_heapRefs.push_back(depthAttachment);
 
 	return *this;
 }
@@ -178,12 +180,12 @@ VKLSubpassDescription& VKLSubpassDescription::preserveAttachment(uint32_t attach
 }
 
 VKLRenderPassCreateInfo& VKLSubpassDescription::end() {
-	m_parent.m_subpassDecriptionBuffer.push_back(m_desc);
+	m_parent->m_subpassDecriptionBuffer.push_back(m_desc);
 
-	return m_parent;
+	return *m_parent;
 }
 
-VKLSubpassDescription::VKLSubpassDescription(VKLRenderPassCreateInfo& parent) : m_parent(parent) {
+VKLSubpassDescription::VKLSubpassDescription(VKLRenderPassCreateInfo* parent) : m_parent(parent) {
 	memset(&m_desc, 0, sizeof(VkSubpassDescription));
 	m_desc.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 	m_desc.pDepthStencilAttachment = NULL;
@@ -204,12 +206,12 @@ VKLSubpassDependency& VKLSubpassDependency::access(VkAccessFlags srcAccess, VkAc
 }
 
 VKLRenderPassCreateInfo& VKLSubpassDependency::end() {
-	m_parent.m_subpassDependenciesBuffer.push_back(m_dependency);
+	m_parent->m_subpassDependenciesBuffer.push_back(m_dependency);
 	
-	return m_parent;
+	return *m_parent;
 }
 
-VKLSubpassDependency::VKLSubpassDependency(VKLRenderPassCreateInfo& parent, uint32_t srcSubpass, uint32_t dstSubpass, VkDependencyFlags dependencyFlags) : m_parent(parent) {
+VKLSubpassDependency::VKLSubpassDependency(VKLRenderPassCreateInfo* parent, uint32_t srcSubpass, uint32_t dstSubpass, VkDependencyFlags dependencyFlags) : m_parent(parent) {
 	memset(&m_dependency, 0, sizeof(VkSubpassDependency));
 	
 	m_dependency.dependencyFlags = dependencyFlags;

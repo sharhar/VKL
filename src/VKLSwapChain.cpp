@@ -59,10 +59,10 @@ void VKLSwapChain::rebuild(VkSwapchainKHR oldSwapchain) {
 	
 	m_cmdBuffer->end();
 	
-	m_queue->submit(m_cmdBuffer, VK_NULL_HANDLE);
+	m_queue->submit(m_cmdBuffer, (VkFence)VK_NULL_HANDLE);
 	m_queue->waitIdle();
 	
-	VK_CALL(m_device->vk.AcquireNextImageKHR(m_device->handle(), m_handle, UINT64_MAX, VK_NULL_HANDLE, m_fence, &m_currentImgIndex));
+	VK_CALL(m_device->vk.AcquireNextImageKHR(m_device->handle(), m_handle, UINT64_MAX, (VkSemaphore)VK_NULL_HANDLE, m_fence, &m_currentImgIndex));
 	
 	m_device->waitForFence(m_fence);
 	m_device->resetFence(m_fence);
@@ -75,7 +75,7 @@ void VKLSwapChain::_create(const VKLSwapChainCreateInfo& createInfo) {
 	m_cmdBuffer = new VKLCommandBuffer(m_queue);
 	m_fence = m_device->createFence(0);
 	
-	rebuild(VK_NULL_HANDLE);
+	rebuild((VkSwapchainKHR)VK_NULL_HANDLE);
 }
 
 VKLImage& VKLSwapChain::getCurrentImage() {
@@ -108,7 +108,7 @@ void VKLSwapChain::present(const VKLImage* image, uint32_t waitSemaphoreCount, c
 	getCurrentImage().cmdTransitionBarrier(m_cmdBuffer, VK_ACCESS_MEMORY_READ_BIT, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
 	m_cmdBuffer->end();
 	
-	m_queue->submit(m_cmdBuffer, VK_NULL_HANDLE, NULL, waitSemaphoreCount, waitSemaphores, pWaitDstStageMask);
+	m_queue->submit(m_cmdBuffer, (VkFence)VK_NULL_HANDLE, NULL, waitSemaphoreCount, waitSemaphores, pWaitDstStageMask);
 	m_queue->waitIdle();
 	
 	VkPresentInfoKHR presentInfo;
@@ -127,10 +127,10 @@ void VKLSwapChain::present(const VKLImage* image, uint32_t waitSemaphoreCount, c
 	getCurrentImage().cmdTransitionBarrier(m_cmdBuffer, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
 	m_cmdBuffer->end();
 	
-	m_queue->submit(m_cmdBuffer, VK_NULL_HANDLE);
+	m_queue->submit(m_cmdBuffer, (VkFence)VK_NULL_HANDLE);
 	m_queue->waitIdle();
 	
-	VK_CALL(m_device->vk.AcquireNextImageKHR(m_device->handle(), m_handle, UINT64_MAX, VK_NULL_HANDLE, m_fence, &m_currentImgIndex));
+	VK_CALL(m_device->vk.AcquireNextImageKHR(m_device->handle(), m_handle, UINT64_MAX, (VkSemaphore)VK_NULL_HANDLE, m_fence, &m_currentImgIndex));
 	
 	m_device->waitForFence(m_fence);
 	m_device->resetFence(m_fence);
@@ -155,7 +155,7 @@ VKLSwapChainCreateInfo::VKLSwapChainCreateInfo() {
 	m_createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
 	m_createInfo.pNext = NULL;
 	m_createInfo.flags = 0;
-	m_createInfo.surface = VK_NULL_HANDLE;
+	m_createInfo.surface = (VkSurfaceKHR)VK_NULL_HANDLE;
 	m_createInfo.minImageCount = 2;
 	m_createInfo.imageFormat = VK_FORMAT_UNDEFINED;
 	m_createInfo.imageExtent.width = -1;
@@ -169,7 +169,7 @@ VKLSwapChainCreateInfo::VKLSwapChainCreateInfo() {
 	m_createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
 	m_createInfo.presentMode = VK_PRESENT_MODE_FIFO_KHR;
 	m_createInfo.clipped = VK_TRUE;
-	m_createInfo.oldSwapchain = VK_NULL_HANDLE;
+	m_createInfo.oldSwapchain = (VkSwapchainKHR)VK_NULL_HANDLE;
 }
 
 VKLSwapChainCreateInfo& VKLSwapChainCreateInfo::queue(const VKLQueue* queue) {

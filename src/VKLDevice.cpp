@@ -291,7 +291,7 @@ VkDeviceMemory VKLDevice::allocateMemory(VkMemoryRequirements memoryRequirements
 
 	if(memoryAllocateInfo.memoryTypeIndex == -1) {
 		printf("Error allocating memory!!!\n");
-		return VK_NULL_HANDLE;
+		return (VkDeviceMemory)VK_NULL_HANDLE;
 	}
 
 	VkDeviceMemory memory;
@@ -319,6 +319,7 @@ VKLDeviceCreateInfo::VKLDeviceCreateInfo() {
 	m_queueTypeCounts[0] = 0;
 	m_queueTypeCounts[1] = 0;
 	m_queueTypeCounts[2] = 0;
+	m_queueTypeCounts[3] = 0;
 	
 	memset(&m_features, 0, sizeof(VkPhysicalDeviceFeatures));
 	memset(&m_createInfo, 0, sizeof(VkDeviceCreateInfo));
@@ -520,16 +521,25 @@ bool VKLDeviceCreateInfo::_validate() {
 	m_queueTypeIndicies[0].clear();
 	m_queueTypeIndicies[1].clear();
 	m_queueTypeIndicies[2].clear();
+	m_queueTypeIndicies[3].clear();
 	
 	std::vector<VkQueueFamilyProperties> queueFamilyProperties = m_physicalDevice->getQueueFamilyProperties();
 	
 	uint32_t* queueFamilyCounts = (uint32_t*)malloc(sizeof(uint32_t) * queueFamilyProperties.size());
 	memset(queueFamilyCounts, 0, sizeof(uint32_t) * queueFamilyProperties.size());
 	
-	
+	if(!allocateQueueType(m_physicalDevice, queueFamilyProperties, queueFamilyCounts,
+							m_queueTypeCounts[VKL_QUEUE_TYPE_ALL], m_queueTypeIndicies[VKL_QUEUE_TYPE_ALL],
+							VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT | VK_QUEUE_TRANSFER_BIT, 0, 0, (VkSurfaceKHR)VK_NULL_HANDLE)) {
+		free(queueFamilyCounts);
+		
+		printf("VKL Validation Error: Could not allocate the requested number of 'all' queues!\n");
+		return false;
+	}
+
 	if(!allocateQueueType(m_physicalDevice, queueFamilyProperties, queueFamilyCounts,
 							m_queueTypeCounts[VKL_QUEUE_TYPE_GRAPHICS], m_queueTypeIndicies[VKL_QUEUE_TYPE_GRAPHICS],
-							VK_QUEUE_GRAPHICS_BIT, VK_QUEUE_TRANSFER_BIT, VK_QUEUE_COMPUTE_BIT, VK_NULL_HANDLE)) {
+							VK_QUEUE_GRAPHICS_BIT, VK_QUEUE_TRANSFER_BIT, VK_QUEUE_COMPUTE_BIT, (VkSurfaceKHR)VK_NULL_HANDLE)) {
 		free(queueFamilyCounts);
 		
 		printf("VKL Validation Error: Could not allocate the requested number of graphics queues!\n");
@@ -538,7 +548,7 @@ bool VKLDeviceCreateInfo::_validate() {
 	
 	if(!allocateQueueType(m_physicalDevice, queueFamilyProperties, queueFamilyCounts,
 							m_queueTypeCounts[VKL_QUEUE_TYPE_COMPUTE], m_queueTypeIndicies[VKL_QUEUE_TYPE_COMPUTE],
-							VK_QUEUE_COMPUTE_BIT, VK_QUEUE_TRANSFER_BIT, VK_QUEUE_GRAPHICS_BIT, VK_NULL_HANDLE)) {
+							VK_QUEUE_COMPUTE_BIT, VK_QUEUE_TRANSFER_BIT, VK_QUEUE_GRAPHICS_BIT, (VkSurfaceKHR)VK_NULL_HANDLE)) {
 		free(queueFamilyCounts);
 		
 		printf("VKL Validation Error: Could not allocate the requested number of compute queues!\n");
@@ -547,7 +557,7 @@ bool VKLDeviceCreateInfo::_validate() {
 	
 	if(!allocateQueueType(m_physicalDevice, queueFamilyProperties, queueFamilyCounts,
 							m_queueTypeCounts[VKL_QUEUE_TYPE_TRANSFER], m_queueTypeIndicies[VKL_QUEUE_TYPE_TRANSFER],
-							VK_QUEUE_TRANSFER_BIT, VK_QUEUE_COMPUTE_BIT, VK_QUEUE_GRAPHICS_BIT, VK_NULL_HANDLE)) {
+							VK_QUEUE_TRANSFER_BIT, VK_QUEUE_COMPUTE_BIT, VK_QUEUE_GRAPHICS_BIT, (VkSurfaceKHR)VK_NULL_HANDLE)) {
 		free(queueFamilyCounts);
 		
 		printf("VKL Validation Error: Could not allocate the requested number of transfer queues!\n");

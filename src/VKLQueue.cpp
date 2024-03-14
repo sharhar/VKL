@@ -1,7 +1,7 @@
 #include <VKL/VKL.h>
 
 VKLQueue::VKLQueue() {
-	m_handle = VK_NULL_HANDLE;
+	m_handle = (VkQueue)VK_NULL_HANDLE;
 	m_device = NULL;
 	m_familyIndex = -1;
 }

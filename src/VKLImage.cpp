@@ -2,23 +2,22 @@
 
 VKLImage::VKLImage() : VKLCreator<VKLImageCreateInfo>("VKLImage") {
 	m_device = NULL;
-	m_memory = VK_NULL_HANDLE;
-	m_handle = VK_NULL_HANDLE;
+	m_memory = (VkDeviceMemory)VK_NULL_HANDLE;
+	m_handle = (VkImage)VK_NULL_HANDLE;
 	m_aspect = VK_IMAGE_ASPECT_COLOR_BIT;
 }
 
 VKLImage::VKLImage(const VKLImageCreateInfo& createInfo) : VKLCreator<VKLImageCreateInfo>("VKLImage") {
 	m_device = NULL;
-	m_memory = VK_NULL_HANDLE;
-	m_handle = VK_NULL_HANDLE;
+	m_memory = (VkDeviceMemory)VK_NULL_HANDLE;
+	m_handle = (VkImage)VK_NULL_HANDLE;
 	m_aspect = VK_IMAGE_ASPECT_COLOR_BIT;
 	create(createInfo);
 }
 
 void VKLImage::_create(const VKLImageCreateInfo& createInfo) {
-	_create(createInfo, VK_NULL_HANDLE);
+	_create(createInfo, (VkImage)VK_NULL_HANDLE);
 }
-
 
 void VKLImage::_create(const VKLImageCreateInfo& createInfo, VkImage handle) {
 	m_device = createInfo.m_device;

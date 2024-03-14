@@ -54,7 +54,7 @@ VKLSurfaceCreateInfo::VKLSurfaceCreateInfo() {
 }
 
 VKLSurfaceCreateInfoHandle::VKLSurfaceCreateInfoHandle() {
-	m_handle = VK_NULL_HANDLE;
+	m_handle = (VkSurfaceKHR)VK_NULL_HANDLE;
 	m_type = VKL_SURFACE_CREATE_INFO_TYPE_HANDLE;
 }
 

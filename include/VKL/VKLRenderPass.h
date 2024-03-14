@@ -15,9 +15,9 @@ public:
 	VKLRenderPassCreateInfo& end();
 
 private:
-	VKLSubpassDescription(VKLRenderPassCreateInfo& parent);
+	VKLSubpassDescription(VKLRenderPassCreateInfo* parent);
 
-	VKLRenderPassCreateInfo& m_parent;
+	VKLRenderPassCreateInfo* m_parent;
 
 	VkSubpassDescription m_desc;
 
@@ -39,9 +39,9 @@ public:
 	VKLRenderPassCreateInfo& end();
 
 private:
-	VKLAttachmentDescription(VKLRenderPassCreateInfo& parent, VkFormat format);
+	VKLAttachmentDescription(VKLRenderPassCreateInfo* parent, VkFormat format);
 
-	VKLRenderPassCreateInfo& m_parent;
+	VKLRenderPassCreateInfo* m_parent;
 
 	VkAttachmentDescription m_desc;
 
@@ -56,9 +56,9 @@ public:
 	VKLRenderPassCreateInfo& end();
 	
 private:
-	VKLSubpassDependency(VKLRenderPassCreateInfo& parent, uint32_t srcSubpass, uint32_t dstSubpass, VkDependencyFlags dependencyFlags);
+	VKLSubpassDependency(VKLRenderPassCreateInfo* parent, uint32_t srcSubpass, uint32_t dstSubpass, VkDependencyFlags dependencyFlags);
 	
-	VKLRenderPassCreateInfo& m_parent;
+	VKLRenderPassCreateInfo* m_parent;
 
 	VkSubpassDependency m_dependency;
 

@@ -145,7 +145,8 @@ typedef struct VKLDevicePFNS {
 typedef enum VKLQueueType {
 	VKL_QUEUE_TYPE_GRAPHICS = 0,
 	VKL_QUEUE_TYPE_COMPUTE = 1,
-	VKL_QUEUE_TYPE_TRANSFER = 2
+	VKL_QUEUE_TYPE_TRANSFER = 2,
+	VKL_QUEUE_TYPE_ALL = 3
 } VKLQueueType;
 
 typedef struct {
@@ -175,7 +176,7 @@ private:
 
 	uint32_t m_queueTypeCounts[3];
 
-	std::vector<VKLQueueLocation> m_queueTypeIndicies[3];
+	std::vector<VKLQueueLocation> m_queueTypeIndicies[4];
 
 	void _printSelections();
 

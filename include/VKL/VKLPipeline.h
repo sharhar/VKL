@@ -14,11 +14,11 @@ public:
 	VKLPipelineVertexInputStateCreateInfo& end();
 
 private:
-	VKLVertexInputBindingDesc(uint32_t binding, uint32_t stride, VKLPipelineVertexInputStateCreateInfo& parent);
+	VKLVertexInputBindingDesc(uint32_t binding, uint32_t stride, VKLPipelineVertexInputStateCreateInfo* parent);
 
 	VkVertexInputBindingDescription m_desc;
 
-	VKLPipelineVertexInputStateCreateInfo& m_parent;
+	VKLPipelineVertexInputStateCreateInfo* m_parent;
 
 	friend class VKLPipelineVertexInputStateCreateInfo;
 };

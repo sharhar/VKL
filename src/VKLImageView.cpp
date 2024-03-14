@@ -31,7 +31,7 @@ VKLImageViewCreateInfo::VKLImageViewCreateInfo() {
 	m_createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
 	m_createInfo.pNext = NULL;
 	m_createInfo.flags = 0;
-	m_createInfo.image = VK_NULL_HANDLE;
+	m_createInfo.image = (VkImage)VK_NULL_HANDLE;
 	m_createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
 	m_createInfo.format = VK_FORMAT_UNDEFINED;
 	m_createInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;

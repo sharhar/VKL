@@ -101,7 +101,7 @@ inline void log_message_noendl(const char* level, const char* format, ...) {
 template<typename T>
 class VKLHandle {
 public:
-	VKLHandle() { m_handle = VK_NULL_HANDLE;}
+	VKLHandle() { m_handle = (T)VK_NULL_HANDLE;}
 	T handle() const { return m_handle; }
 protected:
 	T m_handle;

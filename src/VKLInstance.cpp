@@ -1,14 +1,14 @@
 #include <VKL/VKL.h>
 
 VKLInstance::VKLInstance() : VKLCreator<VKLInstanceCreateInfo>("VKLInstance") {
-	m_handle = VK_NULL_HANDLE;
+	m_handle = (VkInstance)VK_NULL_HANDLE;
 	m_allocationCallbacks = NULL;
 	m_debugCallback = NULL;
 	memset(&vk, 0, sizeof(VKLInstancePFNS));
 }
 
 VKLInstance::VKLInstance(const VKLInstanceCreateInfo& createInfo) : VKLCreator<VKLInstanceCreateInfo>("VKLInstance") {
-	m_handle = VK_NULL_HANDLE;
+	m_handle = (VkInstance)VK_NULL_HANDLE;
 	m_allocationCallbacks = NULL;
 	m_debugCallback = NULL;
 	memset(&vk, 0, sizeof(VKLInstancePFNS));
@@ -25,7 +25,9 @@ void VKLInstance::_create(const VKLInstanceCreateInfo& createInfo) {
 	m_extensions.insert(m_extensions.end(), createInfo.m_extensions.begin(), createInfo.m_extensions.end());
 	m_layers.insert(m_layers.end(), createInfo.m_layers.begin(), createInfo.m_layers.end());
 
-	VK_CALL(vk.CreateInstance(&createInfo.m_createInfo, m_allocationCallbacks, &m_handle));
+	VK_CALL(vkCreateInstance(&createInfo.m_createInfo, m_allocationCallbacks, &m_handle));
+	
+	printf("Instance: %p\n", m_handle);
 
 	vk.DestroyInstance = (PFN_vkDestroyInstance)procAddr("vkDestroyInstance");
 	vk.EnumeratePhysicalDevices = (PFN_vkEnumeratePhysicalDevices)procAddr("vkEnumeratePhysicalDevices");
@@ -105,16 +107,19 @@ VKLInstanceCreateInfo::VKLInstanceCreateInfo() {
 	memset(&m_createInfo, 0, sizeof(VkInstanceCreateInfo));
 	
 	m_appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-	m_appInfo.pNext = NULL;
-	m_appInfo.pApplicationName = NULL;
-	m_appInfo.applicationVersion = 1;
-	m_appInfo.pEngineName = NULL;
-	m_appInfo.engineVersion = 1;
-	m_appInfo.apiVersion = VK_MAKE_API_VERSION(0, 1, 3, 0); //VK_MAKE_VERSION(1, 0, 0);
+	//m_appInfo.pApplicationName = NULL;
+	//m_appInfo.applicationVersion = 1;
+	//m_appInfo.pEngineName = NULL;
+	//m_appInfo.engineVersion = 1;
+	//m_appInfo.apiVersion = ;//VK_MAKE_API_VERSION(0, 1, 0, 0); //VK_MAKE_VERSION(1, 0, 0);a
+
+	m_appInfo.pApplicationName = "Hello Triangle";
+    m_appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
+    m_appInfo.pEngineName = "No Engine";
+    m_appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
+    m_appInfo.apiVersion = VK_API_VERSION_1_0;
 	
 	m_createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-	m_createInfo.pNext = NULL;
-	m_createInfo.flags = 0;
 	m_createInfo.pApplicationInfo = &m_appInfo;
 	
 	m_procAddr = NULL;
@@ -290,6 +295,11 @@ bool VKLInstanceCreateInfo::_validate() {
 		addExtension("VK_KHR_get_physical_device_properties2");
 	}
 
+	if (_supportsExtension("VK_KHR_portability_enumeration")) {
+		addExtension("VK_KHR_portability_enumeration");
+		m_createInfo.flags = m_createInfo.flags | VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
+	}
+
 	if (m_debug) {
 		if (_supportsExtension("VK_EXT_debug_report")) {
 			addExtension("VK_EXT_debug_report");
@@ -303,7 +313,7 @@ bool VKLInstanceCreateInfo::_validate() {
 			addLayer("VK_LAYER_LUNARG_monitor");
 		}
 
-		//_printSelections();
+		_printSelections();
 	}
 
 	m_createInfo.enabledLayerCount = m_layers.size();

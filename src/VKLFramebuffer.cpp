@@ -60,7 +60,7 @@ VKLFramebufferCreateInfo::VKLFramebufferCreateInfo() {
 	m_createInfo.flags = 0;
 	m_createInfo.attachmentCount = 0;
 	m_createInfo.pAttachments = NULL;
-	m_createInfo.renderPass = VK_NULL_HANDLE;
+	m_createInfo.renderPass = (VkRenderPass)VK_NULL_HANDLE;
 	m_createInfo.width = 0;
 	m_createInfo.height = 0;
 	m_createInfo.layers = 0;
