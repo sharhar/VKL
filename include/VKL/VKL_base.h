@@ -174,6 +174,11 @@ protected:
 	virtual void _create(const T& createInfo) = 0;
 };
 
+typedef struct {
+	VkDeviceMemory memory = (VkDeviceMemory)VK_NULL_HANDLE;
+	VkDeviceSize size = 0;
+	VkDeviceSize offset = 0;
+} VKLAllocation;
 
 
 #endif

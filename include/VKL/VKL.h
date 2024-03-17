@@ -18,5 +18,6 @@
 #include <VKL/VKLPipeline.h>
 #include <VKL/VKLDescriptorSet.h>
 #include <VKL/VKLFramebuffer.h>
+#include <VKL/VKLStaticAllocator.h>
 
 #endif

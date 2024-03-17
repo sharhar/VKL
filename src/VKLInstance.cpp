@@ -26,8 +26,6 @@ void VKLInstance::_create(const VKLInstanceCreateInfo& createInfo) {
 	m_layers.insert(m_layers.end(), createInfo.m_layers.begin(), createInfo.m_layers.end());
 
 	VK_CALL(vkCreateInstance(&createInfo.m_createInfo, m_allocationCallbacks, &m_handle));
-	
-	printf("Instance: %p\n", m_handle);
 
 	vk.DestroyInstance = (PFN_vkDestroyInstance)procAddr("vkDestroyInstance");
 	vk.EnumeratePhysicalDevices = (PFN_vkEnumeratePhysicalDevices)procAddr("vkEnumeratePhysicalDevices");
@@ -313,7 +311,7 @@ bool VKLInstanceCreateInfo::_validate() {
 			addLayer("VK_LAYER_LUNARG_monitor");
 		}
 
-		_printSelections();
+		//_printSelections();
 	}
 
 	m_createInfo.enabledLayerCount = m_layers.size();

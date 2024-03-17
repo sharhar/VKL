@@ -41,7 +41,9 @@ public:
 	VKLBuffer();
 	VKLBuffer(const VKLBufferCreateInfo& createInfo);
 
-	VkDeviceMemory memory() const;
+	void bind(VKLAllocation allocation);
+
+	VKLAllocation allocation() const;
 	VkMemoryRequirements memoryRequirements() const;
 	
 	void* map();
@@ -63,7 +65,7 @@ public:
 private:
 	const VKLDevice* m_device;
 	
-	VkDeviceMemory m_memory;
+	VKLAllocation m_allocation;
 	
 	VkBufferMemoryBarrier m_memoryBarrier;
 	

@@ -42,6 +42,8 @@ class VKLImage : public VKLHandle<VkImage>, public VKLCreator<VKLImageCreateInfo
 public:
 	VKLImage();
 	VKLImage(const VKLImageCreateInfo& createInfo);
+
+	void bind(VKLAllocation allocation);
 	
 	VkAccessFlags accessMask() const;
 	VkImageLayout layout() const;
@@ -51,7 +53,7 @@ public:
 
 	int layers() const;
 
-	VkDeviceMemory memory() const;
+	VKLAllocation allocation() const;
 
 	VkMemoryRequirements memoryRequirements() const;
 	
@@ -70,7 +72,7 @@ public:
 	VkImageAspectFlags m_aspect;
 private:
 	VkImageMemoryBarrier m_memoryBarrier;
-	VkDeviceMemory m_memory;
+	VKLAllocation m_allocation;
 
 	VkFormat m_format;
 	

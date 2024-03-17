@@ -29,9 +29,9 @@ VKLBuffer::VKLBuffer(const VKLBufferCreateInfo& createInfo) : VKLCreator<VKLBuff
 
 void VKLBuffer::setData(void* data, size_t size, size_t offset) {
 	uint8_t* mappedData;
-	VK_CALL(m_device->vk.MapMemory(m_device->handle(), m_memory, 0, VK_WHOLE_SIZE, 0, (void**)&mappedData));	
+	VK_CALL(m_device->vk.MapMemory(m_device->handle(), m_allocation.memory, m_allocation.offset, m_allocation.size, 0, (void**)&mappedData));	
 	memcpy(mappedData + offset, data, size);
-	m_device->vk.UnmapMemory(m_device->handle(), m_memory);
+	m_device->vk.UnmapMemory(m_device->handle(), m_allocation.memory);
 }
 
 void VKLBuffer::setData(const VKLQueue* transferQueue, VKLBuffer* stagingBuffer, void* data, size_t size, size_t offset) {
@@ -50,22 +50,22 @@ void VKLBuffer::setData(const VKLQueue* transferQueue, VKLBuffer* stagingBuffer,
 
 void* VKLBuffer::map() {
 	void* result;
-	VK_CALL(m_device->vk.MapMemory(m_device->handle(), m_memory, 0, VK_WHOLE_SIZE, 0, &result));
+	VK_CALL(m_device->vk.MapMemory(m_device->handle(), m_allocation.memory, m_allocation.offset, m_allocation.size, 0, &result));
 	return result;
 }
 void VKLBuffer::unmap() {
-	m_device->vk.UnmapMemory(m_device->handle(), m_memory);
+	m_device->vk.UnmapMemory(m_device->handle(), m_allocation.memory);
 }
 
 void VKLBuffer::getData(void* data, size_t size, size_t offset) {
 	uint8_t* mappedData;
-	VK_CALL(m_device->vk.MapMemory(m_device->handle(), m_memory, 0, VK_WHOLE_SIZE, 0, (void**)&mappedData));	
+	VK_CALL(m_device->vk.MapMemory(m_device->handle(), m_allocation.memory, m_allocation.offset, m_allocation.size, 0, (void**)&mappedData));
 	memcpy(data, mappedData + offset, size);
-	m_device->vk.UnmapMemory(m_device->handle(), m_memory);
+	m_device->vk.UnmapMemory(m_device->handle(), m_allocation.memory);
 }
 
-VkDeviceMemory VKLBuffer::memory() const {
-	return m_memory;
+VKLAllocation VKLBuffer::allocation() const {
+	return m_allocation;
 }
 
 VkMemoryRequirements VKLBuffer::memoryRequirements() const {
@@ -146,15 +146,18 @@ void VKLBuffer::_create(const VKLBufferCreateInfo& createInfo) {
 	m_device = createInfo.m_device;
 	
 	VK_CALL(m_device->vk.CreateBuffer(m_device->handle(), &createInfo.m_bufferCreateInfo, m_device->allocationCallbacks(), &m_handle));
-	m_memory = m_device->allocateMemory(memoryRequirements(), createInfo.m_memoryProperties, createInfo.m_allocationPNext);
-	VK_CALL(m_device->vk.BindBufferMemory(m_device->handle(), m_handle, m_memory, 0));
 	
 	m_memoryBarrier.buffer = m_handle;
 	m_memoryBarrier.size = createInfo.m_bufferCreateInfo.size;
 }
 
+void VKLBuffer::bind(VKLAllocation allocation) {
+	m_allocation = allocation;
+
+	VK_CALL(m_device->vk.BindBufferMemory(m_device->handle(), m_handle, m_allocation.memory, m_allocation.offset));
+}
+
 void VKLBuffer::_destroy() {
-	m_device->vk.FreeMemory(m_device->handle(), m_memory, m_device->allocationCallbacks());
 	m_device->vk.DestroyBuffer(m_device->handle(), m_handle, m_device->allocationCallbacks());
 }
 
