@@ -215,7 +215,7 @@ public:
 
 	VKLDevicePFNS vk;
 private:
-	std::vector<VKLQueue> m_queues[3];
+	std::vector<VKLQueue> m_queues[4];
 
 	const VKLInstance* m_instance;
 	const VKLPhysicalDevice* m_physicalDevice;

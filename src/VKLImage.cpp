@@ -94,8 +94,12 @@ VkMemoryRequirements VKLImage::memoryRequirements() const {
 void VKLImage::cmdTransitionBarrier(VKLCommandBuffer* cmdBuffer, VkAccessFlags accessMask, VkImageLayout layout, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask) {
 	m_memoryBarrier.dstAccessMask = accessMask;
 	m_memoryBarrier.newLayout = layout;
+
+	LOG_INFO("VKLImage::cmdTransitionBarrier %p", cmdBuffer);
 	
 	m_device->vk.CmdPipelineBarrier(cmdBuffer->handle(), srcStageMask, dstStageMask, 0, 0, NULL, 0, NULL, 1, &m_memoryBarrier);
+
+	LOG_INFO("VKLImage::cmdTransitionBarrier done");
 	
 	m_memoryBarrier.srcAccessMask = m_memoryBarrier.dstAccessMask;
 	m_memoryBarrier.oldLayout = m_memoryBarrier.newLayout;

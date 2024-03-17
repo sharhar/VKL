@@ -163,12 +163,14 @@ void VKLDevice::_create(const VKLDeviceCreateInfo& createInfo) {
 	uint32_t* queueFamilyCurrentIndicies = (uint32_t*)malloc(sizeof(uint32_t) * physical()->getQueueFamilyProperties().size());
 	memset(queueFamilyCurrentIndicies, 0, sizeof(uint32_t) * physical()->getQueueFamilyProperties().size());
 	
-	for(int i = 0; i < 3; i++) {
+	for(int i = 0; i < 4; i++) {
 		for(int j = 0; j < createInfo.m_queueTypeIndicies[i].size(); j++) {
 			VKLQueueLocation queueLocation = createInfo.m_queueTypeIndicies[i][j];
 			
 			VkQueue queue;
 			vk.GetDeviceQueue(m_handle, queueLocation.familyIndex, queueLocation.localIndex, &queue);
+
+			printf("making queue: %d %d\n", queueLocation.familyIndex, queueLocation.localIndex);
 			
 			m_queues[i].push_back(VKLQueue());
 			m_queues[i].back().init(this, queue, queueLocation.familyIndex);

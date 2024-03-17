@@ -161,6 +161,8 @@ public:
 	}
 	
 	void destroy() {
+		LOG_INFO("Destroying %s", m_name);
+
 		if (m_valid) {
 			_destroy();
 		}

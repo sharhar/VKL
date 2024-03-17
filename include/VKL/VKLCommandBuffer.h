@@ -50,7 +50,7 @@ public:
 	void dispatch(uint32_t x, uint32_t y, uint32_t z) const;
 
 	void destroy();
-private:
+//private:
 	VkCommandPool m_pool;
 	
 	const VKLQueue* m_queue;
