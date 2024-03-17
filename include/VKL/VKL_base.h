@@ -54,7 +54,7 @@ inline void log_message(const char* level, const char* format, ...) {
     va_end(args);
 }
 
-// #define LOGGING_INFO
+#define LOGGING_INFO
 #define LOGGING_ERROR
 
 #ifdef LOGGING_INFO

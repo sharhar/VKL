@@ -43,7 +43,15 @@ void VKLStaticAllocator::allocate() {
     }
 
     m_size = 0;
+
+    VkDeviceSize og_sizes[m_requirements.size()];
+
     for (int i = 0; i < m_requirements.size(); i++) {
+        og_sizes[i] = m_requirements[i].size;
+
+        if(m_requirements[i].size % m_requirements[i].alignment != 0)
+            m_requirements[i].size = (1 + (m_requirements[i].size / m_requirements[i].alignment)) * m_requirements[i].alignment;
+
         m_size += m_requirements[i].size;
     }
     
@@ -88,10 +96,10 @@ void VKLStaticAllocator::allocate() {
         int index = indexed_requirements[i].second;
 
         m_allocations[index].offset = offset;
-        m_allocations[index].size = reqs.size;
+        m_allocations[index].size = og_sizes[index];
         m_allocations[index].memory = m_memory;
 
-        LOG_INFO("Allocating %lu bytes at offset %lu with alignment %lu\n", reqs.size, offset, reqs.alignment);
+        LOG_INFO("Allocating %lu bytes at offset %lu with alignment %lu", og_sizes[index], offset, reqs.alignment);
 
         offset += reqs.size;
     }

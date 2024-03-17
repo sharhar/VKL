@@ -102,10 +102,16 @@ void VKLImage::cmdTransitionBarrier(VKLCommandBuffer* cmdBuffer, VkAccessFlags a
 }
 
 void VKLImage::transition(const VKLQueue* queue, VkAccessFlags accessMask, VkImageLayout layout, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask) {
+	LOG_INFO("VKLImage::transition %p", queue);
+	LOG_INFO("VKLImage::transition %p %p", queue, queue->getCmdBuffer());
 	queue->getCmdBuffer()->begin();
+	LOG_INFO("VKLImage::transition: cmdTransitionBarrier");
 	cmdTransitionBarrier(queue->getCmdBuffer(), accessMask, layout, srcStageMask, dstStageMask);
+	LOG_INFO("VKLImage::transition: end");
 	queue->getCmdBuffer()->end();
+	LOG_INFO("VKLImage::transition: submitAndWait");
 	queue->submitAndWait(queue->getCmdBuffer());
+	LOG_INFO("VKLImage::transition: reset");
 	queue->getCmdBuffer()->reset();
 }
 
@@ -196,6 +202,12 @@ void VKLImage::uploadData(const VKLQueue* transferQueue, void* data, size_t size
 							.memoryProperties(VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)
 							.arrayLevels(m_layers));
 	
+	VKLAllocation allocation;
+	allocation.memory = m_device->allocateMemory(stagingImage.memoryRequirements(), 
+													VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+	
+	stagingImage.bind(allocation);
+	
 	stagingImage.setData(data, size, pixelSize);
 	
 	VkImageCopy imageCopy;
@@ -219,6 +231,8 @@ void VKLImage::uploadData(const VKLQueue* transferQueue, void* data, size_t size
 	transferQueue->getCmdBuffer()->reset();
 	
 	stagingImage.destroy();
+
+	m_device->vk.FreeMemory(m_device->handle(), allocation.memory, m_device->allocationCallbacks());
 }
 
 
@@ -228,6 +242,12 @@ void VKLImage::uploadDataBuffer(const VKLQueue* transferQueue, void* data, size_
 							.size(size)
 							.usage(VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT)
 							.memoryProperties(VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT));
+	
+	VKLAllocation allocation;
+	allocation.memory = m_device->allocateMemory(stagingBuffer.memoryRequirements(), 
+													VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+	
+	stagingBuffer.bind(allocation);
 	
 	stagingBuffer.setData(data, size, 0);
 
@@ -248,9 +268,9 @@ void VKLImage::uploadDataBuffer(const VKLQueue* transferQueue, void* data, size_
 
 	m_device->vk.CmdCopyBufferToImage(
 		transferQueue->getCmdBuffer()->handle(),
-		stagingBuffer.handle(), // The VkBuffer containing your data
-		this->handle(), // The VkImage to copy data into
-		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, // Assuming you've transitioned the image layout beforehand
+		stagingBuffer.handle(),
+		this->handle(),
+		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 		1,
 		&bufferImageCopy
 	);
@@ -262,6 +282,57 @@ void VKLImage::uploadDataBuffer(const VKLQueue* transferQueue, void* data, size_
 	transferQueue->getCmdBuffer()->reset();
 	
 	stagingBuffer.destroy();
+	m_device->vk.FreeMemory(m_device->handle(), allocation.memory, m_device->allocationCallbacks());
+}
+
+
+void VKLImage::downloadDataBuffer(const VKLQueue* transferQueue, void* data, size_t size) {
+	VKLBuffer stagingBuffer(VKLBufferCreateInfo()
+							.device(m_device)
+							.size(size)
+							.usage(VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT)
+							.memoryProperties(VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT));
+	
+	VKLAllocation allocation;
+	allocation.memory = m_device->allocateMemory(stagingBuffer.memoryRequirements(), 
+													VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+	
+	stagingBuffer.bind(allocation);
+
+	VkBufferImageCopy bufferImageCopy;
+	memset(&bufferImageCopy, 0, sizeof(VkBufferImageCopy));
+	bufferImageCopy.bufferOffset = 0;
+	bufferImageCopy.bufferRowLength = 0;
+	bufferImageCopy.bufferImageHeight = 0;
+	bufferImageCopy.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	bufferImageCopy.imageSubresource.layerCount = m_layers;
+	bufferImageCopy.imageExtent = m_size;
+	
+	transferQueue->getCmdBuffer()->begin();
+	
+	this->cmdTransitionBarrier(transferQueue->getCmdBuffer(),
+							   VK_ACCESS_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+							   VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
+
+	m_device->vk.CmdCopyImageToBuffer(
+		transferQueue->getCmdBuffer()->handle(),
+		this->handle(), 
+		VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+		stagingBuffer.handle(),
+		1,
+		&bufferImageCopy
+	);
+
+	transferQueue->getCmdBuffer()->end();
+	
+	transferQueue->submitAndWait(transferQueue->getCmdBuffer());
+	
+	transferQueue->getCmdBuffer()->reset();
+
+	stagingBuffer.getData(data, size, 0);
+	
+	stagingBuffer.destroy();
+	m_device->vk.FreeMemory(m_device->handle(), allocation.memory, m_device->allocationCallbacks());
 }
 
 void VKLImage::_destroy() {

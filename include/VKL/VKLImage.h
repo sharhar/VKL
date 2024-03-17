@@ -66,6 +66,7 @@ public:
 	void uploadData(const VKLQueue* transferQueue, void* data, size_t size, size_t pixelSize);
 	
 	void uploadDataBuffer(const VKLQueue* transferQueue, void* data, size_t size);
+	void downloadDataBuffer(const VKLQueue* transferQueue, void* data, size_t size);
 
 	VkFormat format() const;
 	

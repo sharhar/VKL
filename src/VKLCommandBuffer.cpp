@@ -45,6 +45,12 @@ void VKLCommandBuffer::begin() const {
 	beginInfo.flags = 0;
 	beginInfo.pInheritanceInfo = NULL;
 
+	LOG_INFO("VKLCommandBuffer::begin: %p", m_handle);
+	LOG_INFO("VKLCommandBuffer::device %p", m_device);
+	LOG_INFO("VKLCommandBuffer::cmdBuffer %p", &m_device->vk);
+	LOG_INFO("VKLCommandBuffer::cmdBufferFunc %p", &(m_device->vk.BeginCommandBuffer));
+	LOG_INFO("VKLCommandBuffer::cmdBufferFunc %p", &(m_device->vk.BeginCommandBuffer));
+
 	m_device->vk.BeginCommandBuffer(m_handle, &beginInfo);
 }
 
