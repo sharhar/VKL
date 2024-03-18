@@ -7,7 +7,7 @@ VKLCommandBuffer::VKLCommandBuffer(const VKLQueue* queue) {
 	VkCommandPoolCreateInfo commandPoolCreateInfo;
 	commandPoolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
 	commandPoolCreateInfo.pNext = NULL;
-	commandPoolCreateInfo.flags = 0; //VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+	commandPoolCreateInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 	commandPoolCreateInfo.queueFamilyIndex = queue->getFamilyIndex();
 	
 	VK_CALL(m_device->vk.CreateCommandPool(m_device->handle(), &commandPoolCreateInfo, m_device->allocationCallbacks(), &m_pool));
@@ -20,8 +20,6 @@ VKLCommandBuffer::VKLCommandBuffer(const VKLQueue* queue) {
 	commandBufferAllocationInfo.commandBufferCount = 1;
 
 	VK_CALL(m_device->vk.AllocateCommandBuffers(m_device->handle(), &commandBufferAllocationInfo, &m_handle));
-
-	printf("queue: %p\n", m_queue);
 }
 
 VkCommandPool VKLCommandBuffer::pool() const {
@@ -47,52 +45,7 @@ void VKLCommandBuffer::begin() const {
 	beginInfo.flags = 0;
 	beginInfo.pInheritanceInfo = NULL;
 
-	LOG_INFO("VKLCommandBuffer::begin: %p", m_handle);
-	LOG_INFO("VKLCommandBuffer::device %p", m_device);
-	LOG_INFO("VKLCommandBuffer::cmdBuffer %p", &m_device->vk);
-	LOG_INFO("VKLCommandBuffer::cmdBufferFunc %p", &(m_device->vk.BeginCommandBuffer));
-
-	//const VKLQueue* queue = m_device->getQueue(VKL_QUEUE_TYPE_ALL, 0);
-
-	printf("queue: %p\n", m_queue);
-
-	printf("queue index: %d\n", m_queue->getFamilyIndex());
-
-	VkCommandPoolCreateInfo commandPoolCreateInfo;
-	commandPoolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-	commandPoolCreateInfo.pNext = NULL;
-	commandPoolCreateInfo.flags = 0; //VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-	commandPoolCreateInfo.queueFamilyIndex = m_queue->getFamilyIndex();
-
-	LOG_INFO("VKLCommandBuffer::cmdBufferFunc %p", &(m_device->vk.CreateCommandPool));
-	
-	VkCommandPool pool;
-	VK_CALL(m_device->vk.CreateCommandPool(m_device->handle(), &commandPoolCreateInfo, m_device->allocationCallbacks(), &pool));
-	
-	VkCommandBufferAllocateInfo commandBufferAllocationInfo;
-	commandBufferAllocationInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-	commandBufferAllocationInfo.pNext = NULL;
-	commandBufferAllocationInfo.commandPool = m_pool;
-	commandBufferAllocationInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	commandBufferAllocationInfo.commandBufferCount = 1;
-
-	LOG_INFO("VKLCommandBuffer::cmdBufferFunc %p", &(m_device->vk.AllocateCommandBuffers));
-
-	VkCommandBuffer cmdBuffer;
-	VK_CALL(m_device->vk.AllocateCommandBuffers(m_device->handle(), &commandBufferAllocationInfo, &cmdBuffer));
-
-	LOG_INFO("VKLCommandBuffer::cmdBufferFunc %p", &(m_device->vk.BeginCommandBuffer));
-
-	//m_device->vk.BeginCommandBuffer(m_handle, &beginInfo);
-	vkBeginCommandBuffer(cmdBuffer, &beginInfo);
-
-	LOG_INFO("VKLCommandBuffer::cmdBufferFunc %p", &(m_device->vk.EndCommandBuffer));
-
-	vkBeginCommandBuffer(m_handle, &beginInfo);
-
-	//vkEndCommandBuffer(m_handle);
-	
-	LOG_INFO("VKLCommandBuffer::done");
+	m_device->vk.BeginCommandBuffer(m_handle, &beginInfo);
 }
 
 void VKLCommandBuffer::end() const {
@@ -100,7 +53,7 @@ void VKLCommandBuffer::end() const {
 }
 
 void VKLCommandBuffer::reset() const {
-	
+	//m_device->vk.ResetCommandBuffer(m_handle, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
 }
 
 void VKLCommandBuffer::beginRenderPass(const VKLFramebuffer& framebuffer, VkSubpassContents contents) const  {

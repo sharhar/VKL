@@ -123,7 +123,9 @@ void VKLBuffer::uploadData(const VKLQueue* transferQueue, void* data, size_t siz
 	VKLAllocation allocation;
 	allocation.memory = m_device->allocateMemory(tempStageBuffer.memoryRequirements(), 
 													VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
-	
+	allocation.offset = 0;
+	allocation.size = tempStageBuffer.memoryRequirements().size;
+
 	tempStageBuffer.bind(allocation);
 	
 	LOG_INFO("Uploading data through temp buffer");
@@ -148,6 +150,8 @@ void VKLBuffer::downloadData(const VKLQueue* transferQueue, void* data, size_t s
 	VKLAllocation allocation;
 	allocation.memory = m_device->allocateMemory(tempStageBuffer.memoryRequirements(), 
 													VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+	allocation.offset = 0;
+	allocation.size = tempStageBuffer.memoryRequirements().size;
 	
 	tempStageBuffer.bind(allocation);
 	
@@ -168,6 +172,8 @@ void VKLBuffer::_create(const VKLBufferCreateInfo& createInfo) {
 }
 
 void VKLBuffer::bind(VKLAllocation allocation) {
+	LOG_INFO("Binding buffer to memory: %d, %d, %d", allocation.memory, allocation.offset, allocation.size);
+
 	m_allocation = allocation;
 
 	VK_CALL(m_device->vk.BindBufferMemory(m_device->handle(), m_handle, m_allocation.memory, m_allocation.offset));

@@ -12,20 +12,19 @@ void VKLQueue::init(const VKLDevice* device, VkQueue queue, uint32_t familyIndex
 	m_familyIndex = familyIndex;
 	
 	m_fence = m_device->createFence(0);
-
-	printf("this queue: %p\n", this);
 	
 	m_cmdBuffer = new VKLCommandBuffer(this);
-
-	printf("cmdbufff queue: %p\n", m_cmdBuffer->m_queue);
 }
 
 const VKLDevice* VKLQueue::device() const {
 	return m_device;
 }
 
+VkFence VKLQueue::fence() const {
+	return m_fence;
+}
+
 VKLCommandBuffer* VKLQueue::getCmdBuffer() const {
-	printf("cmdbufff queue: %p\n", m_cmdBuffer->m_queue);
 	return m_cmdBuffer;
 }
 

@@ -41,6 +41,7 @@ public:
 	VKLPipelineLayoutCreateInfo& addPushConstant(VkShaderStageFlags stage, uint32_t offset, uint32_t size);
 	VKLPipelineLayoutCreateInfo& addShaderModule(const uint32_t* pCode, size_t codeSize,
 										 VkShaderStageFlagBits stage, const char* entryPoint);
+	VKLPipelineLayoutCreateInfo& addShaderModuleSource(const char* source, VkShaderStageFlagBits stage, const char* entryPoint, const char* shaderName);
 private:
 
 	std::vector<VKLShaderModuleCreateInfo> m_shaderModuleCreateInfos;

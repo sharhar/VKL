@@ -169,8 +169,6 @@ void VKLDevice::_create(const VKLDeviceCreateInfo& createInfo) {
 			
 			VkQueue queue;
 			vk.GetDeviceQueue(m_handle, queueLocation.familyIndex, queueLocation.localIndex, &queue);
-
-			printf("making queue: %d %d\n", queueLocation.familyIndex, queueLocation.localIndex);
 			
 			m_queues[i].push_back(VKLQueue());
 			m_queues[i].back().init(this, queue, queueLocation.familyIndex);

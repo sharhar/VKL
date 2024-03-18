@@ -94,28 +94,18 @@ VkMemoryRequirements VKLImage::memoryRequirements() const {
 void VKLImage::cmdTransitionBarrier(VKLCommandBuffer* cmdBuffer, VkAccessFlags accessMask, VkImageLayout layout, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask) {
 	m_memoryBarrier.dstAccessMask = accessMask;
 	m_memoryBarrier.newLayout = layout;
-
-	LOG_INFO("VKLImage::cmdTransitionBarrier %p", cmdBuffer);
 	
 	m_device->vk.CmdPipelineBarrier(cmdBuffer->handle(), srcStageMask, dstStageMask, 0, 0, NULL, 0, NULL, 1, &m_memoryBarrier);
-
-	LOG_INFO("VKLImage::cmdTransitionBarrier done");
 	
 	m_memoryBarrier.srcAccessMask = m_memoryBarrier.dstAccessMask;
 	m_memoryBarrier.oldLayout = m_memoryBarrier.newLayout;
 }
 
 void VKLImage::transition(const VKLQueue* queue, VkAccessFlags accessMask, VkImageLayout layout, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask) {
-	LOG_INFO("VKLImage::transition %p", queue);
-	LOG_INFO("VKLImage::transition %p %p", queue, queue->getCmdBuffer());
 	queue->getCmdBuffer()->begin();
-	LOG_INFO("VKLImage::transition: cmdTransitionBarrier");
 	cmdTransitionBarrier(queue->getCmdBuffer(), accessMask, layout, srcStageMask, dstStageMask);
-	LOG_INFO("VKLImage::transition: end");
 	queue->getCmdBuffer()->end();
-	LOG_INFO("VKLImage::transition: submitAndWait");
 	queue->submitAndWait(queue->getCmdBuffer());
-	LOG_INFO("VKLImage::transition: reset");
 	queue->getCmdBuffer()->reset();
 }
 
@@ -209,7 +199,9 @@ void VKLImage::uploadData(const VKLQueue* transferQueue, void* data, size_t size
 	VKLAllocation allocation;
 	allocation.memory = m_device->allocateMemory(stagingImage.memoryRequirements(), 
 													VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
-	
+	allocation.offset = 0;
+	allocation.size = stagingImage.memoryRequirements().size;
+
 	stagingImage.bind(allocation);
 	
 	stagingImage.setData(data, size, pixelSize);
@@ -225,7 +217,7 @@ void VKLImage::uploadData(const VKLQueue* transferQueue, void* data, size_t size
 	
 	stagingImage.cmdTransitionBarrier(transferQueue->getCmdBuffer(),
 									  VK_ACCESS_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-									  VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
+									  VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
 	
 	transferQueue->getCmdBuffer()->copyImage(this, &stagingImage, imageCopy);
 	transferQueue->getCmdBuffer()->end();
@@ -250,6 +242,8 @@ void VKLImage::uploadDataBuffer(const VKLQueue* transferQueue, void* data, size_
 	VKLAllocation allocation;
 	allocation.memory = m_device->allocateMemory(stagingBuffer.memoryRequirements(), 
 													VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+	allocation.offset = 0;
+	allocation.size = stagingBuffer.memoryRequirements().size;	
 	
 	stagingBuffer.bind(allocation);
 	
@@ -268,7 +262,7 @@ void VKLImage::uploadDataBuffer(const VKLQueue* transferQueue, void* data, size_
 	
 	this->cmdTransitionBarrier(transferQueue->getCmdBuffer(),
 							   VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-							   VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
+							   VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
 
 	m_device->vk.CmdCopyBufferToImage(
 		transferQueue->getCmdBuffer()->handle(),
@@ -300,7 +294,9 @@ void VKLImage::downloadDataBuffer(const VKLQueue* transferQueue, void* data, siz
 	VKLAllocation allocation;
 	allocation.memory = m_device->allocateMemory(stagingBuffer.memoryRequirements(), 
 													VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
-	
+	allocation.offset = 0;
+	allocation.size = stagingBuffer.memoryRequirements().size;
+
 	stagingBuffer.bind(allocation);
 
 	VkBufferImageCopy bufferImageCopy;
@@ -316,7 +312,7 @@ void VKLImage::downloadDataBuffer(const VKLQueue* transferQueue, void* data, siz
 	
 	this->cmdTransitionBarrier(transferQueue->getCmdBuffer(),
 							   VK_ACCESS_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-							   VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
+							   VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
 
 	m_device->vk.CmdCopyImageToBuffer(
 		transferQueue->getCmdBuffer()->handle(),

@@ -7,6 +7,7 @@ class VKLQueue : public VKLHandle<VkQueue> {
 public:
 	uint32_t getFamilyIndex() const;
 	const VKLDevice* device() const;
+	VkFence fence() const;
 	VKLCommandBuffer* getCmdBuffer() const;
 	
 	void submitAndWait(const VKLCommandBuffer* cmdBuffer) const;
