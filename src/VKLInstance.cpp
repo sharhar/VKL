@@ -293,10 +293,14 @@ bool VKLInstanceCreateInfo::_validate() {
 		addExtension("VK_KHR_get_physical_device_properties2");
 	}
 
-	if (_supportsExtension("VK_KHR_portability_enumeration")) {
-		addExtension("VK_KHR_portability_enumeration");
+#ifdef VK_KHR_portability_enumeration
+
+	if (_supportsExtension(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME)) {
+		addExtension(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
 		m_createInfo.flags = m_createInfo.flags | VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
 	}
+
+#endif
 
 	if (m_debug) {
 		if (_supportsExtension("VK_EXT_debug_report")) {
